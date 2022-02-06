@@ -101,7 +101,6 @@ def graphConfidenceInterval(d : np.ndarray, confidence: float = 95):
         self.sample_distribution_Ho = self.sample_distribution - self.sample_distribution.mean() + pop_value
         self.sample_mean_Ho = np.round(np.mean(self.sample_distribution_Ho), 2)
  """    
- 
 
 
 class OneSampleHT(Bootstrap):
