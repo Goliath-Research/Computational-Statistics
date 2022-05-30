@@ -228,7 +228,7 @@ if __name__ == "__main__":
 
     # Graphical View
 
-    graphSampleDistribution(d, np.mean)
+    graphSampleDistribution(d)
     #input()
 
     graphConfidenceInterval(d, 95)
@@ -238,7 +238,7 @@ if __name__ == "__main__":
 
     My1HT = OneSampleHT(data, sample_size=40)
 
-    graphSampleDistribution(My1HT.sample_distribution, np.mean)
+    graphSampleDistribution(My1HT.sample_distribution)
 
     pop_value = 160
     My1HT.createSampleDistributionHo(pop_value)
