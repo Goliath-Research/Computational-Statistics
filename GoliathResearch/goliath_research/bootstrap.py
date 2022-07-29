@@ -50,13 +50,10 @@ class Bootstrap(object):
         '''
         It returns a DataFrame where each column (num_samples columns) is a sample with replacement.
         '''
-        self._samples = pd.DataFrame()
-        for k in range(self.num_samples):
-            sample = np.random.choice(self.sample_data, size=self.sample_size, replace=True)
-            column_name = 'Sample' + str(k)
-            self._samples[column_name] = sample
-        self._samples = self._samples.copy()
-
+        cols = ['S' + str(k) for k in range(self.num_samples)]
+        sample = np.random.choice(self.sample_data, replace=True, size=self.sample_size * self.num_samples)
+        self._samples = pd.DataFrame(sample.reshape(self.sample_size, self.num_samples), columns=cols)
+    
 # Method for generating a sample distribution from a DataFrame with sample columns
 # This method receives all samples (a Pandas DataFrame) and the statistical function
 # of interest (that is, a function that takes a sample and returns a statistic)
@@ -79,7 +76,7 @@ def getConfidenceInterval(d : np.ndarray, confidence: float = 95) -> (float, flo
 
 def graphSampleDistribution(d : np.ndarray):
     '''
-    It graph the sample distribution
+    It graphs the sample distribution
     '''
     sns.displot(d, height=3.5, aspect=1.5).set(title='Sample Distribution') 
 
