@@ -73,7 +73,6 @@ class Samples(ABC):
 
 
 
-
 class BSamples(Samples):
     '''
     Class for generating samples using the bootstrap method (resampling WITH replacement)    
@@ -103,41 +102,19 @@ class PSamples(Samples):
         It returns a 2D NumPy array where each column is a sample without replacement.        
         '''
         n = len(self._sample_data)
+        # Generate an array of indices (0, 1, 2, ..., n-1)
+        indices = np.tile(np.arange(n), (self._num_samples, 1))
+        # Shuffle each row of the indices array to create permutations
+        np.apply_along_axis(np.random.shuffle, 1, indices)
+        # Use the shuffled indices to generate the samples array
+        self._samples = self._sample_data[indices.T]
+        """
+        n = len(self._sample_data)
         self._samples = np.empty((n, self._num_samples))  
         # Generate all permutations at once
         for i in range(self._num_samples):
             self._samples[:, i] = np.random.permutation(self._sample_data)
-        
-        # Vectorized approach for permutation
-        #repeated_sample_data = np.tile(self._sample_data, (self._num_samples, 1))
-        #self._samples = np.apply_along_axis(np.random.permutation, 1, repeated_sample_data).T
-
-
-        # Generate all permutations at once
-        #repeated_data = np.tile(self._sample_data, (self._num_samples, 1))
-        #shuffled_data = np.apply_along_axis(np.random.permutation, 1, repeated_data)
-        # Transpose to fit the shape of self._samples
-        #self._samples = shuffled_data.T
-
-        #for i in range(self._num_samples):
-        #    self._samples[:, i] = np.random.permutation(self._sample_data)
-
-
-        #self._samples = np.array([np.random.choice(self._sample_data, size=len(self._sample_data), 
-        #                            replace=False) for _ in range(self._num_samples)])
-        # Create a matrix by repeating the _sample_data num_samples times
-        #replicated_data = np.tile(self._sample_data, (self._num_samples, 1)).T        
-        # Apply permutation on each column of the matrix
-        #self._samples = np.apply_along_axis(np.random.permutation, 0, replicated_data) 
-
-       
-
-    
-
-
-
-
-
+        """
 
 
 
