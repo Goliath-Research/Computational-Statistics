@@ -284,8 +284,8 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
+def _(binom, mo):
+    mo.md(rf"""
     ## 5. Calculate probabilities: a binomial example
     **Example:** It is known that 5% of adults who take a certain medication experience negative side effects. 
     We have a random sample of 100 patients, and we want to calculate the probability that:
@@ -306,8 +306,7 @@ def _(mo):
     | Exactly 5 | \(X\) = 5 | `binom.pmf(5, n=100, p=0.05)` | {binom.pmf(5, n=100, p=0.05):.4f} |
     | At most 5 | \(X\) ≤ 5 | `binom.cdf(5, n=100, p=0.05)` | {binom.cdf(5, n=100, p=0.05):.4f} |
     | More than 5 | \(X\) > 5 | `1 - binom.cdf(5, n=100, p=0.05)` | {1 - binom.cdf(5, n=100, p=0.05):.4f} |
-    | Between 1 and 10, inclusive | 1 ≤ \(X\) ≤ 10 | `binom.cdf(10, n=100, p=0.05) - binom.cdf(0, n=100, p=0.05)` |
-    | {binom.cdf(10, n=100, p=0.05) - binom.cdf(0, n=100, p=0.05):.4f} |
+    | Between 1 and 10, inclusive | 1 ≤ \(X\) ≤ 10 | `binom.cdf(10, n=100, p=0.05) - binom.cdf(0, n=100, p=0.05)` | {binom.cdf(10, n=100, p=0.05) - binom.cdf(0, n=100, p=0.05):.4f} |
     
     The **probability mass function**, **pmf**, gives the probability of an exact count. 
     
