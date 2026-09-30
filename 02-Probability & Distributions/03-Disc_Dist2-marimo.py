@@ -126,7 +126,7 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    bern_p = mo.ui.slider(start=0, stop=1, step=0.05, value=0.8, label="Bernoulli probability")
+    bern_p = mo.ui.slider(start=0, stop=1, step=0.05, value=0.8, label="Bernoulli probability p")
     bern_size = mo.ui.slider(steps=[10, 30, 100, 1000, 10000], value=100, label="Bernoulli observations")
     mo.hstack([bern_p, bern_size])
     return bern_p, bern_size
@@ -155,8 +155,7 @@ def _(bern_model, bern_values, plot_distribution):
 
 
 @app.cell
-def _(bern_model, bern_values, compare_summaries):
-    #compare_summaries(bern_values, bern_model)
+def _(bern_model, bern_values, compare_summaries):    
     print(compare_summaries(bern_values, bern_model).to_string(index=False))
     return
 
@@ -257,7 +256,7 @@ def _(bin_model, bin_n, bin_values, np, plot_distribution):
 
 @app.cell
 def _(bin_model, bin_values, compare_summaries):
-    compare_summaries(bin_values, bin_model)
+    print(compare_summaries(bin_values, bin_model).to_string(index=False))
     return
 
 
@@ -395,7 +394,7 @@ def _(poi_model, poi_values, plot_distribution, poisson_support):
 
 @app.cell
 def _(compare_summaries, poi_model, poi_values):
-    compare_summaries(poi_values, poi_model)
+    print(compare_summaries(poi_values, poi_model).to_string(index=False))
     return
 
 
