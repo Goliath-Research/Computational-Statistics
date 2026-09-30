@@ -180,7 +180,9 @@ def _(mo):
     2. Try p = 0 and p = 1. What happens to the outcomes and variance?
     3. Hold the parameters fixed and change the seed. Which quantities change: observed summaries, theoretical summaries, or both?
     
-    **Discussion:** The expected success count in 100 trials at p = 0.8 is 80, but it is not guaranteed. Larger samples generally approximate model probabilities more closely, with random fluctuations. At p = 0 or 1 the outcome is constant and the variance is zero.
+    **Discussion:** The expected success count in 100 trials at p = 0.8 is 80, but it is not guaranteed. 
+    Larger samples generally approximate model probabilities more closely, with random fluctuations. 
+    At p = 0 or 1 the outcome is constant and the variance is zero.
     """)
     return
 
@@ -277,8 +279,8 @@ def _(mo):
     3. With p = 0.5, increase n from 10 to 20. What happens to the theoretical mean and variance?
     4. Explain why changing n and changing size represent different changes to the experiment.
     
-    **Discussion:** Increasing size changes how much data we simulate, not the model. Increasing n changes 
-    the number of trials within each experiment and therefore the distribution of X.
+    **Discussion:** Increasing size changes how much data we simulate, not the model. 
+    Increasing n changes the number of trials within each experiment and therefore the distribution of \(X\).
     """)
     return
 
@@ -470,7 +472,9 @@ def _(mo):
     3. Increase μ. Describe changes to the center and spread.
     4. Would a constant-rate model be suitable for a service with a strong lunchtime arrival surge?
     
-    **Discussion:** Both theoretical mean and variance increase with μ. Increasing sample size leaves these theoretical properties unchanged. A strong time-dependent rate conflicts with a homogeneous Poisson-process assumption.
+    **Discussion:** Both theoretical mean and variance increase with μ. 
+    Increasing sample size leaves these theoretical properties unchanged. 
+    A strong time-dependent rate conflicts with a homogeneous Poisson-process assumption.
     """)
     return
 
