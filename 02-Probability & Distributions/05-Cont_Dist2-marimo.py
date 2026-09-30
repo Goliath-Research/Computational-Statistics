@@ -56,9 +56,9 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    simulation_seed = mo.ui.slider(start=1, stop=100, step=1, value=42, label="Simulation seed")
-    sample_size = mo.ui.slider(steps=[10, 100, 1000, 10000], value=1000, label="Observations displayed")
-    histogram_bins = mo.ui.slider(start=5, stop=60, step=5, value=20, label="Histogram bins")
+    simulation_seed = mo.ui.slider(start=1, stop=100, step=1, value=42, show_value=True, label="Simulation seed")
+    sample_size = mo.ui.slider(steps=[10, 100, 1000, 10000], value=1000, show_value=True, label="Observations displayed")
+    histogram_bins = mo.ui.slider(start=5, stop=60, step=5, value=20, show_value=True, label="Histogram bins")
     mo.vstack([simulation_seed, sample_size, histogram_bins])
     return histogram_bins, sample_size, simulation_seed
 
@@ -130,8 +130,8 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    uniform_start = mo.ui.slider(start=0, stop=20, step=1, value=0, label="Uniform lower endpoint a")
-    uniform_width = mo.ui.slider(start=0.5, stop=40, step=0.5, value=10, label="Uniform width b−a")
+    uniform_start = mo.ui.slider(start=0, stop=20, step=1, value=0, show_value=True, label="Uniform lower endpoint a")
+    uniform_width = mo.ui.slider(start=0.5, stop=40, step=0.5, value=10, show_value=True, label="Uniform width b−a")
     mo.hstack([uniform_start, uniform_width])
     return uniform_start, uniform_width
 
@@ -217,8 +217,8 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    normal_mean = mo.ui.slider(start=-10, stop=20, step=1, value=5, label="Normal mean μ")
-    normal_sd = mo.ui.slider(start=0.5, stop=10, step=0.5, value=2, label="Normal standard deviation σ")
+    normal_mean = mo.ui.slider(start=-10, stop=20, step=1, value=5, show_value=True, label="Normal mean μ")
+    normal_sd = mo.ui.slider(start=0.5, stop=10, step=0.5, value=2, show_value=True, label="Normal standard deviation σ")
     mo.hstack([normal_mean, normal_sd])
     return normal_mean, normal_sd
 
@@ -308,8 +308,8 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    exp_rate = mo.ui.slider(start=0.5, stop=10, step=0.5, value=3, label="Event rate λ per hour")
-    exp_shift = mo.ui.slider(start=0, stop=2, step=0.25, value=0, label="Fixed delay c (hours)")
+    exp_rate = mo.ui.slider(start=0.5, stop=10, step=0.5, value=3, show_value=True, label="Event rate λ per hour")
+    exp_shift = mo.ui.slider(start=0, stop=2, step=0.25, value=0, show_value=True, label="Fixed delay c (hours)")
     mo.hstack([exp_rate, exp_shift])
     return exp_rate, exp_shift
 

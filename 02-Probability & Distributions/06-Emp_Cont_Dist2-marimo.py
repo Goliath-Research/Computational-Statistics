@@ -85,9 +85,9 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    original_seed = mo.ui.slider(start=1, stop=100, step=1, value=42, label="Original data seed")
-    bin_control = mo.ui.slider(start=10, stop=60, step=5, value=30, label="Histogram bins")
-    bandwidth_control = mo.ui.slider(start=0.5, stop=2, step=0.25, value=1, label="KDE bandwidth multiplier")
+    original_seed = mo.ui.slider(start=1, stop=100, step=1, value=42, show_value=True, label="Original data seed")
+    bin_control = mo.ui.slider(start=10, stop=60, step=5, value=30, show_value=True, label="Histogram bins")
+    bandwidth_control = mo.ui.slider(start=0.5, stop=2, step=0.25, value=1, show_value=True, label="KDE bandwidth multiplier")
     mo.vstack([original_seed, bin_control, bandwidth_control])
     return bandwidth_control, bin_control, original_seed
 
@@ -186,7 +186,7 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    query_control = mo.ui.slider(start=10, stop=70, step=1, value=40, label="Threshold t")
+    query_control = mo.ui.slider(start=10, stop=70, step=1, value=40, show_value=True, label="Threshold t")
     query_control
     return (query_control,)
 
@@ -275,8 +275,8 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    resample_seed = mo.ui.slider(start=1, stop=100, step=1, value=73, label="Resampling seed")
-    resample_size = mo.ui.slider(steps=[10, 100, 1000, 10000, 100000], value=1000, label="Resample size displayed")
+    resample_seed = mo.ui.slider(start=1, stop=100, step=1, value=73, show_value=True, label="Resampling seed")
+    resample_size = mo.ui.slider(steps=[10, 100, 1000, 10000, 100000], value=1000, show_value=True, label="Resample size displayed")
     mo.hstack([resample_seed, resample_size])
     return resample_seed, resample_size
 

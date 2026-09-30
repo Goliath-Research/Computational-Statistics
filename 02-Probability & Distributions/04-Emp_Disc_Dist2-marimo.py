@@ -111,8 +111,8 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    die_seed = mo.ui.slider(start=1, stop=100, step=1, value=42, label="Die experiment seed")
-    die_size = mo.ui.slider(steps=[10, 30, 100, 1000, 10000], value=10, label="Die rolls displayed")
+    die_seed = mo.ui.slider(start=1, stop=100, step=1, value=42, show_value=True, label="Die experiment seed")
+    die_size = mo.ui.slider(steps=[10, 30, 100, 1000, 10000], value=10, show_value=True, label="Die rolls displayed")
     mo.hstack([die_seed, die_size])
     return die_seed, die_size
 
@@ -179,7 +179,7 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    source_seed = mo.ui.slider(start=1, stop=100, step=1, value=17, label="Original data seed")
+    source_seed = mo.ui.slider(start=1, stop=100, step=1, value=17, show_value=True, label="Original data seed")
     source_seed
     return (source_seed,)
 
@@ -248,8 +248,8 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    new_seed = mo.ui.slider(start=1, stop=100, step=1, value=73, label="Resampling seed")
-    new_size = mo.ui.slider(steps=[10, 100, 1000, 10000, 100000], value=100, label="New sample size displayed")
+    new_seed = mo.ui.slider(start=1, stop=100, step=1, value=73, show_value=True, label="Resampling seed")
+    new_size = mo.ui.slider(steps=[10, 100, 1000, 10000, 100000], value=100, show_value=True, label="New sample size displayed")
     mo.hstack([new_seed, new_size])
     return new_seed, new_size
 

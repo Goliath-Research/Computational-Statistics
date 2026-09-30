@@ -151,7 +151,8 @@ def _(simulate_outcomes):
 
 @app.cell
 def _(mo):
-    coin_n = mo.ui.slider(steps=[1, 2, 10, 20, 50, 100, 500, 1000, 10000], value=20, label="Coin tosses displayed")
+    coin_n = mo.ui.slider(steps=[1, 2, 10, 20, 50, 100, 500, 1000, 10000], value=20, show_value=True, 
+    label="Coin tosses displayed")
     coin_n
     return (coin_n,)
 
@@ -230,7 +231,8 @@ def _(simulate_outcomes):
 
 @app.cell
 def _(mo):
-    fair_n = mo.ui.slider(steps=[1, 2, 6, 10, 30, 100, 600, 6000], value=6, label="Die rolls displayed")
+    fair_n = mo.ui.slider(steps=[1, 2, 6, 10, 30, 100, 600, 6000], value=6, show_value=True, 
+    label="Die rolls displayed")
     fair_n
     return (fair_n,)
 
@@ -273,7 +275,8 @@ def _(simulate_outcomes):
 
 @app.cell
 def _(mo):
-    weighted_n = mo.ui.slider(steps=[1, 2, 6, 10, 30, 100, 600, 6000], value=6, label="Die rolls displayed")
+    weighted_n = mo.ui.slider(steps=[1, 2, 6, 10, 30, 100, 600, 6000], value=6, show_value=True, 
+    label="Die rolls displayed")
     weighted_n
     return (weighted_n,)
 

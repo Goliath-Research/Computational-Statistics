@@ -115,7 +115,7 @@ def _(Path, pd):
 
 @app.cell
 def _(mo):
-    passing_control = mo.ui.slider(start=0, stop=100, step=5, value=60, label="Passing threshold (%)")
+    passing_control = mo.ui.slider(start=0, stop=100, step=5, value=60, show_value=True, label="Passing threshold (%)")
     passing_control
     return (passing_control,)
 
