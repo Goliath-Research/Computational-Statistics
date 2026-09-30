@@ -62,7 +62,7 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    seed_control = mo.ui.slider(start=1, stop=100, step=1, value=42, show_label=True, label="Simulation seed")
+    seed_control = mo.ui.slider(start=1, stop=100, step=1, value=42, show_value=True, label="Simulation seed")
     seed_control
     return (seed_control,)
 
@@ -126,8 +126,8 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    bern_p = mo.ui.slider(start=0, stop=1, step=0.05, value=0.8, show_label=True, label="Bernoulli probability p")
-    bern_size = mo.ui.slider(steps=[10, 30, 100, 1000, 10000], value=100, show_label=True, label="Bernoulli observations")
+    bern_p = mo.ui.slider(start=0, stop=1, step=0.05, value=0.8, show_value=True, label="Bernoulli probability p")
+    bern_size = mo.ui.slider(steps=[10, 30, 100, 1000, 10000], value=100, show_value=True, label="Bernoulli observations")
     mo.hstack([bern_p, bern_size])
     return bern_p, bern_size
 
@@ -227,9 +227,9 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    bin_n = mo.ui.slider(start=1, stop=30, step=1, value=10, show_label=True, label="Trials per experiment n")
-    bin_p = mo.ui.slider(start=0, stop=1, step=0.05, value=0.5, show_label=True, label="Success probability p")
-    bin_size = mo.ui.slider(steps=[10, 100, 1000, 10000], value=1000, show_label=True, label="Repeated experiments displayed")
+    bin_n = mo.ui.slider(start=1, stop=30, step=1, value=10, show_value=True, label="Trials per experiment n")
+    bin_p = mo.ui.slider(start=0, stop=1, step=0.05, value=0.5, show_value=True, label="Success probability p")
+    bin_size = mo.ui.slider(steps=[10, 100, 1000, 10000], value=1000, show_value=True, label="Repeated experiments displayed")
     mo.vstack([bin_n, bin_p, bin_size])
     return bin_n, bin_p, bin_size
 
@@ -416,9 +416,9 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    arrival_rate = mo.ui.slider(start=0, stop=10, step=0.5, value=3, show_label=True, label="Arrivals per hour r")
-    interval_hours = mo.ui.slider(start=0.5, stop=3, step=0.5, value=1, show_label=True, label="Interval length (hours)")
-    poi_size = mo.ui.slider(steps=[10, 100, 1000, 10000], value=1000, show_label=True, label="Intervals observed")
+    arrival_rate = mo.ui.slider(start=0, stop=10, step=0.5, value=3, show_value=True, label="Arrivals per hour r")
+    interval_hours = mo.ui.slider(start=0.5, stop=3, step=0.5, value=1, show_value=True, label="Interval length (hours)")
+    poi_size = mo.ui.slider(steps=[10, 100, 1000, 10000], value=1000, show_value=True, label="Intervals observed")
     mo.vstack([arrival_rate, interval_hours, poi_size])
     return arrival_rate, interval_hours, poi_size
 
