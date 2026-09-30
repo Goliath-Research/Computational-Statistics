@@ -320,22 +320,44 @@ def _(binom, mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""
+    mo.md("""
     ### Try it yourself
-    Before running the next cell, choose the method for each question: no patients, at least one patient, and at least five patients.
-    **Watch the boundary:** “at least five” includes five; “more than five” does not.
+
+    In the same example, 5% of adults taking a certain medication
+    experience negative side effects. We consider 100 patients.
+
+    Write and run your calculation in each code cell below.
+    Use `binom.pmf()` or `binom.cdf()`, with `n=100` and `p=0.05`.
+
+    **Remember:** “at least five” includes five.
     """)
     return
 
+
 @app.cell
-def _(binom, mo):
-    mo.accordion({
-        "Answers and calculations": mo.md(f"""
-        - No patients: `binom.pmf(0, n=100, p=0.05)` = {binom.pmf(0, n=100, p=0.05):.4f}
-        - At least one: `1 - binom.cdf(0, n=100, p=0.05)` = {1 - binom.cdf(0, n=100, p=0.05):.4f}
-        - At least five: `1 - binom.cdf(4, n=100, p=0.05)` = {1 - binom.cdf(4, n=100, p=0.05):.4f}
-        """)
-    })
+def _(binom):
+    # 1. What is the probability that no patients experience side effects?
+    # Write your calculation below, inside print(...).
+
+    print()
+    return
+
+
+@app.cell
+def _(binom):
+    # 2. What is the probability that at least one patient experiences side effects?
+    # Write your calculation below, inside print(...).
+
+    print()
+    return
+
+
+@app.cell
+def _(binom):
+    # 3. What is the probability that at least five patients experience side effects?
+    # Write your calculation below, inside print(...).
+
+    print()
     return
 
 @app.cell(hide_code=True)
