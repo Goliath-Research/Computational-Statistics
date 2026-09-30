@@ -126,8 +126,8 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    bern_p = mo.ui.slider(start=0, stop=1, step=0.05, value=0.8, label="Bernoulli success probability p")
-    bern_size = mo.ui.slider(steps=[10, 30, 100, 1000, 10000], value=100, label="Bernoulli observations displayed")
+    bern_p = mo.ui.slider(start=0, stop=1, step=0.05, value=0.8, label="Bernoulli probability")
+    bern_size = mo.ui.slider(steps=[10, 30, 100, 1000, 10000], value=100, label="Bernoulli observations")
     mo.hstack([bern_p, bern_size])
     return bern_p, bern_size
 
