@@ -303,11 +303,21 @@ def _(mo):
 
     | Question | Mathematical event | SciPy calculation | Result |
     |---|---|---|--- |
-    | Exactly 5 | \(X\) = 5 | `binom.pmf(5, n=100, p=0.05)` |
-    | At most 5 | \(X\) ≤ 5 | `binom.cdf(5, n=100, p=0.05)` |
-    | More than 5 | \(X\) > 5 | `1 - binom.cdf(5, n=100, p=0.05)` |
+    | Exactly 5 | \(X\) = 5 | `binom.pmf(5, n=100, p=0.05)` | {binom.pmf(5, n=100, p=0.05):.4f} |
+    | At most 5 | \(X\) ≤ 5 | `binom.cdf(5, n=100, p=0.05)` | {binom.cdf(5, n=100, p=0.05):.4f} |
+    | More than 5 | \(X\) > 5 | `1 - binom.cdf(5, n=100, p=0.05)` | {1 - binom.cdf(5, n=100, p=0.05):.4f} |
     | Between 1 and 10, inclusive | 1 ≤ \(X\) ≤ 10 | `binom.cdf(10, n=100, p=0.05) - binom.cdf(0, n=100, p=0.05)` |
+    | {binom.cdf(10, n=100, p=0.05) - binom.cdf(0, n=100, p=0.05):.4f} |
+    
+    The **probability mass function**, **pmf**, gives the probability of an exact count. 
+    
+    The **cumulative distribution function**, **cdf**, gives the probability of that count or fewer.
+
+    For **more than 5**, subtract the probability of **5 or fewer** from 1. 
+    
+    For **1 through 10**, subtract the probability of zero from the probability of **10 or fewer**.
     """)
+
     return
 
 
