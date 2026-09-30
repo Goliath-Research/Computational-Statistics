@@ -326,8 +326,10 @@ def _(mo):
     In the same example, 5% of adults taking a certain medication
     experience negative side effects. We consider 100 patients.
 
-    Write and run your calculation in each code cell below.
+    In each code cell below, replace `None` with your calculation.
     Use `binom.pmf()` or `binom.cdf()`, with `n=100` and `p=0.05`.
+
+    Your answer will be checked automatically.
 
     **Remember:** “at least five” includes five.
     """)
@@ -337,27 +339,60 @@ def _(mo):
 @app.cell
 def _(binom):
     # 1. What is the probability that no patients experience side effects?
-    # Write your calculation below, inside print(...).
+    answer_1 = None
+    return (answer_1,)
 
-    print()
+
+@app.cell(hide_code=True)
+def _(answer_1, binom, mo):
+    if answer_1 is None:
+        _feedback = "Enter your calculation above."
+    elif abs(answer_1 - binom.pmf(0, n=100, p=0.05)) < 0.0001:
+        _feedback = "✅ Correct!"
+    else:
+        _feedback = "❌ Try again. Use the probability mass function for exactly zero."
+
+    mo.md(_feedback)
     return
 
 
 @app.cell
 def _(binom):
     # 2. What is the probability that at least one patient experiences side effects?
-    # Write your calculation below, inside print(...).
+    answer_2 = None
+    return (answer_2,)
 
-    print()
+
+@app.cell(hide_code=True)
+def _(answer_2, binom, mo):
+    if answer_2 is None:
+        _feedback = "Enter your calculation above."
+    elif abs(answer_2 - (1 - binom.cdf(0, n=100, p=0.05))) < 0.0001:
+        _feedback = "✅ Correct!"
+    else:
+        _feedback = "❌ Try again. Subtract the probability of zero patients from 1."
+
+    mo.md(_feedback)
     return
 
 
 @app.cell
 def _(binom):
     # 3. What is the probability that at least five patients experience side effects?
-    # Write your calculation below, inside print(...).
+    answer_3 = None
+    return (answer_3,)
 
-    print()
+
+@app.cell(hide_code=True)
+def _(answer_3, binom, mo):
+    if answer_3 is None:
+        _feedback = "Enter your calculation above."
+    elif abs(answer_3 - (1 - binom.cdf(4, n=100, p=0.05))) < 0.0001:
+        _feedback = "✅ Correct!"
+    else:
+        _feedback = "❌ Try again. At least five excludes zero through four."
+
+    mo.md(_feedback)
     return
 
 @app.cell(hide_code=True)
