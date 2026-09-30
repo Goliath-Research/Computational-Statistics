@@ -48,10 +48,14 @@ def _(mo):
     All datasets below are simulated; no external files are needed.
     
     ## Reproducible experiments
-    A seed initializes a pseudorandom generator. The same inputs and seed reproduce an experiment in the same software environment.
-    Each simulation uses a fresh generator so cell execution order cannot change another experiment's results.
-    Changing the seed changes the sample, not the model's probabilities.
-    For sample-size comparisons, we generate a long sequence once and inspect its prefixes.
+    A seed is a number that lets us repeat a simulation and obtain the same results. 
+    Each simulation uses its own seed, so running other cells does not affect its results. 
+    Changing the seed produces different observations, but the distribution’s probabilities 
+    remain the same.
+
+    To compare sample sizes, we generate one large sample and examine its first 10 observations, 
+    then its first 100, and then its first 1,000. Each larger sample includes the observations 
+    already examined, showing how the results change as we include more observations.
     """)
     return
 
