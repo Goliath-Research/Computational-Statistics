@@ -156,7 +156,8 @@ def _(bern_model, bern_values, plot_distribution):
 
 @app.cell
 def _(bern_model, bern_values, compare_summaries):
-    compare_summaries(bern_values, bern_model)
+    #compare_summaries(bern_values, bern_model)
+    mo.md(compare_summaries(bern_values, bern_model).to_markdown(index=False))
     return
 
 
