@@ -316,22 +316,7 @@ def _(binom, mo):
     
     For **1 through 10**, subtract the probability of zero from the probability of **10 or fewer**.
     """)
-
     return
-
-
-@app.cell
-def _(binom, np, pd):
-    medication_model = binom(n=100, p=0.05)
-    medication_results = pd.DataFrame({
-        "Event": ["X = 5", "X ≤ 5", "X > 5", "1 ≤ X ≤ 10"],
-        "Probability": [medication_model.pmf(5), medication_model.cdf(5), medication_model.sf(5), medication_model.cdf(10) - medication_model.cdf(0)]
-    })
-    print("Interval check: sum of PMF values =", medication_model.pmf(np.arange(1, 11)).sum())
-    print("CDF + survival function =", medication_model.cdf(5) + medication_model.sf(5))
-    medication_results.round(4)
-    return (medication_model,)
-
 
 @app.cell(hide_code=True)
 def _(mo):
@@ -342,12 +327,16 @@ def _(mo):
     """)
     return
 
-
 @app.cell
-def _(medication_model, mo):
-    mo.accordion({"Answers and calculations": mo.md(f"No patients: pmf(0) = {medication_model.pmf(0):.4f}. At least one: sf(0) = {medication_model.sf(0):.4f}. At least five: sf(4) = {medication_model.sf(4):.4f}.")})
+def _(binom, mo):
+    mo.accordion({
+        "Answers and calculations": mo.md(f"""
+        - No patients: `binom.pmf(0, n=100, p=0.05)` = {binom.pmf(0, n=100, p=0.05):.4f}
+        - At least one: `1 - binom.cdf(0, n=100, p=0.05)` = {1 - binom.cdf(0, n=100, p=0.05):.4f}
+        - At least five: `1 - binom.cdf(4, n=100, p=0.05)` = {1 - binom.cdf(4, n=100, p=0.05):.4f}
+        """)
+    })
     return
-
 
 @app.cell(hide_code=True)
 def _(mo):
