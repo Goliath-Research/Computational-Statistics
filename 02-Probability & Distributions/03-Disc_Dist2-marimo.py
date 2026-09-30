@@ -69,17 +69,18 @@ def _(mo):
 
 @app.cell
 def _(np, pd, plt):
+    
     def draw_sample(model, size, seed):
-        """Draw observations using a fresh seeded generator."""
-        if not isinstance(size, (int, np.integer)) or isinstance(size, bool) or size < 1:
+        """Generate a reproducible sample."""
+        if not isinstance(size, (int, np.integer)) or size < 1:
             raise ValueError("size must be a positive integer.")
-        return model.rvs(size=size, random_state=np.random.default_rng(seed))
+        return model.rvs(size=size, random_state=seed)
 
 
     def compare_summaries(values, model):
         """Compare model properties with descriptive summaries of the sample."""
         return pd.DataFrame({
-            "Quantity": ["Mean", "Variance (sample description, ddof=0)", "Standard deviation"],
+            "Quantity": ["Mean", "Variance", "Standard deviation"],
             "Theoretical": [model.mean(), model.var(), model.std()],
             "Observed": [values.mean(), values.var(ddof=0), values.std(ddof=0)]
         }).round(4)
