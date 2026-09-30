@@ -204,7 +204,7 @@ def _(np, pd, seed_control):
     trial_table = pd.DataFrame(trial_matrix, columns=[f"Trial {i}" for i in range(1, 11)])
     trial_table["Success count X"] = trial_matrix.sum(axis=1)
     trial_table.index = [f"Experiment {i}" for i in range(1, 6)]
-    trial_table
+    print(trial_table)
     return
 
 
@@ -277,7 +277,8 @@ def _(mo):
     3. With p = 0.5, increase n from 10 to 20. What happens to the theoretical mean and variance?
     4. Explain why changing n and changing size represent different changes to the experiment.
     
-    **Discussion:** Increasing size changes how much data we simulate, not the model. Increasing n changes the number of trials within each experiment and therefore the distribution of X.
+    **Discussion:** Increasing size changes how much data we simulate, not the model. Increasing n changes 
+    the number of trials within each experiment and therefore the distribution of X.
     """)
     return
 
@@ -286,19 +287,26 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## 5. Calculate probabilities: a binomial example
-    **Hypothetical teaching scenario:** Each of 100 patients independently has probability 0.05 of experiencing a side effect. We assume the same probability for every patient.
-    Let X be the number experiencing a side effect. Then X follows Binomial(100, 0.05).
-    Here “success” means a side effect, not a desirable result.
+    **Example:** It is known that 5% of adults who take a certain medication experience negative side effects. 
+    We have a random sample of 100 patients, and we want to calculate the probability that:
+
+    - a) Exactly 5 patients experience side effects.
+    - b) 5 patients or fewer experience side effects.
+    - c) More than 5 patients experience side effects.
+    - d) Between 1 and 10 patients, inclusive, experience side effects.
     
-    | Question | Mathematical event | SciPy method |
-    |---|---|---|
-    | Exactly 5 | X = 5 | Probability mass function: `pmf(5)` |
-    | At most 5 | X ≤ 5 | Cumulative distribution function: `cdf(5)` |
-    | More than 5 | X > 5 | Survival function: `sf(5)` |
-    | Between 1 and 10, inclusive | 1 ≤ X ≤ 10 | `cdf(10) - cdf(0)` |
-    
-    The cumulative distribution function (CDF) adds the masses up through its argument.
-    The survival function gives the probability strictly above its argument. It avoids subtracting nearly equal numbers for very small upper tails.
+    Assume patients’ outcomes are independent and each patient has the same probability of experiencing 
+    side effects.
+
+    Let \(X\) be the number of patients experiencing side effects. We use a binomial distribution with 
+    \(n=100\) and \(p=0.05\).
+
+    | Question | Mathematical event | SciPy calculation | Result |
+    |---|---|---|--- |
+    | Exactly 5 | \(X\) = 5 | `binom.pmf(5, n=100, p=0.05)` |
+    | At most 5 | \(X\) ≤ 5 | `binom.cdf(5, n=100, p=0.05)` |
+    | More than 5 | \(X\) > 5 | `1 - binom.cdf(5, n=100, p=0.05)` |
+    | Between 1 and 10, inclusive | 1 ≤ \(X\) ≤ 10 | `binom.cdf(10, n=100, p=0.05) - binom.cdf(0, n=100, p=0.05)` |
     """)
     return
 
