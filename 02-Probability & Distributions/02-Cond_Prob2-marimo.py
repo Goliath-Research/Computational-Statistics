@@ -1,5 +1,6 @@
 import marimo
 
+__generated_with = "0.24.2"
 app = marimo.App(width="medium")
 
 
@@ -10,14 +11,15 @@ def _():
     import numpy as np
     import matplotlib.pyplot as plt
     from pathlib import Path
-    return mo, pd, np, plt, Path
+
+    return Path, mo, np, pd, plt
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     # Conditional Probability
-    
+
     ## Learning goals
     - Calculate probabilities from counts and cross-tabulations.
     - Explain how a condition changes the group we consider and the denominator.
@@ -25,31 +27,31 @@ def _(mo):
     - Recover an overall probability using the law of total probability.
     - Calculate a reversed conditional probability using Bayes' rule and verify it with counts.
     - Interpret associations without assuming causation.
-    
+
     ## 1. Start with a small example
     The following table is **invented for teaching**. Imagine choosing one of these 40 students uniformly at random.
-    
+
     | Study-time group | Passed | Did not pass | Total |
     |---|---:|---:|---:|
     | Higher | 12 | 8 | 20 |
     | Lower | 9 | 11 | 20 |
     | Total | 21 | 19 | 40 |
-    
+
     An **event** is a set of possible results, such as selecting a student who passed.
     Without a condition, all 40 students are eligible: P(Passed) = 21/40 = 0.525.
     Given higher study time, only those 20 students are eligible: P(Passed | Higher) = 12/20 = 0.600.
     Given passing, only the 21 passing students are eligible: P(Higher | Passed) = 12/21 ≈ 0.571.
     The same 12 students appear in both numerators, but the denominators differ.
-    
+
     ## Conditional probability
     “Given B” means that we restrict attention to outcomes satisfying B. B need not occur earlier in time.
-    
+
     $$P(A\mid B)=\frac{P(A\cap B)}{P(B)},\qquad P(B)>0.$$
-    
+
     Here A ∩ B means that both A and B hold. For equally likely selections from a table:
-    
+
     $$P(A\mid B)=\frac{\text{number satisfying both A and B}}{\text{number satisfying B}}.$$
-    
+
     ### Try it yourself
     Before continuing, calculate P(Passed | Lower), P(Lower | Passed), and P(Higher and Passed).
     Explain which students form the denominator each time.
@@ -69,14 +71,14 @@ def _(mo):
     ## 2. Work with the student dataset
     We now use the mathematics file `student-mat.csv` from the [UCI Student Performance dataset](https://archive.ics.uci.edu/dataset/320/student+performance).
     Place the CSV in the course's `data` folder (one directory above this lesson), or in a `data` folder beside this lesson.
-    
+
     Imagine selecting one recorded student uniformly at random. Calculated probabilities describe that selection from this file. They do not automatically describe all students.
-    
+
     We retain only five columns needed for these questions:
     - `studytime`: categories 1 (<2 hours), 2 (2–5 hours), 3 (5–10 hours), 4 (>10 hours).
     - `internet`: internet access at home, `yes` or `no`.
     - `G1`, `G2`, `G3`: first-period, second-period, and final grades, on a 0–20 scale.
-    
+
     Study time is recorded in categories, not as exact hours. “Higher study time” below means categories 3 and 4.
     The passing threshold is **our definition for this lesson**, not a claim about the original school's grading policy.
     """)
@@ -130,7 +132,9 @@ def _(passing_control, source_data):
 
 @app.cell
 def _(mo, passing_percent):
-    mo.md(f"**Current rule:** a grade passes when its percentage is at least {passing_percent}%, equivalent to at least {passing_percent / 5:g} on the 0–20 scale. All calculations below use this rule.")
+    mo.md(f"""
+    **Current rule:** a grade passes when its percentage is at least {passing_percent}%, equivalent to at least {passing_percent / 5:g} on the 0–20 scale. All calculations below use this rule.
+    """)
     return
 
 
@@ -140,7 +144,7 @@ def _(mo):
     A Boolean passing indicator is `True` for passing and `False` otherwise.
     Python counts `True` as 1 and `False` as 0. Therefore its sum counts passes, and its mean is the passing proportion.
     We checked missing values first so an unrecorded grade cannot silently become a failure.
-    
+
     The helper below returns a count ratio. If the condition selects nobody, the probability is undefined—not zero.
     """)
     return
@@ -157,6 +161,7 @@ def _(np):
 
     def format_probability(value):
         return "undefined (empty conditioning group)" if np.isnan(value) else f"{value:.3f}"
+
     return format_probability, probability_from_counts
 
 
@@ -178,7 +183,7 @@ def _(data, pd):
     study_crosstab["All"] = study_crosstab.sum(axis=1)
     study_crosstab.loc["All"] = study_crosstab.sum(axis=0)
     study_crosstab
-    return (study_crosstab,)
+    return
 
 
 @app.cell
@@ -192,7 +197,7 @@ def _(data, format_probability, probability_from_counts):
 
 
 @app.cell
-def _(data, np, pd):
+def _(data):
     study_comparison = data.groupby("HigherStudyTime").agg(Students=("G1pass", "size"), G1_rate=("G1pass", "mean"), G2_rate=("G2pass", "mean"), G3_rate=("G3pass", "mean")).reindex([False, True])
     study_comparison["Students"] = study_comparison["Students"].fillna(0).astype(int)
     study_comparison.index = ["Lower study time", "Higher study time"]
@@ -207,7 +212,7 @@ def _(mo):
     1. Calculate the G1 conditional probability directly from the cross-tabulation.
     2. Compare both study groups for G1, G2, and G3. Is the direction of the comparison identical for every grade?
     3. Predict what happens to a fixed group's passing rate if the threshold decreases. Move the threshold from 60% to 50% and check.
-    
+
     **Discussion:** Lowering the threshold cannot decrease the passing rate within a fixed group. It can leave it unchanged. A difference between study groups is an association; this calculation alone does not show that studying longer caused it.
     """)
     return
@@ -250,7 +255,7 @@ def _(mo):
     1. Identify the denominator for P(G3pass | internet = yes).
     2. Compare this probability with P(G3pass | internet = no).
     3. Could differences in other characteristics contribute to the observed comparison?
-    
+
     **Discussion:** These are descriptive associations in the recorded data. The comparisons do not establish causation or automatically generalize to a broader student population.
     """)
     return
@@ -262,9 +267,9 @@ def _(mo):
     ## 5. The law of total probability
     The four study categories form a **partition**: each student belongs to exactly one category, and together the categories include every student.
     Let A mean passing G3 and Bᵢ mean belonging to study category i.
-    
+
     $$P(A)=\sum_{i=1}^{4}P(A\mid B_i)P(B_i).$$
-    
+
     This is a weighted average. Each group's passing rate is multiplied by its share of all students.
     A group with twice as many students gets twice as much weight.
     For a category with no students, its contribution is zero; its within-group passing rate is undefined.
@@ -301,7 +306,7 @@ def _(mo):
     1. Multiply each group's conditional passing rate by its group probability. Add the contributions.
     2. Why would an unweighted average of the four passing rates generally be wrong?
     3. Change the cutoff and check that the weighted and direct calculations still agree.
-    
+
     **Discussion:** An unweighted average gives equal importance to groups of unequal sizes. Use full precision for calculations; round only the displayed results.
     """)
     return
@@ -312,9 +317,9 @@ def _(mo):
     mo.md(r"""
     ## 6. Bayes' rule: reverse the condition
     Now we are told that the selected student passed G3. We ask which study group the student belongs to.
-    
+
     $$P(B_i\mid A)=\frac{P(A\mid B_i)P(B_i)}{P(A)},\qquad P(A)>0.$$
-    
+
     The numerator describes the intersection. Dividing by P(A) changes the reference group to passing students.
     We can verify the answer directly: count passing students in category i and divide by all passing students.
     """)
@@ -329,7 +334,7 @@ def _(mo):
 
 
 @app.cell
-def _(chosen_group, data, format_probability, overall_direct, study_summary):
+def _(chosen_group, data, overall_direct, study_summary):
     selected_category = chosen_group.value
     selected_row = study_summary.loc[selected_category]
     passing_total = int(data["G3pass"].sum())
@@ -349,12 +354,12 @@ def _(chosen_group, data, format_probability, overall_direct, study_summary):
 
 
 @app.cell
-def _(data, pd, study_summary):
+def _(data, study_summary):
     passing_count = int(data["G3pass"].sum())
     posterior_table = study_summary[["Students", "Passed", "Group_probability", "Pass_given_group"]].copy()
     posterior_table["Group_given_pass"] = posterior_table["Passed"] / passing_count if passing_count else float("nan")
     posterior_table.round(4)
-    return (posterior_table,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -365,9 +370,9 @@ def _(mo):
     2. Explain why P(G3pass | category 2) and P(category 2 | G3pass) have different denominators.
     3. Add the four probabilities of study category given passing. Why must they sum to 1 when at least one student passed?
     4. Lower the cutoff. Must every category's share among passing students increase?
-    
+
     **Discussion:** No. Lowering the cutoff can add passing students in different proportions across categories. Although each fixed group's passing rate cannot decrease, its share among passing students may increase, decrease, or remain unchanged.
-    
+
     ## Conclusions
     - Conditioning restricts our reference group and changes the denominator.
     - P(A | B) and P(B | A) generally differ.
@@ -376,7 +381,7 @@ def _(mo):
     - Bayes' rule reverses conditioning; direct counts provide a useful verification.
     - Changing our passing definition changes the calculated events and results.
     - Results describe this file's students; associations do not establish causation.
-    
+
     ## Check your understanding
     1. In the introductory table, what is P(Did not pass | Higher)?
     2. Which denominator belongs to P(Higher | Passed): 20, 21, or 40?
@@ -399,7 +404,7 @@ def _(mo):
     ## References
     - [UCI Machine Learning Repository: Student Performance](https://archive.ics.uci.edu/dataset/320/student+performance), for the dataset and variable definitions.
     - Unpingco, J. (2019). *Python for Probability, Statistics, and Machine Learning*. Springer, Chapter 2.
-    
+
     This lesson contains no random sampling, so it needs no random seed. The same CSV and passing threshold reproduce the same calculations.
     """)
     return

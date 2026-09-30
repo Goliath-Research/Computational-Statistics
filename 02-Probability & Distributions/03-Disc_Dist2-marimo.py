@@ -28,8 +28,10 @@ def _(mo):
     
     ## 1. What is a discrete random variable?
     A **random variable** assigns a number to an experiment's outcome.
+    
     A **discrete** random variable has a finite or countably infinite set of possible values.
-    For example, let X be the face of a fair die: X can be 1, 2, 3, 4, 5, or 6.
+    
+    For example, let X be the face of a fair die: X can be 1, 2, 3, 4, 5, or 6. 
     Its probability distribution gives P(X = k) = 1/6 for each of these values.
     Every probability is nonnegative, and all probabilities add to one.
     
