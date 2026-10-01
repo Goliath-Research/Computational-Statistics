@@ -343,8 +343,7 @@ def _(coin_n, coin_results):
 def _(mo):
     mo.accordion({
     "Show answers": mo.md('''
-    ```python
-    
+        
     student_coin_count = np.count_nonzero(student_coin_results == "Heads")
     
     student_coin_frequency = student_coin_count / len(student_coin_results)
