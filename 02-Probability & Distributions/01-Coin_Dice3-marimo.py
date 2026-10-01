@@ -434,8 +434,8 @@ def _(mo):
         small_count = np.count_nonzero(sample[:20] == "Heads")
         large_count = np.count_nonzero(sample == "Heads")
 
-        student_repeat_small.append(small_count / 20)
-        student_repeat_large.append(large_count / len(sample))
+        student_repeat_small.append(float(small_count / 20))
+        student_repeat_large.append(float(large_count / len(sample)))
 
     print("20-toss frequencies:", student_repeat_small)
     print("2,000-toss frequencies:", student_repeat_large)
