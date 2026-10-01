@@ -29,10 +29,13 @@ def _(mo):
 
     ## Before we simulate
     A **trial** is one repetition of an experiment: one toss or one roll.
+
     An **outcome** is the result of a trial. The **sample space** lists all possible outcomes.
+    
     For a coin it is {Heads, Tails}; for a die it is {1, 2, 3, 4, 5, 6}.
 
     For a fair coin, P(Heads) = P(Tails) = 1/2. For a fair die, each face has probability 1/6.
+    
     These are properties of our model, not numbers calculated from one experiment.
 
     **Relative frequency = number of occurrences / number of trials.**
@@ -44,8 +47,8 @@ def _(mo):
 
     ## Reproducible simulations
     NumPy generates pseudorandom outcomes. A **seed** initializes its generator.
-    The same seed and inputs reproduce the same experiment in the same software environment.
-    A different seed gives another experiment; it does not change the theoretical probabilities.
+    - The same seed and inputs reproduce the same experiment in the same software environment.
+    - A different seed gives another experiment; it does not change the theoretical probabilities.
 
     We create a fresh generator inside each simulation function. This keeps the results independent of which notebook cell you run first.
     No external dataset is needed.
