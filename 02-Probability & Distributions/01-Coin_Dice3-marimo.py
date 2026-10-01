@@ -601,16 +601,34 @@ def _(mo):
     ### Try it yourself
     1. Before displaying 100 rolls, predict the expected number of fives. Compare with the observed count.
     2. Inspect 6,000 rolls. Which relative frequencies tend toward 0.1? Which tends toward 0.5?
-    3. Does increasing the sample size make all faces equally frequent?
+    3. Does increasing the sample size make all faces equally frequent?    
+    """)
+    return
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+        "Show answers": mo.md("""
+        1. The expected number of fives is 100 × 0.5 = 50.
+           The observed count can differ from 50.
+
+        2. The relative frequencies of faces 1, 2, 3, 4, and 6 tend toward 0.1.
+           The relative frequency of face 5 tends toward 0.5.
+
+        3. No. More rolls help reveal the unequal probabilities.
+           The die remains weighted.
+        """)
+    })
+    return
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     **Write your script in the next cell:**
     - Use `weighted_results[:weighted_n.value]`, the rolls selected by the slider.
-    - Calculate the expected number of fives: number of selected rolls × P(5).
+    - Calculate the expected number of fives: number of selected rolls × 0.5.
     - Calculate the observed number of fives and their relative frequency.
-    - Store and print your calculations using the named variables below.
-
-    Change the slider and compare the expected and observed counts. Feedback checks
-    your calculations; it does not require the observed count to equal the expected count.
+    - Print your results. Move the slider and compare the expected and observed counts.
     """)
     return
 
@@ -634,8 +652,20 @@ def _(weighted_n, weighted_results):
         student_weighted_frequency,
     )
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+        "Show answers": mo.md('''
+```python
+student_weighted_expected = len(student_weighted_results) * 0.5
+student_weighted_count = np.count_nonzero(student_weighted_results == 5)
+student_weighted_frequency = float(student_weighted_count / len(student_weighted_results))
+```
+''')
+    })
+    return
 
-@app.cell
+app.cell
 def _(
     np,
     student_weighted_count,
