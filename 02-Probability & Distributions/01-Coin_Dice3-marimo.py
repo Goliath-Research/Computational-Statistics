@@ -762,32 +762,18 @@ def _():
     )
 
 
-@app.cell
-def _(
-    custom_n,
-    custom_probabilities,
-    custom_results,
-    np,
-    student_custom_expected,
-    student_custom_face,
-    student_custom_frequency,
-    student_custom_sum,
-):
-    if student_custom_face not in [1, 2, 3, 4, 5, 6]:
-        print("Choose a face from 1 to 6.")
-    elif student_custom_sum is None or student_custom_expected is None or student_custom_frequency is None:
-        print("Write and run your script above to calculate the probability sum, expected count, and observed frequency.")
-    else:
-        _sum = sum(custom_probabilities)
-        _expected = custom_n * custom_probabilities[student_custom_face - 1]
-        _count = int(np.count_nonzero(custom_results == student_custom_face))
-        _frequency = _count / len(custom_results)
-        print("Probability sum:", "Correct!" if np.isclose(student_custom_sum, _sum) else "Add all six probabilities.")
-        print("Expected count:", "Correct!" if np.isclose(student_custom_expected, _expected) else "Multiply the number of rolls by your face's probability.")
-        print("Observed frequency:", "Correct!" if np.isclose(student_custom_frequency, _frequency) else "Divide your face's observed count by the number of rolls.")
-        print(f"Check: probability sum = {_sum:g}; expected count = {_expected:g}; observed count = {_count}; observed frequency = {_frequency:.4f}.")
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+        "Show answers": mo.md('''
+```python
+student_custom_sum = sum(custom_probabilities)
+student_custom_expected = 1000 * custom_probabilities[student_custom_face - 1]
+student_custom_frequency = float(np.count_nonzero(custom_results == student_custom_face) / 1000)
+```
+''')
+    })
     return
-
 
 @app.cell(hide_code=True)
 def _(mo):
