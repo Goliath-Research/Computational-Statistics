@@ -473,13 +473,96 @@ def _(fair_n, fair_results, show_experiment):
     show_experiment(fair_results[:fair_n.value], [1, 2, 3, 4, 5, 6], [1/6, 1/6, 1/6, 1/6, 1/6, 1/6], "A fair die: one growing experiment")
     return
 
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ### Try it yourself
+    1. Inspect six rolls. How many distinct faces appeared?
+       Could a fair die show the same face six times?
+    2. Inspect 600 and 6,000 rolls. Compare each relative frequency with 1/6.
+       Must every face appear exactly 1,000 times in 6,000 rolls?
+    3. If a face has observed frequency 0, what is its theoretical probability?
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+        "Show answers": mo.md("""
+        1. Count the different faces shown in the six rolls.
+           Yes, a fair die could show the same face six times,
+           although this is unlikely.
+
+        2. With more rolls, the relative frequencies generally tend toward 1/6.
+           No, exactly 1,000 occurrences of each face are not required.
+
+        3. Its theoretical probability remains 1/6.
+           A possible outcome does not have to appear in a short experiment.
+        """)
+    })
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    **Write your script in the next cell:**
+    - Choose `student_die_face` from 1 to 6.
+    - Use `fair_results[:fair_n.value]`, the rolls selected by the slider.
+    - Calculate your face's count and relative frequency.
+    - Calculate the number of distinct faces observed.
+    - Print your results. Change the slider and your selected face.
+
+    `set(student_die_results)` gives the different faces observed.
+    Use `len(...)` to count them.
+    """)
+    return
+
+
+@app.cell
+def _(fair_n, fair_results):
+    # Choose a face, then write your script below.
+    student_die_face = 6
+    student_die_results = fair_results[:fair_n.value]
+
+    # Replace None with your calculations.
+    student_die_count = None
+    student_die_frequency = None
+    student_die_distinct = None
+
+    print("Face count:", student_die_count)
+    print("Relative frequency:", student_die_frequency)
+    print("Distinct faces:", student_die_distinct)
+    return (
+        student_die_count,
+        student_die_distinct,
+        student_die_face,
+        student_die_frequency,
+        student_die_results,
+    )
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+        "Show answers": mo.md('''
+```python
+student_die_count = np.count_nonzero(student_die_results == student_die_face)
+student_die_frequency = float(student_die_count / len(student_die_results))
+student_die_distinct = len(set(student_die_results))
+```
+''')
+    })
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself ******
     1. Inspect six rolls. How many distinct faces appeared? Could a fair die show the same face six times?
-    2. Inspect 600 and 6,000 rolls. Compare every relative frequency with 1/6.
+    2. Inspect 600 and 6000 rolls. Compare every relative frequency with 1/6.
     3. Explain why a face with observed frequency 0 still has theoretical probability 1/6.
 
     **Write your script in the next cell:**
@@ -496,7 +579,7 @@ def _(mo):
 
 @app.cell
 def _(fair_n, fair_results):
-    # Choose a face, then write your script below.
+    # Choose a face, then write your script below. ******
     student_die_face = 6
     student_die_results = fair_results[:fair_n.value]
 
