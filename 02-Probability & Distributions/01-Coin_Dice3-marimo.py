@@ -345,9 +345,9 @@ def _(mo):
     "Show answers": mo.md('''
     ```python	
         
-    student_coin_count = np.count_nonzero(student_coin_results == "Heads")
+student_coin_count = np.count_nonzero(student_coin_results == "Heads")
     
-    student_coin_frequency = student_coin_count / len(student_coin_results)
+student_coin_frequency = student_coin_count / len(student_coin_results)
     
     ```
     ''')
@@ -419,7 +419,7 @@ def _():
 
     # For each sample in repeat_samples, count Heads and calculate both frequencies.
     print("20-toss frequencies:", student_repeat_small)
-    print("2,000-toss frequencies:", student_repeat_large)
+    print("2000-toss frequencies:", student_repeat_large)
     return student_repeat_large, student_repeat_small
 
 @app.cell(hide_code=True)
@@ -427,18 +427,9 @@ def _(mo):
     mo.accordion({
         "Show answers": mo.md('''
 ```python
-    student_repeat_small = []
-    student_repeat_large = []
+student_repeat_small = [float(np.count_nonzero(_sample[:20] == "Heads") / 20) for _sample in repeat_samples]
+student_repeat_large = [float(np.count_nonzero(_sample == "Heads") / 2000) for _sample in repeat_samples]
 
-    for sample in repeat_samples:
-        small_count = np.count_nonzero(sample[:20] == "Heads")
-        large_count = np.count_nonzero(sample == "Heads")
-
-        student_repeat_small.append(float(small_count / 20))
-        student_repeat_large.append(float(large_count / len(sample)))
-
-    print("20-toss frequencies:", student_repeat_small)
-    print("2,000-toss frequencies:", student_repeat_large)
 ```
 ''')
     })
