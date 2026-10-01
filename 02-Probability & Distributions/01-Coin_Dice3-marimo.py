@@ -555,37 +555,12 @@ student_die_distinct = len(set(student_die_results))
     })
     return
 
-@app.cell
-def _(
-    fair_n,
-    fair_results,
-    np,
-    student_die_count,
-    student_die_distinct,
-    student_die_face,
-    student_die_frequency,
-):
-    if student_die_face not in [1, 2, 3, 4, 5, 6]:
-        print("Choose a face from 1 to 6.")
-    elif student_die_count is None or student_die_frequency is None or student_die_distinct is None:
-        print("Write and run your script above to calculate the count, frequency, and number of distinct faces.")
-    else:
-        _selected = fair_results[:fair_n.value]
-        _count = int(np.count_nonzero(_selected == student_die_face))
-        _frequency = _count / len(_selected)
-        _distinct = len(set(_selected))
-        print("Face count:", "Correct!" if student_die_count == _count else "Check the count of your selected face.")
-        print("Relative frequency:", "Correct!" if np.isclose(student_die_frequency, _frequency) else "Divide the count by the number of selected rolls.")
-        print("Distinct faces:", "Correct!" if student_die_distinct == _distinct else "Count the different faces that appeared.")
-        print(f"Check: face {student_die_face} appeared {_count} times in {len(_selected)} rolls; frequency = {_frequency:.4f}; distinct faces = {_distinct}.")
-    return
-
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     **Discussion:** A possible outcome need not appear in a short experiment.
-    Even at 6,000 rolls, exactly 1,000 occurrences of each face are not required.
+    Even at 6000 rolls, exactly 1000 occurrences of each face are not required.
     """)
     return
 
@@ -608,7 +583,7 @@ def _(simulate_outcomes):
 
 @app.cell
 def _(mo):
-    weighted_n = mo.ui.slider(steps=[1, 2, 6, 10, 30, 100, 600, 6000], value=6, show_value=True, 
+    weighted_n = mo.ui.slider(steps=[1, 2, 6, 10, 30, 100, 600, 6000], value=10, show_value=True, 
     label="Die rolls displayed")
     weighted_n
     return (weighted_n,)
