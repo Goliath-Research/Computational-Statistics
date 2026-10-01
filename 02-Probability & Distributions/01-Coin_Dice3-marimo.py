@@ -435,23 +435,6 @@ student_repeat_large = [float(np.count_nonzero(_sample == "Heads") / 2000) for _
     })
     return
 
-@app.cell
-def _(np, repeat_samples, student_repeat_large, student_repeat_small):
-    if student_repeat_small is None or student_repeat_large is None:
-        print("Write and run your script above to calculate the two lists of frequencies.")
-    else:
-        _small = [np.count_nonzero(_sample[:20] == "Heads") / 20 for _sample in repeat_samples]
-        _large = [np.count_nonzero(_sample == "Heads") / len(_sample) for _sample in repeat_samples]
-        if np.shape(student_repeat_small) != (len(repeat_samples),) or np.shape(student_repeat_large) != (len(repeat_samples),):
-            print("Each list must contain one frequency for each experiment.")
-        else:
-            print("20-toss frequencies:", "Correct!" if np.allclose(student_repeat_small, _small) else "Check the Heads counts and divide each by 20.")
-            print("2,000-toss frequencies:", "Correct!" if np.allclose(student_repeat_large, _large) else "Check the Heads counts and divide each by the full sequence length.")
-            print("Check, 20 tosses:", [float(_value) for _value in _small])
-            print("Check, 2,000 tosses:", [float(_value) for _value in _large])
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -473,13 +456,13 @@ def _(mo):
 
 @app.cell
 def _(simulate_outcomes):
-    fair_results = simulate_outcomes(6000, [1, 2, 3, 4, 5, 6], [1 / 6] * 6, seed=2027)
+    fair_results = simulate_outcomes(6000, [1, 2, 3, 4, 5, 6], [1/6, 1/6, 1/6, 1/6, 1/6, 1/6], seed=2026)
     return (fair_results,)
 
 
 @app.cell
 def _(mo):
-    fair_n = mo.ui.slider(steps=[1, 2, 6, 10, 30, 100, 600, 6000], value=6, show_value=True, 
+    fair_n = mo.ui.slider(steps=[1, 2, 6, 10, 30, 100, 600, 6000], value=10, show_value=True, 
     label="Die rolls displayed")
     fair_n
     return (fair_n,)
@@ -487,7 +470,8 @@ def _(mo):
 
 @app.cell
 def _(fair_n, fair_results, show_experiment):
-    show_experiment(fair_results[:fair_n.value], [1, 2, 3, 4, 5, 6], [1 / 6] * 6, "A fair die: one growing experiment")
+    show_experiment(fair_results[:fair_n.value], [1, 2, 3, 4, 5, 6], [1/6, 1/6, 1/6, 1/6, 1/6, 1/6], 
+    "A fair die: one growing experiment")
     return
 
 
