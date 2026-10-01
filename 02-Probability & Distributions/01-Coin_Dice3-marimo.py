@@ -353,26 +353,13 @@ def _(mo):
     })
     return
 
-@app.cell
-def _(coin_n, coin_results, np, student_coin_count, student_coin_frequency):
-    if student_coin_count is None or student_coin_frequency is None:
-        print("Write and run your script above to count Heads and calculate their relative frequency.")
-    else:
-        _selected = coin_results[:coin_n.value]
-        _count = int(np.count_nonzero(_selected == "Heads"))
-        _frequency = _count / len(_selected)
-        print("Heads count:", "Correct!" if student_coin_count == _count else "Check how your script counts Heads.")
-        print("Heads relative frequency:", "Correct!" if np.isclose(student_coin_frequency, _frequency) else "Divide the Heads count by the number of selected tosses.")
-        print(f"Check: {_count} Heads in {len(_selected)} tosses; relative frequency = {_frequency:.4f}.")
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    **Discussion:** Ten tosses do not guarantee five Heads. Relative frequencies fluctuate;
-    a larger sample can sometimes be farther from 0.5. Under our independence assumption,
-    P(Heads) on the next toss is still 0.5, whatever happened before.
+    **Discussion:** 
+    - Ten tosses do not guarantee five Heads. 
+    - Relative frequencies fluctuate, a larger sample can sometimes be farther from 0.5. 
+    - Under our independence assumption, P(Heads) on the next toss is still 0.5, whatever happened before.
     """)
     return
 
