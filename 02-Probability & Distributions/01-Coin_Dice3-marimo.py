@@ -176,6 +176,10 @@ def _(mo):
 @app.cell
 def _(np, plt, running_frequencies):
     def show_experiment(results, outcomes, probabilities, title):
+        """
+        Plot running relative frequencies and print outcome counts,
+        observed relative frequencies, and theoretical probabilities.
+        """
         frequencies = running_frequencies(results, outcomes)
         trials = np.arange(1, len(results) + 1)
         colors = ["tab:green", "tab:blue", "tab:orange", "tab:red", "tab:purple", "tab:brown"]
@@ -283,8 +287,28 @@ def _(mo):
     ### Try it yourself
     1. Inspect 1, 2, 10, 100, and 10,000 tosses with the slider.
     2. Does the frequency get closer to 0.5 at every increase? Must it be exactly 0.5 at the largest size?
-    3. If Tails appeared five times in a row, what would P(Heads) be on the next toss?
+    3. If Tails appeared five times in a row, what would P(Heads) be on the next toss?    
+    """)
+    mo.accordion({
+    "Show answers": mo.md("""
+    1. At one toss, the Heads frequency is 0 or 1.
+       At two tosses, it can be 0, 0.5, or 1.
+       With more tosses, it generally tends toward 0.5.
 
+    2. No. The frequency does not necessarily get closer
+       at every increase, nor must it equal exactly 0.5
+       at 10,000 tosses.
+
+    3. P(Heads) = 0.5. Independent tosses are unaffected
+       by previous results.
+    """)
+    })
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     **Write your script in the next cell:**
     - Use `coin_results[:coin_n.value]`, the results currently selected by the slider.
     - Calculate the number of Heads and their relative frequency.
@@ -294,7 +318,6 @@ def _(mo):
     You may add variables, calculations, loops, and print statements to your script.
     """)
     return
-
 
 @app.cell
 def _(coin_n, coin_results):
