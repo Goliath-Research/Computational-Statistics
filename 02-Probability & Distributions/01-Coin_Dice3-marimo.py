@@ -470,8 +470,7 @@ def _(mo):
 
 @app.cell
 def _(fair_n, fair_results, show_experiment):
-    show_experiment(fair_results[:fair_n.value], [1, 2, 3, 4, 5, 6], [1/6, 1/6, 1/6, 1/6, 1/6, 1/6], 
-    "A fair die: one growing experiment")
+    show_experiment(fair_results[:fair_n.value], [1, 2, 3, 4, 5, 6], [1/6, 1/6, 1/6, 1/6, 1/6, 1/6], "A fair die: one growing experiment")
     return
 
 
