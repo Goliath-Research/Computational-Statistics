@@ -343,11 +343,13 @@ def _(coin_n, coin_results):
 def _(mo):
     mo.accordion({
     "Show answers": mo.md('''
+    ```python	
         
     student_coin_count = np.count_nonzero(student_coin_results == "Heads")
     
     student_coin_frequency = student_coin_count / len(student_coin_results)
     
+    ```
     ''')
     })
     return
@@ -420,6 +422,27 @@ def _():
     print("2,000-toss frequencies:", student_repeat_large)
     return student_repeat_large, student_repeat_small
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+        "Show answers": mo.md('''
+```python
+    student_repeat_small = []
+    student_repeat_large = []
+
+    for sample in repeat_samples:
+        small_count = np.count_nonzero(sample[:20] == "Heads")
+        large_count = np.count_nonzero(sample == "Heads")
+
+        student_repeat_small.append(small_count / 20)
+        student_repeat_large.append(large_count / len(sample))
+
+    print("20-toss frequencies:", student_repeat_small)
+    print("2,000-toss frequencies:", student_repeat_large)
+```
+''')
+    })
+    return
 
 @app.cell
 def _(np, repeat_samples, student_repeat_large, student_repeat_small):
