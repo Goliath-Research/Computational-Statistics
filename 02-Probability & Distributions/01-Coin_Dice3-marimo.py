@@ -280,15 +280,18 @@ def _(coin_n, coin_results, show_experiment):
     show_experiment(coin_results[:coin_n.value], ["Heads", "Tails"], [0.5, 0.5], "Fair coin: one growing experiment")
     return
 
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ### Try it yourself
     1. Inspect 1, 2, 10, 100, and 10,000 tosses with the slider.
     2. Does the frequency get closer to 0.5 at every increase? Must it be exactly 0.5 at the largest size?
-    3. If Tails appeared five times in a row, what would P(Heads) be on the next toss?    
+    3. If Tails appeared five times in a row, what would P(Heads) be on the next toss?
     """)
+    return
+
+@app.cell(hide_code=True)
+def _(mo):    
     mo.accordion({
     "Show answers": mo.md("""
     1. At one toss, the Heads frequency is 0 or 1.
