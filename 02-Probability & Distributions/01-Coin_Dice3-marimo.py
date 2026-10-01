@@ -326,7 +326,7 @@ def _(mo):
 def _(coin_n, coin_results):
     # Write your script here. Use the results selected by the slider.
     student_coin_results = coin_results[:coin_n.value]
-
+    
     # Replace None with code that counts Heads.
     student_coin_count = None
 
@@ -337,6 +337,21 @@ def _(coin_n, coin_results):
     print("Heads relative frequency:", student_coin_frequency)
     return student_coin_count, student_coin_frequency
 
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+    "Show answers": mo.md('''
+    ```python
+    student_coin_results = coin_results[:coin_n.value]
+    print(student_coin_results)
+    student_coin_count = np.count_nonzero(student_coin_results == "Heads")
+    student_coin_frequency = student_coin_count / len(student_coin_results)
+    print("Heads count:", student_coin_count)
+    print("Heads relative frequency:", student_coin_frequency)
+    ''')
+    })
+    return
 
 @app.cell
 def _(coin_n, coin_results, np, student_coin_count, student_coin_frequency):
