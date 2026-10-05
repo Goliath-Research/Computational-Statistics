@@ -68,9 +68,17 @@ def _(mo):
     return
 
 
-@app.cell(hide_code=True)
+app.cell(hide_code=True)
 def _(mo):
-    mo.accordion({"Show answers": mo.md("P(Passed | Lower) = 9/20 = 0.450. P(Lower | Passed) = 9/21 ≈ 0.429. P(Higher and Passed) = 12/40 = 0.300.")})
+    mo.accordion({
+        "Show answers": mo.md("""
+```python
+P(Passed | Lower) = 9/20 = 0.450
+P(Lower | Passed) = 9/21 ≈ 0.429
+P(Higher and Passed) = 12/40 = 0.300
+```
+""")
+    })
     return
 
 
