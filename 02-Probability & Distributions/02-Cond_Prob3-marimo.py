@@ -114,7 +114,7 @@ def _(pd):
     ].copy()
 
     print(f"Loaded {len(source_data)} student records.")
-    source_data.head()
+    print(source_data.head())
     return (source_data,)
 
 
@@ -186,7 +186,7 @@ def _(data, pd):
     study_crosstab.columns = ["Lower study time", "Higher study time"]
     study_crosstab["All"] = study_crosstab.sum(axis=1)
     study_crosstab.loc["All"] = study_crosstab.sum(axis=0)
-    study_crosstab
+    print(study_crosstab)
     return
 
 
@@ -196,7 +196,7 @@ def _(data, format_probability, probability_from_counts):
     print(f"P(G1pass and HigherStudyTime) = {joint_count}/{len(data)} = {joint_count / len(data):.3f}")
     print(f"P(HigherStudyTime) = {subgroup_count}/{len(data)} = {subgroup_count / len(data):.3f}")
     print(f"P(G1pass | HigherStudyTime) = {joint_count}/{subgroup_count} = {format_probability(conditional_g1)}")
-    print("Check using the filtered indicator's mean:", format_probability(data.loc[data["HigherStudyTime"], "G1pass"].mean()))
+    print("\nCheck using the filtered indicator's mean:", format_probability(data.loc[data["HigherStudyTime"], "G1pass"].mean()))
     return
 
 
