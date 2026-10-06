@@ -49,7 +49,10 @@ def _(mo):
     For discrete distributions, use “probability mass,” not “probability density.”
     
     ### Try it yourself
-    For [1, 1, 3, 5], calculate the mass at 1, the ECDF at 4, and the empirical SF at 3 (the proportion strictly above 3).
+    For [1, 1, 3, 5], calculate:
+    - the mass at 1 
+    - the ECDF at 4 
+    - the empirical SF at 3 (the proportion strictly above 3)
     """)
     return
 
@@ -136,8 +139,8 @@ def _(die_model, die_sequence, die_size, die_support, empirical_table, mo, np):
     die_table = empirical_table(die_sequence[:die_size.value], die_support)
     die_table["Theoretical_PMF"] = die_model.pmf(die_support)
     die_table["Theoretical_CDF"] = die_model.cdf(die_support)
-    print("Empirical masses sum to:", die_table["Empirical_PMF"].sum())
-    print("Largest absolute mass difference:", np.abs(die_table["Empirical_PMF"] - die_table["Theoretical_PMF"]).max())
+    print("Empirical masses sum to:", die_table["Empirical_PMF"].sum().round(4))
+    print("Largest absolute mass difference:", np.abs(die_table["Empirical_PMF"] - die_table["Theoretical_PMF"]).max().round(4))
     mo.Html(
         die_table.round(4).to_html(border=0, col_space=110)
         .replace("<table ", '<table style="width: auto;" ')
@@ -221,7 +224,7 @@ def _(np, poisson, source_seed, empirical_table, rv_discrete, mo):
     empirical_model = rv_discrete(values=(observed_support, observed_counts / len(original_values)))
     print("Original observations:", len(original_values))
     print("Uniform-component weight:", mixture_weight)
-    print("Known mixture probability above display:", (1 - mixture_weight) * poisson.sf(mixture_max, mu=1))
+    print("Known mixture probability above display:", (1 - mixture_weight) * poisson.sf(mixture_max, mu=1).round(4))
     mo.Html(
         source_table.round(4).to_html(border=0, col_space=110)
         .replace("<table ", '<table style="width: auto;" ')
@@ -362,11 +365,11 @@ def _(compare_distributions, resample_table):
 
 @app.cell
 def _(mixture_pmf, np, resample_table, source_table):
-    print("Largest absolute PMF difference:")
-    print("Original sample versus generating mixture:", np.abs(source_table["Empirical_PMF"] - mixture_pmf).max())
-    print("New sample versus original empirical model:", np.abs(resample_table["Empirical_PMF"] - resample_table["Original_empirical_PMF"]).max())
-    print("New sample versus generating mixture:", np.abs(resample_table["Empirical_PMF"] - mixture_pmf).max())
-    print("These are descriptive discrepancies, not hypothesis tests.")
+    print("Largest absolute PMF difference:\n")
+    print("Original sample versus generating mixture:", np.abs(source_table["Empirical_PMF"] - mixture_pmf).max().round(4))
+    print("New sample versus original empirical model:", np.abs(resample_table["Empirical_PMF"] - resample_table["Original_empirical_PMF"]).max().round(4))
+    print("New sample versus generating mixture:", np.abs(resample_table["Empirical_PMF"] - mixture_pmf).max().round(4))
+    print("\nThese are descriptive discrepancies, not hypothesis tests.")
     return
 
 
