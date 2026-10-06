@@ -141,7 +141,9 @@ def _(passing_control, source_data):
 @app.cell
 def _(mo, passing_percent):
     mo.md(f"""
-    **Current rule:** a grade passes when its percentage is at least {passing_percent}%, equivalent to at least {passing_percent / 5:g} on the 0–20 scale. All calculations below use this rule.
+    **Current rule:** a grade passes when its percentage is at least
+    {passing_percent}%, equivalent to at least {passing_percent / 5:g}
+    on the 0–20 scale. All calculations below use this rule.
     """)
     return
 
