@@ -51,15 +51,20 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 2. A two-component generating mixture
-    Generate 400 normal observations with mean 30 and standard deviation 5, and 700 with mean 50 and standard deviation 5.
-    Use conventional notation N(30,25) and N(50,25): the second parameter is variance. SciPy's scale is standard deviation.
-    The pooled target mixture has weights 400/1100 and 700/1100, not equal weights.
-    These separated components give this example a two-peaked density. Combining two normal distributions does not always produce two visible peaks.
-    We fix component counts, so the observations are independent but not identically distributed: the first 400 come from N(30,25), and the next 700 from N(50,25).
-    Before generating the data, selecting a pooled position uniformly gives the stated mixture distribution. After observing the data, selecting recorded observations uniformly with replacement follows their empirical distribution.
-    Independently choosing a random component for each observation would instead produce an independent, identically distributed sample from the mixture.
-    All data here are simulated; no external files are required.
+    ## 2. Combining two normal samples
+
+    We will generate two groups of measurements:
+
+    - **Group 1:** 400 observations with mean **30** and standard deviation **5**.
+    - **Group 2:** 700 observations with mean **50** and standard deviation **5**.
+
+    Then we will combine them into one sample of **1,100 observations**.
+
+    Because the groups have different means, we expect two peaks: one near **30** and another near **50**. The second group contains more observations, so it contributes more to the combined distribution.
+
+    We will use this combined sample to build an **empirical cumulative distribution function (ECDF)** and calculate probabilities.
+
+    All observations are simulated; no external dataset is needed.
     """)
     return
 
