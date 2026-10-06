@@ -63,7 +63,11 @@ def _(mo):
     then expand **Show answers** to compare with the explanation or example script.
 
     ### Try it yourself
-    Before continuing, calculate P(Passed | Lower), P(Lower | Passed), and P(Higher and Passed).
+    Before continuing, calculate: 
+    - P(Passed | Lower) 
+    - P(Lower | Passed)
+    - P(Higher and Passed)
+    
     Explain which students form the denominator each time.
     """)
     return
