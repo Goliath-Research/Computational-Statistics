@@ -24,6 +24,7 @@ def _(mo):
     - Calculate probabilities from counts and cross-tabulations.
     - Explain how a condition changes the group we consider and the denominator.
     - Distinguish P(A | B) from P(B | A).
+    - Recognize when a conditional probability is undefined.
     - Recover an overall probability using the law of total probability.
     - Calculate a reversed conditional probability using Bayes' rule and verify it with counts.
     - Interpret associations without assuming causation.
@@ -68,15 +69,13 @@ def _(mo):
     return
 
 
-app.cell(hide_code=True)
+@app.cell(hide_code=True)
 def _(mo):
     mo.accordion({
         "Show answers": mo.md("""
-```python
-P(Passed | Lower) = 9/20 = 0.450
-P(Lower | Passed) = 9/21 ≈ 0.429
-P(Higher and Passed) = 12/40 = 0.300
-```
+1. P(Passed | Lower) = 9/20 = 0.450. The denominator is the 20 lower-study students.
+2. P(Lower | Passed) = 9/21 ≈ 0.429. The denominator is the 21 passing students.
+3. P(Higher and Passed) = 12/40 = 0.300. The denominator is all 40 students.
 """)
     })
     return
@@ -113,6 +112,10 @@ def _(mo):
 student_pass_given_lower = 9 / 20
 student_lower_given_pass = 9 / 21
 student_higher_and_pass = 12 / 40
+
+print("P(Passed | Lower):", student_pass_given_lower)
+print("P(Lower | Passed):", student_lower_given_pass)
+print("P(Higher and Passed):", student_higher_and_pass)
 ```
     """)})
     return
@@ -128,7 +131,7 @@ def _(mo):
     Imagine selecting one recorded student uniformly at random. Calculated probabilities describe that selection from this file. They do not automatically describe all students.
 
     We retain only five columns needed for these questions:
-    - `studytime`: categories 1 (<2 hours), 2 (2–5 hours), 3 (5–10 hours), 4 (>10 hours).
+    - `studytime`: weekly study-time categories 1 (<2 hours), 2 (2–5 hours), 3 (5–10 hours), 4 (>10 hours).
     - `internet`: internet access at home, `yes` or `no`.
     - `G1`, `G2`, `G3`: first-period, second-period, and final grades, on a 0–20 scale.
 
@@ -309,9 +312,14 @@ def _(data):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
+student_study_group = data["HigherStudyTime"]
 student_study_count = student_study_group.sum()
 student_study_passes = (data["G1pass"] & student_study_group).sum()
 student_study_probability = student_study_passes / student_study_count if student_study_count else np.nan
+
+print("Students in the group:", student_study_count)
+print("G1 passes in the group:", student_study_passes)
+print("P(G1pass | HigherStudyTime):", student_study_probability)
 ```
     """)})
     return
@@ -406,6 +414,9 @@ def _(mo):
 ```python
 student_internet_yes = data.loc[data["internet"] == "yes", "G3pass"].mean()
 student_internet_no = data.loc[data["internet"] == "no", "G3pass"].mean()
+
+print("P(G3pass | internet = yes):", student_internet_yes)
+print("P(G3pass | internet = no):", student_internet_no)
 ```
     """)})
     return
@@ -427,11 +438,11 @@ def _(mo):
     The four study categories form a **partition**: each student belongs to exactly one category, and together the categories include every student.
     Let A mean passing G3 and Bᵢ mean belonging to study category i.
 
-    $$P(A)=\sum_{i=1}^{4}P(A\mid B_i)P(B_i).$$
+    $$P(A)=\sum_{i:\,P(B_i)>0}P(A\mid B_i)P(B_i).$$
 
     This is a weighted average. Each group's passing rate is multiplied by its share of all students.
     A group with twice as many students gets twice as much weight.
-    For a category with no students, its contribution is zero; its within-group passing rate is undefined.
+    The sum includes only nonempty categories. An empty category has intersection probability P(A ∩ Bᵢ) = 0, so its contribution is zero. Its conditional passing probability is undefined; we do not multiply an undefined value by zero.
     """)
     return
 
@@ -509,6 +520,9 @@ def _(mo):
 ```python
 student_total_weighted = (study_summary["Pass_given_group"] * study_summary["Group_probability"]).fillna(0).sum()
 student_total_direct = data["G3pass"].mean()
+
+print("Weighted probability:", student_total_weighted)
+print("Direct probability:", student_total_direct)
 ```
     """)})
     return
@@ -529,7 +543,9 @@ def _(mo):
     ## 6. Bayes' rule: reverse the condition
     Now we are told that the selected student passed G3. We ask which study group the student belongs to.
 
-    $$P(B_i\mid A)=\frac{P(A\mid B_i)P(B_i)}{P(A)},\qquad P(A)>0.$$
+    $$P(B_i\mid A)=\frac{P(A\mid B_i)P(B_i)}{P(A)},\qquad P(A)>0,\;P(B_i)>0.$$
+
+    For an empty category, P(Bᵢ | A) = 0 when P(A) > 0, obtained directly from its zero intersection count. The displayed product formula does not apply because P(A | Bᵢ) is undefined.
 
     The numerator describes the intersection. Dividing by P(A) changes the reference group to passing students.
     We can verify the answer directly: count passing students in category i and divide by all passing students.
@@ -629,6 +645,9 @@ def _(chosen_group, data, study_summary):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
+student_bayes_row = study_summary.loc[chosen_group.value]
+student_bayes_total = data["G3pass"].sum()
+
 if student_bayes_total == 0:
     student_bayes_probability = np.nan
     student_bayes_direct = np.nan
@@ -642,6 +661,9 @@ else:
         / data["G3pass"].mean()
     )
     student_bayes_direct = student_bayes_row["Passed"] / student_bayes_total
+
+print("Bayes probability:", student_bayes_probability)
+print("Direct probability:", student_bayes_direct)
 ```
     """)})
     return
@@ -660,12 +682,12 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## Conclusions
-    - Conditioning restricts our reference group and changes the denominator.
+    - Conditioning restricts our reference group and uses that group as the denominator. The numerical probability may change or remain the same.
     - P(A | B) and P(B | A) generally differ.
     - A probability conditioned on an empty group is undefined, not zero.
     - The law of total probability combines group rates using group-size weights.
     - Bayes' rule reverses conditioning; direct counts provide a useful verification.
-    - Changing our passing definition changes the calculated events and results.
+    - Changing the passing threshold changes the criterion defining a pass; event membership and numerical results may change or remain the same.
     - Results describe this file's students; associations do not establish causation.
 
     ## Check your understanding
@@ -681,7 +703,13 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.accordion({"Show answers": mo.md("1. 8/20 = 0.40. 2. 21, the number who passed. 3. No; weight by group proportions. 4. No; it is undefined. 5. No; an association alone does not establish causation.")})
+    mo.accordion({"Show answers": mo.md("""
+1. 8/20 = 0.40.
+2. 21, the number who passed.
+3. No; weight by group proportions.
+4. No; it is undefined.
+5. No; an association alone does not establish causation.
+""")})
     return
 
 
