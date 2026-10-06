@@ -370,52 +370,46 @@ def _(binom, mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md("""
-    ### Try it yourself
+### Try it yourself
 
-    In the same example, 5% of adults taking a certain medication
-    experience negative side effects. We consider 100 patients.
+In the same example, 5% of adults taking a certain medication experience
+negative side effects. We consider 100 independent patients, each with
+the same probability of side effects.
 
-    1. What is the probability that no patients experience side effects?
-    2. What is the probability that at least one patient experiences side effects?
-    3. What is the probability that at least five patients experience side effects?
+1. What is the probability that no patients experience side effects?
+2. What is the probability that at least one patient experiences side effects?
+3. What is the probability that at least five patients experience side effects?
 
-    In each code cell below, replace **None** with your calculation.
-    Use **binom.pmf()**, **binom.cdf()**, or **binom.sf()**, with **n=100** and **p=0.05**.
-    Run your cells, then expand **Show answers** to compare with the explanations,
-    complete solution script, and numerical answers.
+**Write your script in the next cell:**
+- Replace **None** with your calculations.
+- Use **binom.pmf()**, **binom.cdf()**, or **binom.sf()**, with **n=100** and **p=0.05**.
+- Print your results, then expand **Show answers** to compare.
 
-    **Remember:** “at least five” includes five.
-    """)
+**Remember:** “at least five” includes five.
+""")
     return
 
 
 @app.cell
 def _(binom):
-    # 1. What is the probability that no patients experience side effects?
+    # Replace None with your calculations.
     answer_1 = None
-    return (answer_1,)
-
-
-@app.cell
-def _(binom):
-    # 2. What is the probability that at least one patient experiences side effects?
     answer_2 = None
-    return (answer_2,)
-
-
-@app.cell
-def _(binom):
-    # 3. What is the probability that at least five patients experience side effects?
     answer_3 = None
-    return (answer_3,)
+
+    print("No patients:", answer_1)
+    print("At least one patient:", answer_2)
+    print("At least five patients:", answer_3)
+    return answer_1, answer_2, answer_3
 
 
 @app.cell(hide_code=True)
-def _(binom, mo):
-    _answers = f"""
-1. **No patients:** P(X = 0) = {binom.pmf(0, n=100, p=0.05):.4f}. Use the PMF for exactly zero.
-2. **At least one patient:** P(X ≥ 1) = {binom.sf(0, n=100, p=0.05):.4f}. This excludes zero: SF(0) = 1 − CDF(0).
-3. **At least five patients:** P(X ≥ 5) = {binom.sf(4, n=100, p=0.05):.4f}. This excludes zero through four, so use SF(4).
+def _(mo):
+    mo.accordion({
+        "Show answers": mo.md("""
+1. **No patients:** P(X = 0) ≈ 0.0059. Use the PMF for exactly zero.
+2. **At least one patient:** P(X ≥ 1) ≈ 0.9941. This excludes zero: SF(0) = 1 − CDF(0).
+3. **At least five patients:** P(X ≥ 5) ≈ 0.5640. This excludes zero through four, so use SF(4).
 
 ```python
 answer_1 = binom.pmf(0, n=100, p=0.05)
@@ -426,8 +420,8 @@ print("No patients:", answer_1)
 print("At least one patient:", answer_2)
 print("At least five patients:", answer_3)
 ```
-"""
-    mo.accordion({"Show answers": mo.md(_answers)})
+""")
+    })
     return
 
 
