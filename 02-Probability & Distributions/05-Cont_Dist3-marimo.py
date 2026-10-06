@@ -68,17 +68,27 @@ def _(mo):
 @app.cell
 def _(np, pd, plt):
     def draw_continuous(model, seed):
+        """Generate 10,000 observations from a SciPy distribution using a reproducible seed."""
         return model.rvs(size=10000, random_state=np.random.default_rng(seed))
 
 
     def summary_table(values, model):
+        """
+        Compare observed and theoretical mean, variance, and standard deviation.
+        - Use ddof=0 for descriptive sample variance and standard deviation.
+        - Return a DataFrame rounded to four decimal places.
+        """
         return pd.DataFrame({"Quantity": ["Mean", "Variance (descriptive, ddof=0)", "Standard deviation"],
                              "Theoretical": [model.mean(), model.var(), model.std()],
                              "Observed": [values.mean(), values.var(ddof=0), values.std(ddof=0)]}).round(4)
 
 
     def plot_density(values, model, bins, title, bounded=False):
-        # Include every observed value and the central 99.8% model interval.
+        """
+        Plot a density histogram of observed values and the theoretical PDF.
+        - Include every observed value and the central 99.8% model interval.
+        - Return a Figure object.
+        """
         if bounded:
             lower, upper = model.support()
         else:
@@ -100,6 +110,12 @@ def _(np, pd, plt):
 
 
     def shaded_interval(model, a, b, title):
+        """
+        Plot a shaded interval on a density plot.
+        - Return a Figure object.
+        """
+        # Calculate the interval bounds to ensure the shaded region is visible
+        # The interval is extended by 0.1% on each side to ensure it's visible
         lower = min(a, float(model.ppf(0.001)))
         upper = max(b, float(model.ppf(0.999)))
         x = np.linspace(lower, upper, 1000)
