@@ -13,21 +13,6 @@ def _():
     return mo, np, pd, plt, norm , gaussian_kde
 
 
-@app.cell
-def _(np):
-    class ECDF:
-        """Right-continuous empirical CDF, evaluated by binary search."""
-        def __init__(self, values, side="right"):
-            """Sort the observations for a right-continuous empirical CDF."""
-            values = np.asarray(values, dtype=float)
-            self.sorted_values = np.sort(values)
-
-        def __call__(self, thresholds):
-            """Return the proportion at or below each scalar or array threshold."""
-            return np.searchsorted(self.sorted_values, thresholds, side="right") / len(self.sorted_values)
-    return (ECDF,)
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -101,6 +86,21 @@ def _(mo):
     bandwidth_control = mo.ui.slider(start=0.5, stop=2, step=0.25, value=1, show_value=True, label="KDE bandwidth multiplier")
     mo.vstack([original_seed, bin_control, bandwidth_control])
     return bandwidth_control, bin_control, original_seed
+
+
+@app.cell
+def _(np):
+    class ECDF:
+        """Right-continuous empirical CDF, evaluated by binary search."""
+        def __init__(self, values, side="right"):
+            """Sort the observations for a right-continuous empirical CDF."""
+            values = np.asarray(values, dtype=float)
+            self.sorted_values = np.sort(values)
+
+        def __call__(self, thresholds):
+            """Return the proportion at or below each scalar or array threshold."""
+            return np.searchsorted(self.sorted_values, thresholds, side="right") / len(self.sorted_values)
+    return (ECDF,)
 
 
 @app.cell
