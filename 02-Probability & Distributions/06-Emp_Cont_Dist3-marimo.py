@@ -71,8 +71,11 @@ def _(mo):
 
 @app.cell
 def _(mo):
+    # Seed: Controls the random sample; the same seed reproduces the same observations.
     original_seed = mo.ui.slider(start=1, stop=100, step=1, value=42, show_value=True, label="Original data seed")
+    # Bins: Controls the histogram's bin count; the larger the bins, the smoother the histogram.
     bin_control = mo.ui.slider(start=10, stop=60, step=5, value=30, show_value=True, label="Histogram bins")
+    # Bandwidth: Controls the KDE's smoothing; the larger the bandwidth, the smoother the KDE. Smaller values show more details.
     bandwidth_control = mo.ui.slider(start=0.5, stop=2, step=0.25, value=1, show_value=True, label="KDE bandwidth multiplier")
     mo.vstack([original_seed, bin_control, bandwidth_control])
     return bandwidth_control, bin_control, original_seed
@@ -113,14 +116,28 @@ def _(ECDF, norm, np, original_seed):
 def _(mo):
     mo.md(r"""
     ## 3. Histogram and estimated density
-    A density-normalized histogram has total area one; a bar's area is its observed proportion.
-    A **kernel density estimate (KDE)** smooths the observations to estimate a population density. It is not the empirical distribution itself or a known true PDF.
-    Bandwidth controls smoothing: small bandwidths reveal more local variation; large bandwidths can hide peaks.
-    Neither histogram binning nor KDE bandwidth changes the ECDF.
-    Density heights are not probabilities. A KDE can place density beyond the observed range; those tails come from smoothing, not newly observed information.
+
+    A **histogram** groups observations into intervals called **bins**. Here, the bars are scaled so their total area equals one. Each bar’s **area** represents the proportion of observations in its interval.
+
+    A **kernel density estimate (KDE)** draws a smooth curve that helps us see the shape of the data. It is an estimate of the population density.
+
+    The **bandwidth** controls how smooth the curve is:
+
+    - **Smaller bandwidth:** More detail, with more bumps.
+    - **Larger bandwidth:** A smoother curve that may merge nearby peaks.
+
+    Changing the bins or bandwidth changes the plot, but leaves the observations and their **ECDF** unchanged.
+
+    Probabilities correspond to **areas**, not heights. The KDE may also extend beyond the smallest and largest observations because of smoothing.
     """)
     return
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    This plot compares the observed data’s **histogram** and **smooth KDE estimate** with the **theoretical density of the two combined normal distributions**.
+    """)
+    return
 
 @app.cell
 def _(bandwidth_control, bin_control, gaussian_kde, mixture_pdf, np, plot_grid, plt, sample):
@@ -137,6 +154,12 @@ def _(bandwidth_control, bin_control, gaussian_kde, mixture_pdf, np, plot_grid, 
     _figure
     return
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    This plot compares the **observed proportion at or below each threshold (ECDF)** with the **theoretical probability from the combined normal distributions (CDF)**.
+    """)
+    return
 
 @app.cell
 def _(mixture_cdf, np, original_ecdf, plot_grid, plt, sample):
@@ -195,7 +218,13 @@ def _(mo):
     """)
     return
 
-
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    This table shows the **observed proportions below, at, and above the selected threshold**, plus the proportion **greater than 30 and at or below 50**, checked by direct counting.
+    """)
+    return
+    
 @app.cell
 def _(mo):
     query_control = mo.ui.slider(start=10, stop=70, step=1, value=40, show_value=True, label="Threshold t")
