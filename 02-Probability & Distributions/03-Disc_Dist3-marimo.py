@@ -541,6 +541,58 @@ def _(mo, pd, poisson):
     )
     return
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+### Try it yourself
+
+A service receives arrivals according to a homogeneous Poisson process,
+at a constant rate of three arrivals per hour.
+Let X be the number of arrivals during one hour, so μ = 3.
+
+1. What is the probability that no arrivals occur?
+2. What is the probability that at least one arrival occurs?
+3. What is the probability that at least five arrivals occur?
+
+**Write your script in the next cell:**
+- Replace **None** with your calculations.
+- Use **poisson.pmf()**, **poisson.cdf()**, or **poisson.sf()**, with **mu=3**.
+- Print your results, then expand **Show answers** to compare.
+
+**Remember:** “at least five” includes five.
+""")
+    return
+
+@app.cell
+def _(poisson):
+    # Replace None with your calculations.
+    poisson_answer_1 = None
+    poisson_answer_2 = None
+    poisson_answer_3 = None
+
+    print("No arrivals:", poisson_answer_1)
+    print("At least one arrival:", poisson_answer_2)
+    print("At least five arrivals:", poisson_answer_3)
+    return poisson_answer_1, poisson_answer_2, poisson_answer_3
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({
+        "Show answers": mo.md("""
+1. **No arrivals:** P(X = 0) ≈ 0.0498. Use the PMF for exactly zero.
+2. **At least one arrival:** P(X ≥ 1) ≈ 0.9502. This excludes zero: SF(0) = 1 − CDF(0).
+3. **At least five arrivals:** P(X ≥ 5) ≈ 0.1847. This excludes zero through four, so use SF(4).
+
+```python
+poisson_answer_1 = poisson.pmf(0, mu=3)
+poisson_answer_2 = poisson.sf(0, mu=3)
+poisson_answer_3 = poisson.sf(4, mu=3)
+```
+""")
+    })
+    return
+    
+            
 
 @app.cell(hide_code=True)
 def _(mo):
