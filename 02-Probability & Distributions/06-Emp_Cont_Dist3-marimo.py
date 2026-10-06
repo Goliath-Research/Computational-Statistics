@@ -181,9 +181,10 @@ def _(mixture_cdf, np, original_ecdf, plot_grid, plt, sample):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The original statsmodels implementation stores an extra x value of −∞ to represent the initial zero level. It is a plotting sentinel, not an observation or the lower bound of the ECDF's domain.
-    This revision calculates the ECDF directly with sorted observations and binary searches. It needs no statsmodels dependency or sentinel. Our step plots use finite observations and explicit zero/one padding.
-    
+    The ECDF equals zero below the smallest observation and one at or above the largest.
+
+    Our code calculates it from the sorted observations. The plot includes these zero and one levels so students can see how the ECDF behaves outside the observed range.
+        
     ### Try it yourself
     1. Change histogram bins and KDE bandwidth separately. Which plot changes, and which remains the same?
     2. Compare the KDE with the known mixture PDF. Is the KDE exactly the generating density?
@@ -224,7 +225,7 @@ def _(mo):
     This table shows the **observed proportions below, at, and above the selected threshold**, plus the proportion **greater than 30 and at or below 50**, checked by direct counting.
     """)
     return
-    
+
 @app.cell
 def _(mo):
     query_control = mo.ui.slider(start=10, stop=70, step=1, value=40, show_value=True, label="Threshold t")
@@ -249,10 +250,10 @@ def _(np, original_ecdf, pd, query_control, sample, mo):
 @app.cell
 def _(np, original_ecdf, sample):
     recorded_threshold = float(sample[0])
-    print(f"Using a recorded observation t = {recorded_threshold:.6f}")
+    print(f"Using a recorded observation t = {recorded_threshold:.4f}")
     print("Strictly below:", np.mean(sample < recorded_threshold))
-    print("At or below:", original_ecdf(recorded_threshold))
-    print("Exact-point empirical mass:", np.mean(sample == recorded_threshold))
+    print("At or below:", original_ecdf(recorded_threshold).round(4))
+    print("Exact-point empirical mass:", np.mean(sample == recorded_threshold).round(4))
     return
 
 
