@@ -54,13 +54,10 @@ def _(mo):
 
     $$P(A\mid B)=\frac{\text{number satisfying both A and B}}{\text{number satisfying B}}.$$
 
-    In each **Try it yourself** section, write your Python script in the code cell
-    immediately below the script instructions. Open this notebook in the **marimo editor**
-    to edit and run these cells; a read-only page does not allow code editing.
-
-    Replace the `None` placeholders with your calculations. You may add variables,
-    loops, and print statements. Keep the requested variable names. Run your cell,
-    then expand **Show answers** to compare with the explanation or example script.
+    In each **Try it yourself** section, solve the questions before expanding
+    **Show answers**. The explanations and complete example Python script, when needed,
+    are together in that one answer cell. To try the script, copy it into a code cell
+    in the **marimo editor**; a read-only page does not allow code editing.
 
     ### Try it yourself
     Before continuing, calculate: 
@@ -106,7 +103,7 @@ def _(mo):
 
 
 @app.cell
-def _(pd):
+def _(mo, pd):
     student_file = pd.read_csv("../data/student-mat.csv", sep=";")
 
     source_data = student_file[
@@ -114,7 +111,10 @@ def _(pd):
     ].copy()
 
     print(f"Loaded {len(source_data)} student records.")
-    print(source_data.head())
+    mo.Html(
+        source_data.head().to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return (source_data,)
 
 
@@ -208,22 +208,30 @@ def _(data, format_probability, probability_from_counts):
 
 
 @app.cell
-def _(data):
+def _(data, mo):
     study_comparison = data.groupby("HigherStudyTime").agg(Students=("G1pass", "size"), G1_rate=("G1pass", "mean"), G2_rate=("G2pass", "mean"), G3_rate=("G3pass", "mean")).reindex([False, True])
     study_comparison["Students"] = study_comparison["Students"].fillna(0).astype(int)
     study_comparison.index = ["Lower study time", "Higher study time"]
-    study_comparison.round(3)
+    mo.Html(
+        study_comparison.round(3).to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Try it yourself
+### Try it yourself
     1. Calculate the G1 conditional probability directly from the cross-tabulation.
     2. Compare both study groups for G1, G2, and G3. Is the direction of the comparison identical for every grade?
     3. Predict what happens to a fixed group's passing rate if the threshold decreases. Move the threshold from 60% to 50% and check.
 
+**Python task:**
+    - Select students with `data["HigherStudyTime"]`.
+    - Count the selected students and their G1 passes using `.sum()`.
+    - Divide passes by students. Use `np.nan` if the selected group is empty.
+    - Print your result, then move the passing-threshold slider.
     """)
     return
 
@@ -234,38 +242,7 @@ def _(mo):
 1. Divide the G1 passes in the higher-study group by that group's total.
 2. Read the three grade columns for both groups; the direction can differ by grade and cutoff.
 3. Lowering the threshold cannot decrease a fixed group's passing rate; it may leave it unchanged.
-    """)})
-    return
 
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    **Write your script in the next cell:**
-    - Select students with `data["HigherStudyTime"]`.
-    - Count the selected students and their G1 passes using `.sum()`.
-    - Divide passes by students. Use `np.nan` if the selected group is empty.
-    - Print your result, then move the passing-threshold slider.
-    """)
-    return
-
-
-@app.cell
-def _(data):
-    student_study_group = data["HigherStudyTime"]
-    student_study_count = None
-    student_study_passes = None
-    student_study_probability = None
-
-    print("Students in the group:", student_study_count)
-    print("G1 passes in the group:", student_study_passes)
-    print("P(G1pass | HigherStudyTime):", student_study_probability)
-    return student_study_count, student_study_passes, student_study_probability
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.accordion({"Show answers": mo.md(r"""
 ```python
 student_study_group = data["HigherStudyTime"]
 student_study_count = student_study_group.sum()
@@ -276,17 +253,10 @@ print("Students in the group:", student_study_count)
 print("G1 passes in the group:", student_study_passes)
 print("P(G1pass | HigherStudyTime):", student_study_probability)
 ```
+
+**Discussion:** Lowering the threshold cannot decrease the passing rate within a fixed group. It can leave it unchanged. A difference between study groups is an association; this calculation alone does not show that studying longer caused it.
     """)})
     return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    **Discussion:** Lowering the threshold cannot decrease the passing rate within a fixed group. It can leave it unchanged. A difference between study groups is an association; this calculation alone does not show that studying longer caused it.
-    """)
-    return
-
 
 
 @app.cell(hide_code=True)
@@ -300,10 +270,13 @@ def _(mo):
 
 
 @app.cell
-def _(data):
+def _(data, mo):
     internet_comparison = data.groupby("internet").agg(Students=("G1pass", "size"), G1_rate=("G1pass", "mean"), G2_rate=("G2pass", "mean"), G3_rate=("G3pass", "mean")).reindex(["no", "yes"])
     internet_comparison["Students"] = internet_comparison["Students"].fillna(0).astype(int)
-    internet_comparison.round(3)
+    mo.Html(
+        internet_comparison.round(3).to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return (internet_comparison,)
 
 
@@ -322,11 +295,15 @@ def _(internet_comparison, passing_percent, plt):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Try it yourself
+### Try it yourself
     1. Identify the denominator for P(G3pass | internet = yes).
     2. Compare this probability with P(G3pass | internet = no).
     3. Could differences in other characteristics contribute to the observed comparison?
 
+**Python task:**
+    - Select each internet group with `data["internet"] == "yes"` or `"no"`.
+    - Calculate each group's G3 passing rate using the filtered indicator's `.mean()`.
+    - Print both results and compare with the table. An empty group's mean is undefined.
     """)
     return
 
@@ -337,35 +314,7 @@ def _(mo):
 1. The denominator is the number of students with internet access at home.
 2. Compare the G3 rates in the table; each uses its own internet group's total.
 3. Yes. Other characteristics may contribute to the observed association.
-    """)})
-    return
 
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    **Write your script in the next cell:**
-    - Select each internet group with `data["internet"] == "yes"` or `"no"`.
-    - Calculate each group's G3 passing rate using the filtered indicator's `.mean()`.
-    - Print both results and compare with the table. An empty group's mean is undefined.
-    """)
-    return
-
-
-@app.cell
-def _(data):
-    # Replace None with the two conditional passing rates.
-    student_internet_yes = None
-    student_internet_no = None
-
-    print("P(G3pass | internet = yes):", student_internet_yes)
-    print("P(G3pass | internet = no):", student_internet_no)
-    return student_internet_yes, student_internet_no
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.accordion({"Show answers": mo.md(r"""
 ```python
 student_internet_yes = data.loc[data["internet"] == "yes", "G3pass"].mean()
 student_internet_no = data.loc[data["internet"] == "no", "G3pass"].mean()
@@ -373,17 +322,10 @@ student_internet_no = data.loc[data["internet"] == "no", "G3pass"].mean()
 print("P(G3pass | internet = yes):", student_internet_yes)
 print("P(G3pass | internet = no):", student_internet_no)
 ```
+
+**Discussion:** These are descriptive associations in the recorded data. The comparisons do not establish causation or automatically generalize to a broader student population.
     """)})
     return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    **Discussion:** These are descriptive associations in the recorded data. The comparisons do not establish causation or automatically generalize to a broader student population.
-    """)
-    return
-
 
 
 @app.cell(hide_code=True)
@@ -403,14 +345,17 @@ def _(mo):
 
 
 @app.cell
-def _(data):
+def _(data, mo):
     study_summary = data.groupby("studytime")["G3pass"].agg(Students="size", Passed="sum").reindex([1, 2, 3, 4], fill_value=0)
     study_summary["Group_probability"] = study_summary["Students"] / len(data)
     study_summary["Pass_given_group"] = study_summary["Passed"] / study_summary["Students"].where(study_summary["Students"] > 0)
     # Passed / total is the same contribution as group rate × group share,
     # and correctly gives zero for an empty group.
     study_summary["Weighted_contribution"] = study_summary["Passed"] / len(data)
-    study_summary.round(4)
+    mo.Html(
+        study_summary.round(4).to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return (study_summary,)
 
 
@@ -427,11 +372,16 @@ def _(data, np, study_summary):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Try it yourself
+### Try it yourself
     1. Multiply each group's conditional passing rate by its group probability. Add the contributions.
     2. Why would an unweighted average of the four passing rates generally be wrong?
     3. Change the cutoff and check that the weighted and direct calculations still agree.
 
+**Python task:**
+    - Use the `Pass_given_group` and `Group_probability` columns of `study_summary`.
+    - Multiply the columns and add the contributions with `.sum()`.
+    - For empty groups, use `.fillna(0)` on the contributions.
+    - Calculate the direct rate from `data["G3pass"].mean()` and print both results.
     """)
     return
 
@@ -442,36 +392,7 @@ def _(mo):
 1. Multiply each nonempty group's rate by its share of all students, then add.
 2. An unweighted average gives equal importance to groups of unequal sizes.
 3. The weighted and direct methods agree at every cutoff when calculated from the same data.
-    """)})
-    return
 
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    **Write your script in the next cell:**
-    - Use the `Pass_given_group` and `Group_probability` columns of `study_summary`.
-    - Multiply the columns and add the contributions with `.sum()`.
-    - For empty groups, use `.fillna(0)` on the contributions.
-    - Calculate the direct rate from `data["G3pass"].mean()` and print both results.
-    """)
-    return
-
-
-@app.cell
-def _():
-    # Replace None with your weighted and direct calculations.
-    student_total_weighted = None
-    student_total_direct = None
-
-    print("Weighted probability:", student_total_weighted)
-    print("Direct probability:", student_total_direct)
-    return student_total_weighted, student_total_direct
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.accordion({"Show answers": mo.md(r"""
 ```python
 student_total_weighted = (study_summary["Pass_given_group"] * study_summary["Group_probability"]).fillna(0).sum()
 student_total_direct = data["G3pass"].mean()
@@ -479,17 +400,10 @@ student_total_direct = data["G3pass"].mean()
 print("Weighted probability:", student_total_weighted)
 print("Direct probability:", student_total_direct)
 ```
+
+**Discussion:** An unweighted average gives equal importance to groups of unequal sizes. Use full precision for calculations; round only the displayed results.
     """)})
     return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    **Discussion:** An unweighted average gives equal importance to groups of unequal sizes. Use full precision for calculations; round only the displayed results.
-    """)
-    return
-
 
 
 @app.cell(hide_code=True)
@@ -536,23 +450,33 @@ def _(chosen_group, data, overall_direct, study_summary):
 
 
 @app.cell
-def _(data, study_summary):
+def _(data, mo, study_summary):
     passing_count = int(data["G3pass"].sum())
     posterior_table = study_summary[["Students", "Passed", "Group_probability", "Pass_given_group"]].copy()
     posterior_table["Group_given_pass"] = posterior_table["Passed"] / passing_count if passing_count else float("nan")
-    posterior_table.round(4)
+    mo.Html(
+        posterior_table.round(4).to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Try it yourself
+### Try it yourself
     1. Choose categories 2 and 3. Calculate the reversed probabilities using both methods.
     2. Explain why P(G3pass | category 2) and P(category 2 | G3pass) have different denominators.
     3. Add the four probabilities of study category given passing. Why must they sum to 1 when at least one student passed?
     4. Lower the cutoff. Must every category's share among passing students increase?
 
+**Python task:**
+    - Use the category selected by `chosen_group.value`.
+    - Select its row with `study_summary.loc[chosen_group.value]`.
+    - Calculate P(category | G3pass) using Bayes' rule and direct counts.
+    - If nobody passed, both answers are undefined (`np.nan`).
+    - If the category is empty but someone passed, both answers are 0.
+    - Print both results. Choose categories 2 and 3 and change the cutoff.
     """)
     return
 
@@ -564,41 +488,7 @@ def _(mo):
 2. P(G3pass | category 2) uses all category-2 students; P(category 2 | G3pass) uses all passing students.
 3. The four categories partition the passing students, so their shares sum to 1 when anyone passed.
 4. No. Each category's share among passing students may increase, decrease, or remain unchanged.
-    """)})
-    return
 
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    **Write your script in the next cell:**
-    - Use the category selected by `chosen_group.value`.
-    - Select its row with `study_summary.loc[chosen_group.value]`.
-    - Calculate P(category | G3pass) using Bayes' rule and direct counts.
-    - If nobody passed, both answers are undefined (`np.nan`).
-    - If the category is empty but someone passed, both answers are 0.
-    - Print both results. Choose categories 2 and 3 and change the cutoff.
-    """)
-    return
-
-
-@app.cell
-def _(chosen_group, data, study_summary):
-    student_bayes_row = study_summary.loc[chosen_group.value]
-    student_bayes_total = data["G3pass"].sum()
-
-    # Replace None with your calculations, including the empty-group cases.
-    student_bayes_probability = None
-    student_bayes_direct = None
-
-    print("Bayes probability:", student_bayes_probability)
-    print("Direct probability:", student_bayes_direct)
-    return student_bayes_probability, student_bayes_direct
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.accordion({"Show answers": mo.md(r"""
 ```python
 student_bayes_row = study_summary.loc[chosen_group.value]
 student_bayes_total = data["G3pass"].sum()
@@ -620,16 +510,9 @@ else:
 print("Bayes probability:", student_bayes_probability)
 print("Direct probability:", student_bayes_direct)
 ```
+
+**Discussion:** No. Lowering the cutoff can add passing students in different proportions across categories. Although each fixed group's passing rate cannot decrease, its share among passing students may increase, decrease, or remain unchanged.
     """)})
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    **Discussion:** No. Lowering the cutoff can add passing students in different proportions across categories. Although each fixed group's passing rate cannot decrease, its share among passing students may increase, decrease, or remain unchanged.
-
-    """)
     return
 
 
