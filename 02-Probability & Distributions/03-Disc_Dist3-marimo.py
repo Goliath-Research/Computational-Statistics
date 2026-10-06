@@ -415,10 +415,6 @@ def _(mo):
 answer_1 = binom.pmf(0, n=100, p=0.05)
 answer_2 = binom.sf(0, n=100, p=0.05)
 answer_3 = binom.sf(4, n=100, p=0.05)
-
-print("No patients:", answer_1)
-print("At least one patient:", answer_2)
-print("At least five patients:", answer_3)
 ```
 """)
     })
