@@ -235,9 +235,9 @@ def _(mo):
     3. Predict what happens to a fixed group's passing rate if the threshold decreases. Move the threshold from 60% to 50% and check.
 
 **Write your script in the next cell:**
-    - Select students with `data["HigherStudyTime"]`.
-    - Count the selected students and their G1 passes using `.sum()`.
-    - Divide passes by students. Use `np.nan` if the selected group is empty.
+    - Select students with **data["HigherStudyTime"]**.
+    - Count the selected students and their G1 passes using **.sum()**.
+    - Divide passes by students. Use **np.nan** if the selected group is empty.
     - Print your result, then move the passing-threshold slider.
     """)
     return
@@ -307,6 +307,8 @@ def _(internet_comparison, passing_percent, plt):
     _axes.set(xlabel="Internet access at home", ylabel="Passing proportion", ylim=(0, 1), title=f"Passing rates by internet access: cutoff {passing_percent}%")
     _axes.legend(loc="upper center", bbox_to_anchor=(0.5, 1.20), ncol=3)
     _figure.tight_layout()
+    for _bars in _axes.containers:
+        _axes.bar_label(_bars, fmt="%.3f", padding=3)
     plt.close(_figure)
     _figure
     return
