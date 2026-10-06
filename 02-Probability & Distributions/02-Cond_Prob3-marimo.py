@@ -191,10 +191,8 @@ def _(data, mo, pd):
     study_crosstab.loc["All"] = study_crosstab.sum(axis=0)
 
     mo.Html(
-        study_crosstab.style
-        .set_table_attributes('style="width: auto;"')
-        .set_properties(**{"padding": "6px 12px", "text-align": "right"})
-        .to_html()
+        study_crosstab.to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
     )
     return
 
