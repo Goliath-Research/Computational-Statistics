@@ -398,7 +398,7 @@ def _(data, np, study_summary):
     overall_direct = data["G3pass"].mean()
     print(f"Weighted sum: P(G3pass) = {overall_weighted:.4f}")
     print(f"Direct count: {int(data['G3pass'].sum())}/{len(data)} = {overall_direct:.4f}")
-    print("Do the two methods agree?", np.isclose(overall_weighted, overall_direct))
+    print("\nDo the two methods agree?", np.isclose(overall_weighted, overall_direct))
     return (overall_direct,)
 
 
