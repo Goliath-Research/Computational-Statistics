@@ -69,6 +69,9 @@ def _(mo):
     - P(Higher and Passed)
     
     Explain which students form the denominator each time.
+
+    Are “Passed” and “Higher study time” independent? Compare P(Passed | Higher) = 0.600 with P(Passed) = 0.525.
+    Events A and B are independent when P(A | B) = P(A), provided P(B) > 0.
     """)
     return
 
@@ -80,6 +83,7 @@ def _(mo):
 1. P(Passed | Lower) = 9/20 = 0.450. The denominator is the 20 lower-study students.
 2. P(Lower | Passed) = 9/21 ≈ 0.429. The denominator is the 21 passing students.
 3. P(Higher and Passed) = 12/40 = 0.300. The denominator is all 40 students.
+4. “Passed” and “Higher study time” are not independent: P(Passed | Higher) = 0.600 differs from P(Passed) = 0.525.
 """)
     })
     return
@@ -90,7 +94,7 @@ def _(mo):
     mo.md(r"""
     ## 2. Work with the student dataset
     We now use the mathematics file `student-mat.csv` from the [UCI Student Performance dataset](https://archive.ics.uci.edu/dataset/320/student+performance).
-    Place the CSV in the course's `data` folder (one directory above this lesson), or in a `data` folder beside this lesson.
+    The code reads `../data/student-mat.csv`, relative to the current working directory. Run the notebook with the lesson folder as the working directory, and place `student-mat.csv` in a `data` folder one directory above it.
 
     Imagine selecting one recorded student uniformly at random. Calculated probabilities describe that selection from this file. They do not automatically describe all students.
 

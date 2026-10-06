@@ -239,8 +239,7 @@ def _(mo):
 
     The cell contains named variables initialized to `None` so the notebook can run
     before you start. Replace those placeholders with your code, and add as many lines
-    as you need. Keep the requested variable names so the following feedback cell can
-    check your results. Run your cell; the feedback updates automatically.
+    as you need. 
 
     For counting, `np.count_nonzero(results == outcome)` counts how often an outcome
     appears. You can also use a loop. Use `len(results)` for the number of trials.
@@ -662,7 +661,7 @@ student_weighted_frequency = float(student_weighted_count / len(student_weighted
     })
     return
 
-app.cell
+@app.cell
 def _(
     np,
     student_weighted_count,
@@ -765,8 +764,8 @@ def _(mo):
         "Show answers": mo.md('''
 ```python
 student_custom_sum = sum(custom_probabilities)
-student_custom_expected = 1000 * custom_probabilities[student_custom_face - 1]
-student_custom_frequency = float(np.count_nonzero(custom_results == student_custom_face) / 1000)
+student_custom_expected = custom_n * custom_probabilities[student_custom_face - 1]
+student_custom_frequency = float(np.count_nonzero(custom_results == student_custom_face) / custom_n)
 ```
 ''')
     })
