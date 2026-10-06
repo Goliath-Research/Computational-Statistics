@@ -139,7 +139,7 @@ def _(passing_control, source_data):
 
 
 @app.cell
-def _(mo, passing_percent):
+def _(mo, passing_percent, hide_code=True):
     _text = (
         f"**Current rule:** a grade passes when its percentage is "
         f"at least {passing_percent}%, equivalent to at least "
