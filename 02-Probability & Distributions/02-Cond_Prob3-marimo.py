@@ -88,46 +88,6 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    **Write your script in the next cell:**
-    - Use the counts in the introductory table.
-    - Calculate P(Passed | Lower), P(Lower | Passed), and P(Higher and Passed).
-    - Store and print the three results using the variables below.
-    """)
-    return
-
-
-@app.cell
-def _():
-    # Replace None with your calculations from the table.
-    student_pass_given_lower = None
-    student_lower_given_pass = None
-    student_higher_and_pass = None
-
-    print("P(Passed | Lower):", student_pass_given_lower)
-    print("P(Lower | Passed):", student_lower_given_pass)
-    print("P(Higher and Passed):", student_higher_and_pass)
-    return student_pass_given_lower, student_lower_given_pass, student_higher_and_pass
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.accordion({"Show answers": mo.md(r"""
-```python
-student_pass_given_lower = 9 / 20
-student_lower_given_pass = 9 / 21
-student_higher_and_pass = 12 / 40
-
-print("P(Passed | Lower):", student_pass_given_lower)
-print("P(Lower | Passed):", student_lower_given_pass)
-print("P(Higher and Passed):", student_higher_and_pass)
-```
-    """)})
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
     ## 2. Work with the student dataset
     We now use the mathematics file `student-mat.csv` from the [UCI Student Performance dataset](https://archive.ics.uci.edu/dataset/320/student+performance).
     Place the CSV in the course's `data` folder (one directory above this lesson), or in a `data` folder beside this lesson.
@@ -146,28 +106,13 @@ def _(mo):
 
 
 @app.cell
-def _(Path, pd):
-    lesson_directory = Path(__file__).resolve().parent
-    candidate_paths = [lesson_directory.parent / "data" / "student-mat.csv",
-                       lesson_directory / "data" / "student-mat.csv",
-                       lesson_directory / "student-mat.csv"]
-    dataset_path = next((path for path in candidate_paths if path.is_file()), None)
-    if dataset_path is None:
-        raise FileNotFoundError("student-mat.csv is missing. Put it in the course data folder, a data folder beside this lesson, or beside this lesson.")
-    student_file = pd.read_csv(dataset_path, sep=";")
-    required_columns = ["studytime", "internet", "G1", "G2", "G3"]
-    if not set(required_columns).issubset(student_file.columns):
-        raise ValueError("The CSV must contain studytime, internet, G1, G2, and G3.")
-    source_data = student_file[required_columns].copy()
-    if source_data.empty or source_data.isna().any().any():
-        raise ValueError("The selected columns must contain students and no missing values.")
-    if not source_data["studytime"].isin([1, 2, 3, 4]).all():
-        raise ValueError("studytime must contain categories 1–4.")
-    if not source_data["internet"].isin(["yes", "no"]).all():
-        raise ValueError("internet must contain yes or no.")
-    for grade_column in ["G1", "G2", "G3"]:
-        if not pd.api.types.is_numeric_dtype(source_data[grade_column]) or not source_data[grade_column].between(0, 20).all():
-            raise ValueError("Grades must be numeric values between 0 and 20.")
+def _(pd):
+    student_file = pd.read_csv("../data/student-mat.csv", sep=";")
+
+    source_data = student_file[
+        ["studytime", "internet", "G1", "G2", "G3"]
+    ].copy()
+
     print(f"Loaded {len(source_data)} student records.")
     source_data.head()
     return (source_data,)
@@ -202,8 +147,7 @@ def _(mo, passing_percent):
 def _(mo):
     mo.md(r"""
     A Boolean passing indicator is `True` for passing and `False` otherwise.
-    Python counts `True` as 1 and `False` as 0. Therefore its sum counts passes, and its mean is the passing proportion.
-    We checked missing values first so an unrecorded grade cannot silently become a failure.
+    Python counts `True` as 1 and `False` as 0. Therefore its sum counts passes, and its mean is the passing proportion.    
 
     The helper below returns a count ratio. If the condition selects nobody, the probability is undefined—not zero.
     """)
