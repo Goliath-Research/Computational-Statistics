@@ -180,13 +180,22 @@ def _(mo):
 
 
 @app.cell
-def _(data, pd):
-    study_crosstab = pd.crosstab(data["G1pass"], data["HigherStudyTime"]).reindex(index=[False, True], columns=[False, True], fill_value=0)
+def _(data, mo, pd):
+    study_crosstab = pd.crosstab(
+        data["G1pass"], data["HigherStudyTime"]
+    ).reindex(index=[False, True], columns=[False, True], fill_value=0)
+
     study_crosstab.index = ["Did not pass G1", "Passed G1"]
     study_crosstab.columns = ["Lower study time", "Higher study time"]
     study_crosstab["All"] = study_crosstab.sum(axis=1)
     study_crosstab.loc["All"] = study_crosstab.sum(axis=0)
-    print(study_crosstab)
+
+    mo.Html(
+        study_crosstab.style
+        .set_table_attributes('style="width: auto;"')
+        .set_properties(**{"padding": "6px 12px", "text-align": "right"})
+        .to_html()
+    )
     return
 
 
