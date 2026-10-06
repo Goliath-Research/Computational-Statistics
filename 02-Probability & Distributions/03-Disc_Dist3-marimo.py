@@ -54,8 +54,9 @@ def _(mo):
     - **Cumulative distribution function (CDF):** P(X ≤ k), calculated with **.cdf(k)**.
     - **Survival function (SF):** P(X > k), calculated with **.sf(k)**.
 
-    SF(k) = 1 − CDF(k). For integer-valued X, “at least k” is SF(k − 1).
-    For integers a ≤ b, P(a ≤ X ≤ b) = CDF(b) − CDF(a − 1).
+    SF(k) = 1 − CDF(k). 
+    - For integer-valued X, “at least k” is SF(k − 1).
+    - For integers a ≤ b, P(a ≤ X ≤ b) = CDF(b) − CDF(a − 1).
 
     ## Reproducible experiments
     A seed is a number that lets us repeat a simulation and obtain the same results. 
@@ -78,8 +79,7 @@ def _(mo):
 
 
 @app.cell
-def _(np, pd, plt):
-    
+def _(np, pd, plt):    
     def draw_sample(model, size, seed):
         """Generate a reproducible sample."""
         return model.rvs(size=size, random_state=seed)
@@ -297,11 +297,14 @@ def _(bin_model, bin_values, compare_summaries, mo):
 def _(mo):
     mo.md(r"""
     ### Shape and skewness
-    For 0 < p < 1, the theoretical binomial distribution is symmetric when p = 0.5.
-    For p < 0.5 it is **right-skewed**: most mass is at smaller counts, with a tail toward larger counts.
-    For p > 0.5 it is **left-skewed**: most mass is at larger counts, with a tail toward smaller counts.
+    - For 0 < p < 1, the theoretical binomial distribution is symmetric when p = 0.5.
+    - For p < 0.5 it is **right-skewed**: most mass is at smaller counts, with a tail toward larger counts.
+    - For p > 0.5 it is **left-skewed**: most mass is at larger counts, with a tail toward smaller counts.
+    
     Skewness is named for the tail direction, not where the tallest bars stand.
+    
     At p = 0 or 1, the distribution is concentrated at one value.
+    
     A simulated chart need not reproduce theoretical symmetry exactly.
     
     ### Try it yourself
