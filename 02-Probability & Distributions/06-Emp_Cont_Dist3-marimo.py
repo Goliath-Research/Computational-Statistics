@@ -37,29 +37,14 @@ def _(mo):
 
     $$\widehat{SF}_n(t)=1-F_n(t)=\frac{1}{n}\sum_{i=1}^n\mathbf{1}(x_i>t).$$
 
-    For [1.2, 1.2, 2.8, 4.1], the empirical SF at 1.2 is 2/4 = 0.5.
     Because the empirical distribution is discrete, “strictly above” and “at or above” can give different results at a recorded value.
 
     The ECDF works for any sample; the data do not need to fail a named model first.
     It is defined for **every real threshold**, not just between sample extremes.
     It equals zero below the minimum and one at and above the maximum. Those facts describe the empirical distribution, not the unknown population tails.
     
-    For [1.2, 1.2, 2.8, 4.1], Fₙ(1.2) = 2/4, while the proportion strictly below 1.2 is zero.
     Unlike a continuous population model, the empirical distribution has positive exact-point masses.
-    
-    ### Try it yourself
-    For this small sample, calculate Fₙ(2), the mass at 1.2, and the proportion in (1.2, 4.1].
     """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.accordion({"Show answers": mo.md(r"""
-1. **Fₙ(2):** 2/4 = 0.50. Both observations equal to 1.2 are at or below 2.
-2. **Mass at 1.2:** 2/4 = 0.50. Repeated observations contribute their combined weight.
-3. **Proportion in (1.2, 4.1]:** 2/4 = 0.50. The left endpoint is excluded and the right endpoint included, so only 2.8 and 4.1 contribute.
-""")})
     return
 
 
@@ -92,7 +77,7 @@ def _(mo):
 def _(np):
     class ECDF:
         """Right-continuous empirical CDF, evaluated by binary search."""
-        def __init__(self, values, side="right"):
+        def __init__(self, values):
             """Sort the observations for a right-continuous empirical CDF."""
             values = np.asarray(values, dtype=float)
             self.sorted_values = np.sort(values)
@@ -108,7 +93,7 @@ def _(ECDF, norm, np, original_seed):
     sample1 = norm.rvs(loc=30, scale=5, size=400, random_state=np.random.default_rng(original_seed.value))
     sample2 = norm.rvs(loc=50, scale=5, size=700, random_state=np.random.default_rng(original_seed.value + 1000))
     sample = np.concatenate([sample1, sample2])
-    original_ecdf = ECDF(sample, side="right")
+    original_ecdf = ECDF(sample)
     mixture_weight = len(sample1) / len(sample)
     plot_grid = np.linspace(min(sample.min(), 10), max(sample.max(), 70), 800)
     mixture_pdf = mixture_weight * norm.pdf(plot_grid, loc=30, scale=5) + (1 - mixture_weight) * norm.pdf(plot_grid, loc=50, scale=5)
@@ -358,7 +343,7 @@ def _(np, resample_seed, sample):
 @app.cell
 def _(ECDF, np, resample_sequence, resample_size):
     new_sample = resample_sequence[:resample_size.value]
-    new_ecdf = ECDF(new_sample, side="right")
+    new_ecdf = ECDF(new_sample)
     print("New sample size:", len(new_sample))
     print("Distinct values in resample:", len(np.unique(new_sample)))
     return new_ecdf, new_sample
