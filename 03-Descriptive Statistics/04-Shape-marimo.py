@@ -351,7 +351,7 @@ def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 1. **Sign:** Positive. The value 20 creates the longer right tail.
 2. **Finite sample:** No. A symmetric population can produce a small nonzero sample skewness.
-3. **Normal kurtosis:** 0.
+3. **Normal excess kurtosis:** 0.
 4. **Scale:** No. The taller peak is the change in scale. Normal excess kurtosis remains 0.
 5. **Object summary:** The mode, and `freq` reports how many times that mode occurs.
 """)})
