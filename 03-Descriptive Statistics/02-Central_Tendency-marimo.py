@@ -112,13 +112,14 @@ def _(data, mo, pd):
 
 @app.cell
 def _(data, plt, sns):
-    _fig, _axes = plt.subplots(2, 2, figsize=(8, 6))
+    _fig, _axes = plt.subplots(2, 2, figsize=(7, 5))
     for _axis, _column, _title in zip(
         _axes.ravel(),
         ["sex", "Pstatus", "schoolsup", "internet"],
         ["Sex", "Parent status", "Extra support", "Internet"],
     ):
         sns.countplot(x=data[_column], ax=_axis, color="#4C78A8")
+        _axis.bar_label(_axis.containers[0], fmt="%.0f", fontsize=8)
         _axis.set(title=f"{_title}; mode = {data[_column].mode().iloc[0]}", xlabel="", ylabel="Count")
     _fig.tight_layout()
     plt.close(_fig)
@@ -144,7 +145,7 @@ def _(mo):
 
 @app.cell
 def _(data, np, plt):
-    _fig, _axes = plt.subplots(1, 3, figsize=(10, 3.2), sharey=True)
+    _fig, _axes = plt.subplots(1, 3, figsize=(8, 3.2), sharey=True)
     for _axis, _grade in zip(_axes, ["G1", "G2", "G3"]):
         _values = data[_grade].to_numpy()
         _mean = _values.mean()
@@ -306,7 +307,7 @@ def _(mo):
 
 @app.cell
 def _(data, plt):
-    _fig, _axes = plt.subplots(1, 3, figsize=(10, 3.4))
+    _fig, _axes = plt.subplots(1, 3, figsize=(8, 3.2))
     for _axis, _grade in zip(_axes, ["G1", "G2", "G3"]):
         _axis.boxplot(data[_grade], showmeans=True)
         _axis.set(title=_grade, ylabel="Grade")
