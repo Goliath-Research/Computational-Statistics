@@ -36,7 +36,7 @@ def _(mo):
     - Compare spread across groups without treating the comparison as a cause.
 
     ## 1. Two divisors for variance
-    Variability describes how far the recorded values are from their mean.
+    Variability describes how spread out the recorded values are.
     For \(x_1,\ldots,x_n\) with mean \(\bar x\), the squared deviations are \((x_i-\bar x)^2\).
 
     The **descriptive variance** divides their sum by \(n\):
@@ -203,14 +203,29 @@ def _(mo):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("**Variance by sex, divisor n − 1**")
+    return
+
+
 @app.cell
 def _(data, mo):
-    mo.md("**Variance by sex, divisor n − 1**")
     mo.Html(
         data.groupby("sex")[["G1", "G2", "G3"]].var(ddof=1).round(3).to_html(border=0, col_space=110)
         .replace("<table ", '<table style="width: auto;" ')
     )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
     mo.md("**Standard deviation by school and sex, divisor n − 1**")
+    return
+
+
+@app.cell
+def _(data, mo):
     mo.Html(
         data.groupby(["school", "sex"])[["G1", "G2", "G3"]].std(ddof=1).round(3).to_html(border=0, col_space=110)
         .replace("<table ", '<table style="width: auto;" ')
@@ -235,7 +250,7 @@ def _(mo):
 
 
 @app.cell
-def _(data, mo, np, pd, plt, sns):
+def _(data, mo, np, pd):
     _spread_rows = []
     for _grade_name in ["G1", "G2", "G3"]:
         _values = data[_grade_name].to_numpy()
@@ -250,13 +265,18 @@ def _(data, mo, np, pd, plt, sns):
         spread_table.round(2).to_html(index=False, border=0, col_space=110)
         .replace("<table ", '<table style="width: auto;" ')
     )
+    return (spread_table,)
+
+
+@app.cell
+def _(data, plt, sns):
     _fig, _ax = plt.subplots(figsize=(6, 3.5))
     sns.boxplot(data=data[["G1", "G2", "G3"]], ax=_ax)
     _ax.set(title="Box height is the interquartile range", ylabel="Grade")
     _fig.tight_layout()
     plt.close(_fig)
     _fig
-    return (spread_table,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -290,7 +310,9 @@ def _(mo):
     Use the same divisor for \(s\) that you state in the sentence. `scipy.stats.variation` defaults to divisor \(n\).
     `Series.std() / Series.mean()` uses Pandas' divisor \(n-1\) for the standard deviation.
 
-    The ratio is useful when the mean is nonzero and the measurement scale makes “spread relative to the level” meaningful.
+    The ratio is useful when the mean is nonzero and ratios on the measurement scale are meaningful.
+    A length of 20 is twice a length of 10. A grade of 20 does not establish twice the measured achievement of a grade of 10, so these grades are not a ratio scale.
+    The grade table below applies the formula only to show the arithmetic. It is not a comparison of achievement per grade point.
     A mean near zero makes the ratio unstable. The coefficient has no units because the units cancel.
 
     Two groups can share a standard deviation and still have different coefficients because their means differ.
@@ -352,12 +374,12 @@ def _(mo):
     - The standard deviation is the square root of the variance that uses the same divisor, so its units match the observations.
     - Two samples can share a mean and differ in spread. A finite simulated variance need not equal the population variance.
     - The range depends on the two extremes. The interquartile range describes the central half.
-    - The coefficient of variation compares a standard deviation with the mean. Equal standard deviations can produce different coefficients.
+    - The coefficient of variation compares a standard deviation with the mean when ratios on that scale are meaningful. The grade table illustrates the formula only. Equal standard deviations can produce different coefficients.
     - Grouped measures describe the recorded students in each group.
 
     ## Check your understanding
     1. For [2, 2, 2], what is the descriptive variance?
-    2. If a standard deviation is 4, which variance was squared to obtain it: 2 or 16?
+    2. If the standard deviation is 4, what is the corresponding variance?
     3. Why can one extreme grade dominate the range?
     4. For mean 20 and standard deviation 5, what is the coefficient of variation?
     5. Which Pandas default divisor does `Series.var()` use?
