@@ -139,19 +139,21 @@ def _(mo):
     One extreme observation can move the mean substantially because every observation enters the sum with equal weight.
 
     The vertical line on each histogram is that grade's mean.
+    All three histograms use the same intervals, one bar for each integer grade from 0 to 20.
     """)
     return
 
 
 @app.cell
 def _(data, np, plt):
-    _fig, _axes = plt.subplots(1, 3, figsize=(8, 3.2), sharey=True)
+    _grade_edges = np.arange(-0.5, 21.5, 1)
+    _fig, _axes = plt.subplots(1, 3, figsize=(8, 3.2), sharex=True, sharey=True)
     for _axis, _grade in zip(_axes, ["G1", "G2", "G3"]):
         _values = data[_grade].to_numpy()
         _mean = _values.mean()
-        _axis.hist(_values, bins=10, color="#4C78A8", alpha=0.75, edgecolor="white")
+        _axis.hist(_values, bins=_grade_edges, color="#4C78A8", alpha=0.75, edgecolor="white")
         _axis.axvline(_mean, color="black", linewidth=1.5)
-        _axis.set(title=f"{_grade} mean = {_mean:.2f}", xlabel="Grade", ylabel="Count")
+        _axis.set(title=f"{_grade} mean = {_mean:.2f}", xlabel="Grade", ylabel="Count", xlim=(-0.5, 20.5))
     _fig.tight_layout()
     plt.close(_fig)
     _fig
@@ -276,7 +278,7 @@ def _(data, mo, np):
     _p80 = np.percentile(data["G1"], 80)
     _answers = f"""
 1. **Cutoffs:** The 20th percentile is {_p20:.1f}, and the 80th percentile is {_p80:.1f}.
-2. **Meaning:** Each is a cutoff on the grade scale. About 20% of the recorded G1 values are at or below {_p20:.1f}.
+2. **Meaning:** Each is a cutoff on the grade scale. Repeated grades can make the proportion at or below this cutoff greater than 20%.
 
 ```python
 g1_p20 = np.percentile(data["G1"], 20)

@@ -286,6 +286,7 @@ def _(mo):
     mo.md(r"""
     ## 5. Numeric measurements
     A **histogram** counts numeric values in bins. The bin width and the number of bins change the picture, not the observations.
+    The G1, G2, and G3 histograms use one set of edges, the half-integers from −0.5 to 20.5, so each integer grade has its own bar in the same place.
 
     `studytime` has four ordered codes. A bar chart of those codes matches the categories directly.
     A kernel density estimate draws a smooth curve from the observations. It is an estimate of shape, not a table of counts.
@@ -315,11 +316,12 @@ def _(age_bins, data, plt):
 
 
 @app.cell
-def _(data, plt):
-    _fig, _axes = plt.subplots(1, 3, figsize=(10, 3.2), sharey=True)
+def _(data, np, plt):
+    _grade_edges = np.arange(-0.5, 21.5, 1)
+    _fig, _axes = plt.subplots(1, 3, figsize=(10, 3.2), sharex=True, sharey=True)
     for _axis, _grade in zip(_axes, ["G1", "G2", "G3"]):
-        _axis.hist(data[_grade], bins=10, color="#4C78A8", edgecolor="white")
-        _axis.set(title=_grade, xlabel="Grade", ylabel="Count")
+        _axis.hist(data[_grade], bins=_grade_edges, color="#4C78A8", edgecolor="white")
+        _axis.set(title=_grade, xlabel="Grade", ylabel="Count", xlim=(-0.5, 20.5))
     _fig.tight_layout()
     plt.close(_fig)
     _fig
