@@ -136,6 +136,7 @@ def _(plt, school_table):
     _fig, _ax = plt.subplots(figsize=(5, 3.5))
     school_table["Count"].plot(kind="bar", ax=_ax, rot=0, color=["#4C78A8", "#F58518"])
     _ax.set(title="Students by school", xlabel="School", ylabel="Count")
+    _ax.bar_label(_ax.containers[0], fmt="%.0f")
     _ax.set_ylim(0, None)
     _fig.tight_layout()
     plt.close(_fig)
