@@ -455,7 +455,8 @@ def _(mo):
     - Even for continuous measurements, the finite empirical distribution is discrete.
     - KDE is a smoothed estimate of density; it is not the ECDF or a known true PDF.
     - Use correct endpoint conventions when calculating empirical probabilities; the empirical SF is 1 − Fₙ(t) and counts values strictly above t.
-    - Mixture weights depend on the component sample proportions, and mixtures need not always be bimodal.
+    - Mixture weights depend on the component sample proportions. This lesson's two normal components produce a bimodal mixture because their means, 30 and 50, are well separated relative to their common standard deviation of 5.
+    - A mixture need not be bimodal: if component means are close relative to their spreads, their peaks can merge into one.
     - Resampling with replacement targets the original empirical distribution, not an independently known population distribution.
     - Seeds reproduce experiments; separate original-data and resampling seeds expose two sources of variability.
     

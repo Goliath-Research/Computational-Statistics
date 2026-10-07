@@ -798,9 +798,24 @@ def _(mo):
     2. A fair die produces no sixes in 12 rolls. Has P(6) become zero?
     3. Does the law of large numbers imply that tails must follow a long run of heads?
     4. A weighted die has P(5) = 0.5. What is its expected number of fives in 200 rolls? Must that count occur?
+    """)
+    return
 
-    **Answers:** (1) 0.70 and 0.50. (2) No: P(6) remains 1/6. (3) No: trials are independent. (4) 100; no, the observed count can differ.
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
+1. **Coin:** The observed Heads frequency is 7/10 = 0.70. The theoretical Heads probability remains 0.50.
+2. **Die:** No. The theoretical probability P(6) remains 1/6 even when no six appears in this finite sample.
+3. **Law of large numbers:** No. It does not predict the next outcome, and independent tosses do not compensate for earlier results.
+4. **Weighted die:** The expected count is 200 × 0.5 = 100. The observed count need not equal 100.
+""")})
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## Reference
     Unpingco, J. (2019). *Python for Probability, Statistics, and Machine Learning*. Springer, Chapter 2.
     """)
