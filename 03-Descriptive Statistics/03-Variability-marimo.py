@@ -105,18 +105,18 @@ def _(mo, pd):
 
 @app.cell
 def _(data, mo, pd):
-    grade_rows = []
-    for grade_name in ["G1", "G2", "G3"]:
-        values = data[grade_name].to_numpy()
-        grade_rows.append({
-            "Grade": grade_name,
-            "Variance_n": values.var(ddof=0),
-            "Variance_n_minus_1": values.var(ddof=1),
-            "SD_n": values.std(ddof=0),
-            "SD_n_minus_1": values.std(ddof=1),
+    _grade_rows = []
+    for _grade_name in ["G1", "G2", "G3"]:
+        _values = data[_grade_name].to_numpy()
+        _grade_rows.append({
+            "Grade": _grade_name,
+            "Variance_n": _values.var(ddof=0),
+            "Variance_n_minus_1": _values.var(ddof=1),
+            "SD_n": _values.std(ddof=0),
+            "SD_n_minus_1": _values.std(ddof=1),
         })
     mo.Html(
-        pd.DataFrame(grade_rows).round(4).to_html(index=False, border=0, col_space=110)
+        pd.DataFrame(_grade_rows).round(4).to_html(index=False, border=0, col_space=110)
         .replace("<table ", '<table style="width: auto;" ')
     )
     return
@@ -236,16 +236,16 @@ def _(mo):
 
 @app.cell
 def _(data, mo, np, pd, plt, sns):
-    spread_rows = []
-    for grade_name in ["G1", "G2", "G3"]:
-        values = data[grade_name].to_numpy()
-        q1, q3 = np.percentile(values, [25, 75])
-        spread_rows.append({
-            "Grade": grade_name,
-            "Range": values.max() - values.min(),
-            "IQR": q3 - q1,
+    _spread_rows = []
+    for _grade_name in ["G1", "G2", "G3"]:
+        _values = data[_grade_name].to_numpy()
+        _q1, _q3 = np.percentile(_values, [25, 75])
+        _spread_rows.append({
+            "Grade": _grade_name,
+            "Range": _values.max() - _values.min(),
+            "IQR": _q3 - _q1,
         })
-    spread_table = pd.DataFrame(spread_rows)
+    spread_table = pd.DataFrame(_spread_rows)
     mo.Html(
         spread_table.round(2).to_html(index=False, border=0, col_space=110)
         .replace("<table ", '<table style="width: auto;" ')
@@ -302,16 +302,16 @@ def _(mo):
 
 @app.cell
 def _(data, mo, pd):
-    cv_rows = []
-    for grade_name in ["G1", "G2", "G3"]:
-        values = data[grade_name]
-        cv_rows.append({
-            "Grade": grade_name,
-            "CV_divisor_n": values.std(ddof=0) / values.mean(),
-            "CV_divisor_n_minus_1": values.std(ddof=1) / values.mean(),
+    _cv_rows = []
+    for _grade_name in ["G1", "G2", "G3"]:
+        _values = data[_grade_name]
+        _cv_rows.append({
+            "Grade": _grade_name,
+            "CV_divisor_n": _values.std(ddof=0) / _values.mean(),
+            "CV_divisor_n_minus_1": _values.std(ddof=1) / _values.mean(),
         })
     mo.Html(
-        pd.DataFrame(cv_rows).round(4).to_html(index=False, border=0, col_space=110)
+        pd.DataFrame(_cv_rows).round(4).to_html(index=False, border=0, col_space=110)
         .replace("<table ", '<table style="width: auto;" ')
     )
     return

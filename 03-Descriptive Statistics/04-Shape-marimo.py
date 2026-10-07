@@ -80,9 +80,9 @@ def _(mo):
 
 @app.cell
 def _(np, plt, skew):
-    generator = np.random.default_rng(2026)
-    normal_sample = generator.normal(0, 1, 20_000)
-    right_skew_sample = generator.lognormal(0, 0.5, 20_000)
+    _generator = np.random.default_rng(2026)
+    normal_sample = _generator.normal(0, 1, 20_000)
+    right_skew_sample = _generator.lognormal(0, 0.5, 20_000)
     left_skew_sample = -right_skew_sample
     _fig, _axes = plt.subplots(1, 3, figsize=(10, 3.2))
     for _axis, _sample, _title, _color in zip(
@@ -168,10 +168,10 @@ def _(mo):
 
 @app.cell
 def _(kurtosis, mo, normal_sample, np, pd, t):
-    generator = np.random.default_rng(2026)
-    narrow_normal = generator.normal(0, 0.5, 100_000)
-    wide_normal = generator.normal(0, 4, 100_000)
-    uniform_sample = generator.uniform(-1, 1, 100_000)
+    _generator = np.random.default_rng(2026)
+    narrow_normal = _generator.normal(0, 0.5, 100_000)
+    wide_normal = _generator.normal(0, 4, 100_000)
+    uniform_sample = _generator.uniform(-1, 1, 100_000)
     heavy_tail_sample = t.rvs(df=5, size=100_000, random_state=2026)
     kurtosis_table = pd.DataFrame({
         "Sample": ["Normal sd = 0.5", "Normal sd = 4", "Uniform(-1, 1)", "t with 5 df", "Normal sample from the skewness figure"],
