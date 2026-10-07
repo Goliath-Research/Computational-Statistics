@@ -184,7 +184,8 @@ def _(mo):
 @app.cell
 def _(np):
     grades = np.array([10, 12, 14, 15, 12, 16, 17, 18, 16, 20])
-    grades_with_error = np.append(grades, 180)
+    grades_with_error = grades.copy()
+    grades_with_error[7] = 180
     mean_original = None
     median_original = None
     mean_with_error = None
