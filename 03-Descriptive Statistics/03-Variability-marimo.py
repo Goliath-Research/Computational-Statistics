@@ -39,7 +39,7 @@ def _(mo):
     Variability describes how spread out the recorded values are.
     For \(x_1,\ldots,x_n\) with mean \(\bar x\), the squared deviations are \((x_i-\bar x)^2\).
 
-    The **descriptive variance** divides their sum by \(n\):
+    The **population variance** divides their sum by \(n\):
 
     $$s_0^2=\frac{1}{n}\sum_{i=1}^n(x_i-\bar x)^2.$$
 
@@ -128,7 +128,7 @@ def _(mo):
     In each code task, replace the `None` placeholders in the next cell. Use the marimo editor to run the edited cell.
 
     ### Try it yourself
-    For `G3`, calculate the descriptive variance and its matching standard deviation, using divisor \(n\).
+    For `G3`, calculate the population variance and its matching standard deviation, using divisor \(n\).
     1. Store them in `g3_variance` and `g3_sd`.
     2. Check that `g3_sd ** 2` agrees with `g3_variance` up to rounding.
     """)
@@ -139,8 +139,8 @@ def _(mo):
 def _(data):
     g3_variance = None
     g3_sd = None
-    print("Descriptive variance:", g3_variance)
-    print("Descriptive standard deviation:", g3_sd)
+    print("Population variance:", g3_variance)
+    print("Population standard deviation:", g3_sd)
     return g3_sd, g3_variance
 
 
@@ -179,8 +179,8 @@ def _(np, plt):
     generator = np.random.default_rng(2026)
     narrow_sample = generator.normal(0, 10, 2000)
     wide_sample = generator.normal(0, 50, 2000)
-    print(f"Narrow descriptive variance = {narrow_sample.var(ddof=0):.2f}")
-    print(f"Wide descriptive variance = {wide_sample.var(ddof=0):.2f}")
+    print(f"Narrow population variance = {narrow_sample.var(ddof=0):.2f}")
+    print(f"Wide population variance = {wide_sample.var(ddof=0):.2f}")
     _fig, _ax = plt.subplots(figsize=(7, 3.5))
     _ax.hist(narrow_sample, bins=30, alpha=0.55, color="#E45756", label="sd = 10")
     _ax.hist(wide_sample, bins=30, alpha=0.45, color="#4C78A8", label="sd = 50")
@@ -378,7 +378,7 @@ def _(mo):
     - Grouped measures describe the recorded students in each group.
 
     ## Check your understanding
-    1. For [2, 2, 2], what is the descriptive variance?
+    1. For [2, 2, 2], what is the population variance?
     2. If the standard deviation is 4, what is the corresponding variance?
     3. Why can one extreme grade dominate the range?
     4. For mean 20 and standard deviation 5, what is the coefficient of variation?
