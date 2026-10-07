@@ -30,7 +30,7 @@ def _(mo):
 
     ## Learning goals
     By the end of this lesson, you should be able to:
-    - Interpret the sign of the moment skewness.
+    - Interpret the sign of the moment skewness as a usual indication of a longer or heavier tail.
     - Distinguish that skewness from Pearson's median-based approximation.
     - Interpret excess kurtosis as tail weight relative to a normal distribution.
     - Explain why changing a normal distribution's standard deviation does not change its kurtosis.
@@ -42,8 +42,9 @@ def _(mo):
 
     $$g_1=\frac{\frac{1}{n}\sum_{i=1}^n(x_i-\bar x)^3}{s_0^3}.$$
 
-    - \(g_1>0\): the right tail is longer.
-    - \(g_1<0\): the left tail is longer.
+    - \(g_1>0\): positive moment skewness usually indicates a longer or heavier right tail.
+    - \(g_1<0\): negative moment skewness usually indicates a longer or heavier left tail.
+    The sign does not strictly determine tail length.
     - \(g_1\) near 0: the cubed deviations nearly balance. The distribution can still be non-normal. A uniform distribution is symmetric and is not normal.
 
     A finite normal sample has skewness near 0, not necessarily exactly 0.
@@ -272,7 +273,7 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     From the grade table:
-    1. Which final-grade measure, skewness or excess kurtosis, indicates the longer left tail?
+    1. Which final-grade measure, skewness or excess kurtosis, usually indicates a longer or heavier left tail?
     2. Is the G3 excess kurtosis the sharpness of the kernel-density peak?
     """)
     return
@@ -282,7 +283,7 @@ def _(mo):
 def _(grade_shape, mo):
     _g3 = grade_shape.loc[grade_shape["Grade"] == "G3"].iloc[0]
     _answers = f"""
-1. **Left tail:** The skewness, {_g3.Skewness:.4f}, is negative. Negative moment skewness means the longer tail is on the left.
+1. **Left tail:** The skewness, {_g3.Skewness:.4f}, is negative. Negative moment skewness usually indicates a longer or heavier left tail. The sign does not strictly determine tail length.
 2. **Kurtosis:** No. The excess kurtosis, {_g3.Excess_kurtosis:.4f}, compares tail weight with a normal distribution. The kernel-density peak is a display choice.
 """
     mo.accordion({"Show answers": mo.md(_answers)})
@@ -327,7 +328,7 @@ def _(categories, plt, sns):
 def _(mo):
     mo.md(r"""
     ## Conclusions
-    - Positive moment skewness means a longer right tail. Negative moment skewness means a longer left tail.
+    - Positive moment skewness usually indicates a longer or heavier right tail. Negative moment skewness usually indicates a longer or heavier left tail. The sign does not strictly determine tail length.
     - Skewness near zero means the cubed deviations nearly balance. It does not establish a normal distribution.
     - Pearson's median-based coefficient is an approximation with a different formula.
     - Excess kurtosis compares tail weight with a normal distribution, whose excess kurtosis is 0.
