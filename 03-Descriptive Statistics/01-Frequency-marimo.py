@@ -209,20 +209,40 @@ def _(mo):
 
 
 @app.cell
-def _(data, mo, pd):
+def _(data, pd):
     school_internet_counts = pd.crosstab(data["school"], data["internet"], margins=True)
     school_internet_within_school = pd.crosstab(data["school"], data["internet"], normalize="index")
+    return school_internet_counts, school_internet_within_school
+
+
+@app.cell(hide_code=True)
+def _(mo):
     mo.md("**Counts**")
+    return
+
+
+@app.cell
+def _(mo, school_internet_counts):
     mo.Html(
         school_internet_counts.to_html(border=0, col_space=110)
         .replace("<table ", '<table style="width: auto;" ')
     )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
     mo.md("**Proportion within each school**")
+    return
+
+
+@app.cell
+def _(mo, school_internet_within_school):
     mo.Html(
         school_internet_within_school.round(4).to_html(border=0, col_space=110)
         .replace("<table ", '<table style="width: auto;" ')
     )
-    return school_internet_counts, school_internet_within_school
+    return
 
 
 @app.cell
