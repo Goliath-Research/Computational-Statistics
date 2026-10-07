@@ -315,6 +315,7 @@ def _(categories, plt, sns):
     _fig, _axes = plt.subplots(2, 2, figsize=(8, 6))
     for _axis, _column in zip(_axes.ravel(), categories.columns):
         sns.countplot(x=categories[_column], ax=_axis, color="#4C78A8")
+        _axis.bar_label(_axis.containers[0], fmt="%.0f", fontsize=8)
         _axis.set(title=f"Mode = {categories[_column].mode().iloc[0]}", xlabel="", ylabel="Count")
     _fig.tight_layout()
     plt.close(_fig)
