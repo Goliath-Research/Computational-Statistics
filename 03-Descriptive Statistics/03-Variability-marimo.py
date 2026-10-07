@@ -85,16 +85,19 @@ def _(mo):
 
 
 @app.cell
-def _(pd):
+def _(mo, pd):
     student_file = pd.read_csv("../data/student-mat.csv", sep=";")
     data = student_file[["G1", "G2", "G3", "school", "sex"]].copy()
     print(f"Loaded {len(data)} records.")
-    data.head()
+    mo.Html(
+        data.head().to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return (data,)
 
 
 @app.cell
-def _(data, np, pd):
+def _(data, mo, pd):
     grade_rows = []
     for grade_name in ["G1", "G2", "G3"]:
         values = data[grade_name].to_numpy()
@@ -105,7 +108,10 @@ def _(data, np, pd):
             "SD_n": values.std(ddof=0),
             "SD_n_minus_1": values.std(ddof=1),
         })
-    pd.DataFrame(grade_rows).round(4)
+    mo.Html(
+        pd.DataFrame(grade_rows).round(4).to_html(index=False, border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return
 
 
@@ -191,10 +197,17 @@ def _(mo):
 
 
 @app.cell
-def _(data):
-    print(data.groupby("sex")[["G1", "G2", "G3"]].var(ddof=1).round(3))
-    print()
-    print(data.groupby(["school", "sex"])[["G1", "G2", "G3"]].std(ddof=1).round(3))
+def _(data, mo):
+    mo.md("**Variance by sex, divisor n − 1**")
+    mo.Html(
+        data.groupby("sex")[["G1", "G2", "G3"]].var(ddof=1).round(3).to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
+    mo.md("**Standard deviation by school and sex, divisor n − 1**")
+    mo.Html(
+        data.groupby(["school", "sex"])[["G1", "G2", "G3"]].std(ddof=1).round(3).to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return
 
 
@@ -215,7 +228,7 @@ def _(mo):
 
 
 @app.cell
-def _(data, np, pd, plt, sns):
+def _(data, mo, np, pd, plt, sns):
     spread_rows = []
     for grade_name in ["G1", "G2", "G3"]:
         values = data[grade_name].to_numpy()
@@ -226,7 +239,10 @@ def _(data, np, pd, plt, sns):
             "IQR": q3 - q1,
         })
     spread_table = pd.DataFrame(spread_rows)
-    print(spread_table.round(2).to_string(index=False))
+    mo.Html(
+        spread_table.round(2).to_html(index=False, border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     _fig, _ax = plt.subplots(figsize=(6, 3.5))
     sns.boxplot(data=data[["G1", "G2", "G3"]], ax=_ax)
     _ax.set(title="Box height is the interquartile range", ylabel="Grade")
@@ -278,7 +294,7 @@ def _(mo):
 
 
 @app.cell
-def _(data, pd):
+def _(data, mo, pd):
     cv_rows = []
     for grade_name in ["G1", "G2", "G3"]:
         values = data[grade_name]
@@ -287,7 +303,10 @@ def _(data, pd):
             "CV_divisor_n": values.std(ddof=0) / values.mean(),
             "CV_divisor_n_minus_1": values.std(ddof=1) / values.mean(),
         })
-    pd.DataFrame(cv_rows).round(4)
+    mo.Html(
+        pd.DataFrame(cv_rows).round(4).to_html(index=False, border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return
 
 

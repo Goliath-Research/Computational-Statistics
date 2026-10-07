@@ -84,13 +84,16 @@ def _(mo):
 
 
 @app.cell
-def _(pd):
+def _(mo, pd):
     student_file = pd.read_csv("../data/student-mat.csv", sep=";")
     data = student_file[
         ["school", "sex", "age", "Pstatus", "studytime", "schoolsup", "internet", "G1", "G2", "G3"]
     ].copy()
     print(f"Loaded {len(data)} records and {data.shape[1]} columns.")
-    data.head()
+    mo.Html(
+        data.head().to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return (data,)
 
 
@@ -108,13 +111,16 @@ def _(mo):
 
 
 @app.cell
-def _(data, pd):
+def _(data, mo, pd):
     school_counts = data["school"].value_counts()
     school_table = pd.DataFrame({
         "Count": school_counts,
         "Relative_frequency": school_counts / len(data),
     })
-    school_table
+    mo.Html(
+        school_table.round(4).to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return (school_table,)
 
 
@@ -199,13 +205,19 @@ def _(mo):
 
 
 @app.cell
-def _(data, pd):
+def _(data, mo, pd):
     school_internet_counts = pd.crosstab(data["school"], data["internet"], margins=True)
     school_internet_within_school = pd.crosstab(data["school"], data["internet"], normalize="index")
-    print("Counts")
-    print(school_internet_counts)
-    print("\nProportion within each school")
-    print(school_internet_within_school.round(4))
+    mo.md("**Counts**")
+    mo.Html(
+        school_internet_counts.to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
+    mo.md("**Proportion within each school**")
+    mo.Html(
+        school_internet_within_school.round(4).to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return school_internet_counts, school_internet_within_school
 
 

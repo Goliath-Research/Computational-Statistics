@@ -160,7 +160,7 @@ def _(mo):
 
 
 @app.cell
-def _(kurtosis, normal_sample, np, pd, t):
+def _(kurtosis, mo, normal_sample, np, pd, t):
     generator = np.random.default_rng(2026)
     narrow_normal = generator.normal(0, 0.5, 100_000)
     wide_normal = generator.normal(0, 4, 100_000)
@@ -176,7 +176,10 @@ def _(kurtosis, normal_sample, np, pd, t):
             kurtosis(normal_sample),
         ],
     })
-    kurtosis_table.round(3)
+    mo.Html(
+        kurtosis_table.round(3).to_html(index=False, border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return heavy_tail_sample, kurtosis_table, uniform_sample
 
 
@@ -227,7 +230,7 @@ def _(mo):
 
 
 @app.cell
-def _(kurtosis, pd, skew):
+def _(kurtosis, mo, pd, skew):
     student_file = pd.read_csv("../data/student-mat.csv", sep=";")
     data = student_file[
         ["school", "sex", "age", "studytime", "schoolsup", "internet", "G1", "G2", "G3"]
@@ -238,7 +241,10 @@ def _(kurtosis, pd, skew):
         "Excess_kurtosis": [kurtosis(data[grade]) for grade in ["G1", "G2", "G3"]],
     })
     print(f"Loaded {len(data)} records.")
-    grade_shape.round(4)
+    mo.Html(
+        grade_shape.round(4).to_html(index=False, border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return data, grade_shape
 
 
@@ -288,9 +294,12 @@ def _(mo):
 
 
 @app.cell
-def _(data):
+def _(data, mo):
     categories = data[["school", "sex", "schoolsup", "internet"]]
-    print(categories.describe())
+    mo.Html(
+        categories.describe().to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return (categories,)
 
 

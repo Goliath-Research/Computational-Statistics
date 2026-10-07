@@ -66,13 +66,16 @@ def _(mo):
 
 
 @app.cell
-def _(pd):
+def _(mo, pd):
     student_file = pd.read_csv("../data/student-mat.csv", sep=";")
     data = student_file[
         ["school", "sex", "age", "Pstatus", "studytime", "schoolsup", "internet", "G1", "G2", "G3"]
     ].copy()
     print(f"Loaded {len(data)} records.")
-    data.head()
+    mo.Html(
+        data.head().to_html(border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return (data,)
 
 
@@ -87,13 +90,16 @@ def _(mo):
 
 
 @app.cell
-def _(data, pd):
+def _(data, mo, pd):
     mode_table = pd.DataFrame({
         "Variable": ["school", "sex", "Pstatus", "schoolsup", "internet"],
         "Mode": [data[column].mode().iloc[0] for column in ["school", "sex", "Pstatus", "schoolsup", "internet"]],
         "Count": [int((data[column] == data[column].mode().iloc[0]).sum()) for column in ["school", "sex", "Pstatus", "schoolsup", "internet"]],
     })
-    mode_table
+    mo.Html(
+        mode_table.to_html(index=False, border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return (mode_table,)
 
 
@@ -217,7 +223,7 @@ def _(mo):
 
 
 @app.cell
-def _(data, np, pd):
+def _(data, mo, np, pd):
     quartile_rows = []
     for grade_name in ["G1", "G2", "G3"]:
         quartile_rows.append({
@@ -226,7 +232,10 @@ def _(data, np, pd):
             "Q2": np.percentile(data[grade_name], 50),
             "Q3": np.percentile(data[grade_name], 75),
         })
-    pd.DataFrame(quartile_rows)
+    mo.Html(
+        pd.DataFrame(quartile_rows).round(2).to_html(index=False, border=0, col_space=110)
+        .replace("<table ", '<table style="width: auto;" ')
+    )
     return
 
 
