@@ -1,3 +1,10 @@
+# /// script
+# dependencies = [
+#     "marimo",
+#     "seaborn",
+# ]
+# ///
+
 import marimo
 
 app = marimo.App(width="medium")
