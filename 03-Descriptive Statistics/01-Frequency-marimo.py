@@ -185,10 +185,6 @@ def _(data, mo):
 ```python
 internet_counts = data["internet"].value_counts()
 internet_relative = internet_counts / len(data)
-print("Counts:")
-print(internet_counts)
-print("Relative frequencies:")
-print(internet_relative)
 ```
 """
     mo.accordion({"Show answers": mo.md(_answers)})
