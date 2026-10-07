@@ -261,7 +261,7 @@ def _(data, grade_shape, plt, sns):
     _fig, _axes = plt.subplots(1, 3, figsize=(10, 3.2), sharey=True)
     for _axis, _grade, _row in zip(_axes, ["G1", "G2", "G3"], grade_shape.itertuples(index=False)):
         sns.kdeplot(data[_grade], fill=True, ax=_axis, color="#4C78A8")
-        _axis.set(title=f"{_grade}\nskew {_row.Skewness:.2f}; kurtosis {_row.Excess_kurtosis:.2f}")
+        _axis.set(title=f"{_grade}\nskew {_row.Skewness:.2f}; excess kurtosis {_row.Excess_kurtosis:.2f}")
     _fig.tight_layout()
     plt.close(_fig)
     _fig
