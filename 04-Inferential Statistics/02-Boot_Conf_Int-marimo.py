@@ -247,7 +247,8 @@ def _(ages, np, st):
         rng=np.random.default_rng(2027)
     )
     median_replicates = median_bootstrap.bootstrap_distribution
-    print("95% interval for median age (years):", median_bootstrap.confidence_interval)
+    print("95% interval for median age (years):", f"{median_bootstrap.confidence_interval.low:.3f} to {median_bootstrap.confidence_interval.high:.3f}")
+    print("Bootstrap standard error (years):", median_bootstrap.standard_error.round(3))
     return median_bootstrap, median_replicates
 
 
