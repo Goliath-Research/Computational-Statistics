@@ -24,10 +24,9 @@ def _():
     import matplotlib.pyplot as plt
     import seaborn as sns
     import scipy.stats as st
-    from pathlib import Path
 
     sns.set_style("whitegrid")
-    return Path, mo, np, pd, plt, sns, st
+    return mo, np, pd, plt, sns, st
 
 
 @app.cell(hide_code=True)
@@ -42,7 +41,7 @@ def _(mo):
     - Interpret a percentile bootstrap confidence interval.
     - Calculate bootstrap intervals for center, spread, and shape using Python.
     - Explain why bootstrapping cannot correct an unrepresentative sample.
-    - Apply the method to student grades and compare a bootstrap mean interval with a $t$ interval.
+    - Apply percentile bootstrap intervals to the population mean of student grades.
 
     ## 1. Resampling the sample you have
     Suppose we collect one sample and calculate its mean. A different sample would usually give a different mean, but collecting many new samples may be expensive or impractical.
@@ -610,54 +609,27 @@ print("Standard deviation interval (days):", student_delivery_sd_interval)
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 5. Grades in the student file
-    The student performance data provide another application of bootstrap intervals. The file `student-mat.csv` must be available in the notebook folder or its `../data` folder. It uses semicolons to separate columns.
-
-    Each row describes a student. The three grade columns are:
+    ## 5. Bootstrap intervals for student grades
+    We will now apply the bootstrap to recorded student grades. Each row in `student-mat.csv` describes one student. The three columns used here contain grades on a 0–20 scale:
 
     - **G1:** first-period grade.
     - **G2:** second-period grade.
     - **G3:** final grade.
 
-    All three grades are on a 0–20 scale. For each column, we calculate its sample mean and a 95% percentile bootstrap interval for the population mean. We also calculate the ordinary $t$ mean interval for comparison.
+    The file uses semicolons to separate columns. Place it in the `../data` folder relative to the working directory. The next cell loads the data and displays the first five rows of grades as an HTML table.
 
-    Both intervals estimate the same population mean, but they use different methods and need not have identical endpoints. With a sufficiently large sample and suitable data, they may be close.
-
-    The calculation treats students as independent observations. A confidence interval alone does not make this dataset representative of all students. The smoothed grade plots help compare distributions, but grades themselves are discrete values.
+    We treat students as independent observations. Our intervals estimate mean grades for the population represented by this sample, rather than automatically applying to all students.
     """)
     return
 
 
 @app.cell
-def _(Path, mo, np, pd, st):
-    _candidates = [Path("../data/student-mat.csv"), Path("student-mat.csv")]
-    _path = next((_candidate for _candidate in _candidates if _candidate.is_file()), None)
-    mo.stop(_path is None, mo.md("**Student data needed:** Place `student-mat.csv` in the notebook folder or its `../data` folder to run this section."))
-    student_file = pd.read_csv(_path, sep=";")
+def _(mo, pd):
+    student_file = pd.read_csv("../data/student-mat.csv", sep=";")
     grades = student_file[["G1", "G2", "G3"]].copy()
-    _rows = []
-    for _name in ["G1", "G2", "G3"]:
-        _values = grades[_name].to_numpy()
-        _boot = st.bootstrap(
-            (_values,), np.mean, confidence_level=0.95, method="percentile",
-            n_resamples=4_000, batch=100, rng=np.random.default_rng(2034)
-        ).confidence_interval
-        _t = st.t.interval(0.95, len(_values) - 1, loc=_values.mean(), scale=st.sem(_values))
-        _rows.append({
-            "Grade": _name,
-            "Mean": _values.mean(),
-            "Bootstrap_low": _boot[0],
-            "Bootstrap_high": _boot[1],
-            "t_low": _t[0],
-            "t_high": _t[1],
-        })
-    grade_intervals = pd.DataFrame(_rows)
-    print(f"Loaded {len(grades)} records.")
-    mo.Html(
-        grade_intervals.round(3).to_html(index=False, border=0, col_space=110)
-        .replace("<table ", '<table style="width: auto;" ')
-    )
-    return grade_intervals, grades
+    print("Number of students:", len(grades))
+    mo.Html(grades.head().to_html(index=False, border=0))
+    return grades, student_file
 
 
 @app.cell
@@ -676,21 +648,95 @@ def _(grades, plt, sns):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Try it yourself
-    1. Which grade has the lowest sample mean in the table?
-    2. Are the bootstrap and $t$ intervals required to have the same endpoints?
+    ### Bootstrap interval for the first-period mean grade
+    We will use `G1` as our worked example. The observed mean is our point estimate of the population's mean first-period grade.
+
+    The next cell passes the observed `G1` grades to `st.bootstrap`. It draws 4,000 samples with replacement, calculates the mean grade from each sample, and returns a 95% percentile interval using those bootstrap means. Each resample has as many grades as there are students in the original sample.
+
+    The calculation does not draw new grades from a normal distribution. It resamples the grades already observed in the file.
     """)
     return
 
 
+@app.cell
+def _(grades, np, st):
+    g1_grades = grades["G1"].to_numpy()
+    g1_bootstrap = st.bootstrap(
+        (g1_grades,), np.mean, confidence_level=0.95,
+        method="percentile", n_resamples=4_000, batch=100,
+        rng=np.random.default_rng(2034)
+    )
+    print(f"Sample mean G1 grade: {g1_grades.mean():.3f}")
+    print(f"95% bootstrap interval: {g1_bootstrap.confidence_interval.low:.3f} to {g1_bootstrap.confidence_interval.high:.3f}")
+    return g1_bootstrap, g1_grades
+
+
 @app.cell(hide_code=True)
-def _(grade_intervals, mo):
-    _lowest = grade_intervals.loc[grade_intervals["Mean"].idxmin(), "Grade"]
-    _answers = rf"""
-1. **Lowest mean:** {_lowest}.
-2. **Endpoints:** No. One interval uses bootstrap percentiles. The other uses a $t$ critical value and the standard error.
-"""
-    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+def _(g1_bootstrap, mo):
+    mo.md(f"""
+    The 95% percentile bootstrap interval runs from **{g1_bootstrap.confidence_interval.low:.3f} to {g1_bootstrap.confidence_interval.high:.3f} grade points**.
+
+    This interval estimates the **population mean first-period grade**. It is not a range containing 95% of individual students' grades.
+
+    In the graph below, each value in the histogram is a **mean from one bootstrap sample**. The red lines mark the interval's endpoints. Compare this with the earlier grade-distribution graph, which shows individual grades.
+    """)
+    return
+
+
+@app.cell
+def _(g1_bootstrap, plt):
+    _fig, _ax = plt.subplots(figsize=(6, 3.4))
+    _ax.hist(g1_bootstrap.bootstrap_distribution, bins=30, color="#4C78A8", edgecolor="white")
+    _ax.axvline(g1_bootstrap.confidence_interval.low, color="#E45756", linewidth=1.5, label="95% interval endpoints")
+    _ax.axvline(g1_bootstrap.confidence_interval.high, color="#E45756", linewidth=1.5)
+    _ax.set(title="Bootstrap means of first-period grades", xlabel="Mean G1 grade", ylabel="Count")
+    _ax.legend(frameon=False)
+    _fig.tight_layout()
+    plt.close(_fig)
+    _fig
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    1. Calculate a 95% percentile bootstrap confidence interval for the population mean second-period grade (`G2`).
+    2. Calculate a 95% percentile bootstrap confidence interval for the population mean final grade (`G3`).
+    3. What does each interval estimate?
+    """)
+    return
+
+
+@app.cell
+def _(grades, np, st):
+    student_g2_interval = None
+    student_g3_interval = None
+    print("G2 mean interval:", student_g2_interval)
+    print("G3 mean interval:", student_g3_interval)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
+```python
+student_g2_interval = st.bootstrap(
+    (grades["G2"].to_numpy(),), np.mean, confidence_level=0.95,
+    method="percentile", n_resamples=4_000, batch=100,
+    rng=np.random.default_rng(2035)
+).confidence_interval
+student_g3_interval = st.bootstrap(
+    (grades["G3"].to_numpy(),), np.mean, confidence_level=0.95,
+    method="percentile", n_resamples=4_000, batch=100,
+    rng=np.random.default_rng(2036)
+).confidence_interval
+print(f"G2 mean interval: {student_g2_interval.low:.3f} to {student_g2_interval.high:.3f}")
+print(f"G3 mean interval: {student_g3_interval.low:.3f} to {student_g3_interval.high:.3f}")
+```
+
+The first interval estimates the population mean second-period grade. The second estimates the population mean final grade. Both are measured in grade points, and neither is an interval for individual grades.
+""")}, lazy=True)
     return
 
 
