@@ -128,46 +128,130 @@ def _(ages, np, plt):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Calculating an interval with SciPy
-    `st.bootstrap` does the resampling and interval calculation for us. The important arguments are:
+    ### Generating bootstrap samples
+    We will define a general function, `generate_samples_b`, and reuse it throughout the lesson.
 
-    - `data=(ages,)`: the sample in a one-item tuple. The comma is required.
-    - `statistic=np.mean`: the statistic to calculate. Use `np.median` for a median.
-    - `confidence_level=0.95`: the requested confidence level.
-    - `method="percentile"`: the method taught in this lesson. SciPy otherwise defaults to a different method called BCa.
-    - `n_resamples=4_000`: the number of bootstrap samples, not the number of observations in each sample.
-    - `batch=100`: process up to 100 resamples at a time to limit memory use.
-    - `rng=np.random.default_rng(2026)`: the seeded random generator.
+    - `sample_data` contains the original observations.
+    - `num_samples` is the number of bootstrap samples; we use 4,000 by default.
+    - `seed` makes the resampling reproducible.
 
-    The returned result contains `confidence_interval.low` and `.high`, plus `bootstrap_distribution`, the values of the statistic from all resamples. Its `standard_error` summarizes the spread of those bootstrap statistics.
+    The function returns a DataFrame where **each column is one bootstrap sample**. Each column has as many observations as the original sample. `replace=True` allows an observation to be selected more than once.
+    """)
+    return
 
-    The next cell calculates a 95% confidence interval for the mean age and displays its endpoints. The result also gives a bootstrap standard error: an estimate of how much the sample mean varies across samples.
+
+@app.cell
+def _(np, pd):
+    def generate_samples_b(sample_data, num_samples=4_000, seed=2026):
+        """Return bootstrap samples as columns of a DataFrame."""
+        sample_size = len(sample_data)
+        rng = np.random.default_rng(seed)
+        samples = rng.choice(sample_data, size=(sample_size, num_samples), replace=True)
+        columns = [f"S{k}" for k in range(num_samples)]
+        return pd.DataFrame(samples, columns=columns)
+    return (generate_samples_b,)
+
+
+@app.cell
+def _(ages, generate_samples_b, mo):
+    age_samples = generate_samples_b(ages, seed=2026)
+    print("Bootstrap sample table shape:", age_samples.shape)
+    mo.Html(age_samples.iloc[:5, :5].round(2).to_html(index=False, border=0))
+    return (age_samples,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The complete table has **1,000 rows and 4,000 columns**. Each column is a resample of the 1,000 observed ages. The HTML preview shows only the first five rows of the first five samples.
+
+    ### Calculating a percentile interval
+    We now define `confidence_interval`, which can be used for any of the statistics in this lesson.
+
+    Its input is a collection of **bootstrap statistics**, such as the 4,000 sample means, rather than the original observations. The argument `confidence` is a percentage: use `95` for a 95% interval.
+
+    For 95% confidence, the function selects the 2.5th and 97.5th percentiles. It returns the lower and upper endpoints. For a different confidence level, the same function selects the corresponding percentiles.
+    """)
+    return
+
+
+@app.cell
+def _(np):
+    def confidence_interval(sample_distribution, confidence=95):
+        """Return a percentile interval from bootstrap statistics."""
+        alpha = 100 - confidence
+        low, high = np.percentile(sample_distribution, [alpha / 2, 100 - alpha / 2])
+        return low, high
+    return (confidence_interval,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Bootstrap interval for mean age
+    `age_samples.mean()` calculates the mean of each column, giving 4,000 bootstrap means. We pass those means to `confidence_interval` to calculate a 95% interval for the population mean age.
+
+    The standard deviation of the bootstrap means estimates the **standard error** of the sample mean. We calculate it with `ddof=1`.
+    """)
+    return
+
+
+@app.cell
+def _(age_samples, ages, confidence_interval):
+    mean_replicates = age_samples.mean().to_numpy()
+    mean_interval = confidence_interval(mean_replicates, 95)
+    print("Sample mean age (years):", ages.mean().round(3))
+    print(f"95% interval for mean age (years): {mean_interval[0]:.3f} to {mean_interval[1]:.3f}")
+    print("Bootstrap standard error (years):", mean_replicates.std(ddof=1).round(3))
+    return mean_interval, mean_replicates
+
+
+@app.cell(hide_code=True)
+def _(mean_interval, mo):
+    mo.md(f"""
+    The 95% percentile interval runs from **{mean_interval[0]:.3f} to {mean_interval[1]:.3f} years**. 
+    
+    It estimates the mean age of the population of adult visitors represented by this sample. 
+    
+    It does not describe the ages of 95% of individual visitors.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### The same type of interval with SciPy
+    We have calculated a percentile bootstrap interval using our own functions. SciPy offers a library alternative, `st.bootstrap`. Here is one example using the same visitor ages and the same confidence level.
+
+    - `(ages,)` supplies the data in a one-item tuple.
+    - `np.mean` specifies the statistic.
+    - `confidence_level=0.95` requests 95% confidence.
+    - `method="percentile"` selects the method we have learned.
+    - `n_resamples=4_000` requests 4,000 resamples.
+    - `batch=100` limits how many resamples are processed at once.
+    - `rng` supplies a seeded random generator.
+
+    The returned `confidence_interval` contains the lower and upper endpoints. We will continue using our general functions in the remaining examples and exercises.
     """)
     return
 
 
 @app.cell
 def _(ages, np, st):
-    mean_bootstrap = st.bootstrap(
+    scipy_mean_result = st.bootstrap(
         (ages,), np.mean, confidence_level=0.95, method="percentile",
         n_resamples=4_000, batch=100,
         rng=np.random.default_rng(2026)
     )
-    mean_replicates = mean_bootstrap.bootstrap_distribution
-    print("Sample mean age (years):", ages.mean().round(3))
-    print("95% interval for mean age (years):", f"{mean_bootstrap.confidence_interval.low:.3f} to {mean_bootstrap.confidence_interval.high:.3f}")
-    print("Bootstrap standard error (years):", mean_bootstrap.standard_error.round(3))
-    return mean_bootstrap, mean_replicates
+    print(f"SciPy 95% mean interval (years): {scipy_mean_result.confidence_interval.low:.3f} to {scipy_mean_result.confidence_interval.high:.3f}")
+    return (scipy_mean_result,)
 
 
 @app.cell(hide_code=True)
-def _(mean_bootstrap, mo):
-    mo.md(f"""
-    The 95% percentile interval runs from **{mean_bootstrap.confidence_interval.low:.3f} to {mean_bootstrap.confidence_interval.high:.3f} years**. 
-    
-    It estimates the mean age of the population of adult visitors represented by this sample. 
-    
-    It does not describe the ages of 95% of individual visitors.
+def _(mo):
+    mo.md(r"""
+    Both approaches estimate the population mean age using a percentile bootstrap interval. Their endpoints need not match exactly: the implementations arrange the random draws differently, even with the same seed. Small differences from finite resampling are expected.
     """)
     return
 
@@ -200,7 +284,7 @@ def _(mo):
 
 
 @app.cell
-def _(delivery_times, np, st):
+def _(confidence_interval, delivery_times, generate_samples_b):
     student_delivery_mean_interval = None
     print("Mean interval (days):", student_delivery_mean_interval)
     return
@@ -210,11 +294,8 @@ def _(delivery_times, np, st):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
-student_delivery_mean_interval = st.bootstrap(
-    (delivery_times,), np.mean, confidence_level=0.95,
-    method="percentile", n_resamples=4_000, batch=100,
-    rng=np.random.default_rng(2029)
-).confidence_interval
+student_delivery_samples = generate_samples_b(delivery_times, seed=2029)
+student_delivery_mean_interval = confidence_interval(student_delivery_samples.mean().to_numpy(), 95)
 print("Mean interval (days):", student_delivery_mean_interval)
 ```
 
@@ -229,7 +310,7 @@ def _(mo):
     ## 3. Mean and median
     The **mean** is the arithmetic average. The **median** is the middle value after sorting the observations. Both describe center, but they respond differently to the data.
 
-    We already calculated 4,000 bootstrap means in Section 2. The next cell calculates 4,000 bootstrap medians using the same ages. The graph shows how these statistics vary across resamples. Its horizontal axis shows mean or median age, rather than individual ages.
+    We already calculated 4,000 bootstrap means in Section 2. The next cell calculates the median of each column in `age_samples`, giving 4,000 bootstrap medians from the same resamples used for the means. The graph shows how these statistics vary across resamples. Its horizontal axis shows mean or median age, rather than individual ages.
 
     A wider bootstrap distribution indicates greater variability of that estimate. For this uniform population, the median generally varies more than the mean. This is not a rule for every population.
 
@@ -239,16 +320,12 @@ def _(mo):
 
 
 @app.cell
-def _(ages, np, st):
-    median_bootstrap = st.bootstrap(
-        (ages,), np.median, confidence_level=0.95, method="percentile",
-        n_resamples=4_000, batch=100,
-        rng=np.random.default_rng(2027)
-    )
-    median_replicates = median_bootstrap.bootstrap_distribution
-    print("95% interval for median age (years):", f"{median_bootstrap.confidence_interval.low:.3f} to {median_bootstrap.confidence_interval.high:.3f}")
-    print("Bootstrap standard error (years):", median_bootstrap.standard_error.round(3))
-    return median_bootstrap, median_replicates
+def _(age_samples, confidence_interval):
+    median_replicates = age_samples.median().to_numpy()
+    median_interval = confidence_interval(median_replicates, 95)
+    print(f"95% interval for median age (years): {median_interval[0]:.3f} to {median_interval[1]:.3f}")
+    print("Bootstrap standard error (years):", median_replicates.std(ddof=1).round(3))
+    return median_interval, median_replicates
 
 
 @app.cell
@@ -265,21 +342,12 @@ def _(mean_replicates, median_replicates, plt):
 
 
 @app.cell
-def _(ages, mean_bootstrap, median_bootstrap, mo, np, pd, st):
+def _(confidence_interval, mean_replicates, median_replicates, mo, pd):
     _rows = []
-    for _name, _statistic, _previous in (
-        ("Mean", np.mean, mean_bootstrap), ("Median", np.median, median_bootstrap)
-    ):
-        for _level in (0.90, 0.95, 0.99):
-            # Reuse the existing replicates; no additional resamples are drawn.
-            _result = st.bootstrap(
-                (ages,), _statistic, confidence_level=_level, method="percentile",
-                n_resamples=0, bootstrap_result=_previous,
-                rng=np.random.default_rng(2028)
-            )
-            _rows.append({"Statistic": _name, "Confidence": f"{_level:.0%}",
-                          "Low": _result.confidence_interval.low,
-                          "High": _result.confidence_interval.high})
+    for _name, _replicates in (("Mean", mean_replicates), ("Median", median_replicates)):
+        for _level in (90, 95, 99):
+            _low, _high = confidence_interval(_replicates, _level)
+            _rows.append({"Statistic": _name, "Confidence": f"{_level}%", "Low": _low, "High": _high})
     center_intervals = pd.DataFrame(_rows)
     mo.Html(center_intervals.round(2).to_html(index=False, border=0, col_space=110))
     return (center_intervals,)
@@ -296,19 +364,42 @@ def _(mo):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    `graph_confidence_interval` plots any collection of bootstrap statistics and marks the percentile interval. It reuses `confidence_interval` for the endpoints.
+
+    `statistic_name` labels the graph. The optional `ax` lets us place several graphs in one figure; when it is omitted, the function creates its own figure. It returns the figure so marimo can display it.
+    """)
+    return
+
+
 @app.cell
-def _(center_intervals, mean_replicates, plt):
-    _fig, _axes = plt.subplots(1, 3, figsize=(9, 3))
-    for _ax, _level in zip(_axes, ("90%", "95%", "99%")):
-        _row = center_intervals.loc[
-            (center_intervals["Statistic"] == "Mean") & (center_intervals["Confidence"] == _level)
-        ].iloc[0]
-        _ax.hist(mean_replicates, bins=30, color="#4C78A8", edgecolor="white")
-        _ax.axvline(_row.Low, color="#E45756", linewidth=1.5)
-        _ax.axvline(_row.High, color="#E45756", linewidth=1.5)
-        _ax.set(title=f"{_level} mean interval", xlabel="Mean age (years)", ylabel="Count")
+def _(confidence_interval, plt):
+    def graph_confidence_interval(sample_distribution, confidence=95, statistic_name="Mean", ax=None):
+        """Plot bootstrap statistics and their percentile interval."""
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(6, 3.4))
+        else:
+            fig = ax.figure
+        low, high = confidence_interval(sample_distribution, confidence)
+        ax.hist(sample_distribution, bins=30, color="#4C78A8", edgecolor="white")
+        ax.axvline(low, color="#E45756", linewidth=1.5)
+        ax.axvline(high, color="#E45756", linewidth=1.5)
+        ax.set(title=f"{statistic_name}: {confidence}% CI ({low:.2f}, {high:.2f})",
+               xlabel=statistic_name, ylabel="Count")
+        fig.tight_layout()
+        plt.close(fig)
+        return fig
+    return (graph_confidence_interval,)
+
+
+@app.cell
+def _(graph_confidence_interval, mean_replicates, plt):
+    _fig, _axes = plt.subplots(1, 3, figsize=(10, 3))
+    for _ax, _level in zip(_axes, (90, 95, 99)):
+        graph_confidence_interval(mean_replicates, _level, "Mean age (years)", ax=_ax)
     _fig.tight_layout()
-    plt.close(_fig)
     _fig
     return
 
@@ -323,7 +414,7 @@ def _(mo):
 
 
 @app.cell
-def _(delivery_times, np, st):
+def _(confidence_interval, delivery_times, generate_samples_b):
     student_delivery_median_interval = None
     print("Median interval (days):", student_delivery_median_interval)
     return
@@ -333,11 +424,8 @@ def _(delivery_times, np, st):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
-student_delivery_median_interval = st.bootstrap(
-    (delivery_times,), np.median, confidence_level=0.95,
-    method="percentile", n_resamples=4_000, batch=100,
-    rng=np.random.default_rng(2030)
-).confidence_interval
+student_delivery_samples = generate_samples_b(delivery_times, seed=2030)
+student_delivery_median_interval = confidence_interval(student_delivery_samples.median().to_numpy(), 95)
 print("Median interval (days):", student_delivery_median_interval)
 ```
 
@@ -352,7 +440,7 @@ def _(mo):
     ## 4. Spread and shape
     We return to the ages of community visitors. We will calculate one statistic at a time, explain what it tells us, and obtain its 95% bootstrap interval.
 
-    For statistics with options such as `ddof=1`, we define a short function immediately before using it. SciPy calls that function on the resamples. Its `axis` argument tells NumPy or SciPy which direction contains the observations when processing batches; passing it through keeps the calculation efficient.
+    Each column of `age_samples` is one bootstrap sample. We calculate each statistic column by column, then pass the resulting values to our general `confidence_interval` function.
     """)
     return
 
@@ -363,24 +451,18 @@ def _(mo):
     ### Variance
     Variance measures the spread of ages around their mean. The sample variance is written $s^2$ and is measured in **years squared**.
 
-    We use `ddof=1`, so the sample variance divides by $n-1$. The short function below specifies this option. Then `st.bootstrap` calculates a 95% percentile interval for the population variance.
+    We use `ddof=1`, so the sample variance divides by $n-1$. `age_samples.var(ddof=1)` calculates one variance per column. Our `confidence_interval` function then gives the interval for the population variance.
     """)
     return
 
 
 @app.cell
-def _(ages, np, st):
-    def sample_variance(sample, axis=-1):
-        return np.var(sample, ddof=1, axis=axis)
-
-    variance_bootstrap = st.bootstrap(
-        (ages,), sample_variance, confidence_level=0.95, method="percentile",
-        n_resamples=4_000, batch=100,
-        rng=np.random.default_rng(2031)
-    )
-    print("Sample variance (years squared):", round(sample_variance(ages), 3))
-    print("95% interval (years squared):", variance_bootstrap.confidence_interval)
-    return sample_variance, variance_bootstrap
+def _(age_samples, ages, confidence_interval, np, pd):
+    variance_replicates = age_samples.var(ddof=1).to_numpy()
+    _interval = confidence_interval(variance_replicates, 95)
+    print("Sample variance (years squared):", round(ages.var(ddof=1), 3))
+    print(f"95% interval (years squared): {_interval[0]:.3f} to {_interval[1]:.3f}")
+    return (variance_replicates,)
 
 
 @app.cell(hide_code=True)
@@ -389,24 +471,18 @@ def _(mo):
     ### Standard deviation
     Standard deviation is the square root of variance. Unlike variance, it has the same units as the observations: **years**. A larger standard deviation means the ages are more spread out.
 
-    The next cell uses `ddof=1` and calculates a bootstrap interval for the population standard deviation. We retain the same seed as the variance example so both calculations use the same resamples.
+    `age_samples.std(ddof=1)` calculates one standard deviation per column. We reuse the same age resamples and our interval function.
     """)
     return
 
 
 @app.cell
-def _(ages, np, st):
-    def sample_sd(sample, axis=-1):
-        return np.std(sample, ddof=1, axis=axis)
-
-    sd_bootstrap = st.bootstrap(
-        (ages,), sample_sd, confidence_level=0.95, method="percentile",
-        n_resamples=4_000, batch=100,
-        rng=np.random.default_rng(2031)
-    )
-    print("Sample standard deviation (years):", round(sample_sd(ages), 3))
-    print("95% interval (years):", sd_bootstrap.confidence_interval)
-    return sample_sd, sd_bootstrap
+def _(age_samples, ages, confidence_interval, np, pd):
+    sd_replicates = age_samples.std(ddof=1).to_numpy()
+    _interval = confidence_interval(sd_replicates, 95)
+    print("Sample standard deviation (years):", round(ages.std(ddof=1), 3))
+    print(f"95% interval (years): {_interval[0]:.3f} to {_interval[1]:.3f}")
+    return (sd_replicates,)
 
 
 @app.cell(hide_code=True)
@@ -415,21 +491,18 @@ def _(mo):
     ### Interquartile range
     The **interquartile range (IQR)** is the 75th percentile minus the 25th percentile. It measures the spread of the middle half of the ages and is expressed in **years**.
 
-    `st.iqr` already calculates this statistic and accepts `axis`, so no additional function is needed. The interval below estimates the population IQR, rather than giving the lower and upper quartiles themselves.
+    We subtract the 25th percentile from the 75th percentile in each column of `age_samples`. The interval below estimates the population IQR, rather than giving the lower and upper quartiles themselves.
     """)
     return
 
 
 @app.cell
-def _(ages, np, st):
-    iqr_bootstrap = st.bootstrap(
-        (ages,), st.iqr, confidence_level=0.95, method="percentile",
-        n_resamples=4_000, batch=100,
-        rng=np.random.default_rng(2031)
-    )
-    print("Sample interquartile range (years):", round(st.iqr(ages), 3))
-    print("95% interval (years):", iqr_bootstrap.confidence_interval)
-    return iqr_bootstrap
+def _(age_samples, ages, confidence_interval, np, pd):
+    iqr_replicates = (age_samples.quantile(0.75) - age_samples.quantile(0.25)).to_numpy()
+    _interval = confidence_interval(iqr_replicates, 95)
+    print("Sample interquartile range (years):", round(np.percentile(ages, 75) - np.percentile(ages, 25), 3))
+    print(f"95% interval (years): {_interval[0]:.3f} to {_interval[1]:.3f}")
+    return (iqr_replicates,)
 
 
 @app.cell(hide_code=True)
@@ -438,24 +511,18 @@ def _(mo):
     ### Skewness
     Skewness describes asymmetry. A positive value indicates a longer right tail, and a negative value indicates a longer left tail. A symmetric population has skewness zero, although its sample skewness may differ from zero.
 
-    We use `bias=False` for SciPy's finite-sample correction. Skewness has **no measurement units**. The bootstrap interval expresses uncertainty about population skewness. Including zero does not establish that the population is symmetric.
+    Pandas `skew()` calculates the adjusted sample skewness for each column. Skewness has **no measurement units**. The bootstrap interval expresses uncertainty about population skewness. Including zero does not establish that the population is symmetric.
     """)
     return
 
 
 @app.cell
-def _(ages, np, st):
-    def sample_skewness(sample, axis=-1):
-        return st.skew(sample, bias=False, axis=axis)
-
-    skewness_bootstrap = st.bootstrap(
-        (ages,), sample_skewness, confidence_level=0.95, method="percentile",
-        n_resamples=4_000, batch=100,
-        rng=np.random.default_rng(2031)
-    )
-    print("Sample skewness (unitless):", round(sample_skewness(ages), 3))
-    print("95% interval (unitless):", skewness_bootstrap.confidence_interval)
-    return sample_skewness, skewness_bootstrap
+def _(age_samples, ages, confidence_interval, np, pd):
+    skewness_replicates = age_samples.skew().to_numpy()
+    _interval = confidence_interval(skewness_replicates, 95)
+    print("Sample skewness (unitless):", round(pd.Series(ages).skew(), 3))
+    print(f"95% interval (unitless): {_interval[0]:.3f} to {_interval[1]:.3f}")
+    return (skewness_replicates,)
 
 
 @app.cell(hide_code=True)
@@ -464,7 +531,7 @@ def _(mo):
     ### Excess kurtosis
     Excess kurtosis measures the standardized fourth moment minus 3. It helps describe tail weight; it is not simply a measure of how tall the histogram's peak is.
 
-    A normal population has excess kurtosis zero. This simulated uniform population has excess kurtosis $-1.2$. We use `fisher=True` to request excess kurtosis and `bias=False` for the finite-sample correction. The result has **no measurement units**.
+    A normal population has excess kurtosis zero. This simulated uniform population has excess kurtosis $-1.2$. Pandas `kurt()` calculates adjusted sample excess kurtosis for each column. The result has **no measurement units**.
 
     The interval below estimates population excess kurtosis without using the known uniform-population value in its calculation.
     """)
@@ -472,18 +539,12 @@ def _(mo):
 
 
 @app.cell
-def _(ages, np, st):
-    def sample_excess_kurtosis(sample, axis=-1):
-        return st.kurtosis(sample, fisher=True, bias=False, axis=axis)
-
-    kurtosis_bootstrap = st.bootstrap(
-        (ages,), sample_excess_kurtosis, confidence_level=0.95, method="percentile",
-        n_resamples=4_000, batch=100,
-        rng=np.random.default_rng(2031)
-    )
-    print("Sample excess kurtosis (unitless):", round(sample_excess_kurtosis(ages), 3))
-    print("95% interval (unitless):", kurtosis_bootstrap.confidence_interval)
-    return sample_excess_kurtosis, kurtosis_bootstrap
+def _(age_samples, ages, confidence_interval, np, pd):
+    kurtosis_replicates = age_samples.kurt().to_numpy()
+    _interval = confidence_interval(kurtosis_replicates, 95)
+    print("Sample excess kurtosis (unitless):", round(pd.Series(ages).kurt(), 3))
+    print(f"95% interval (unitless): {_interval[0]:.3f} to {_interval[1]:.3f}")
+    return (kurtosis_replicates,)
 
 
 @app.cell(hide_code=True)
@@ -496,50 +557,35 @@ def _(mo):
 
 
 @app.cell
-def _(iqr_bootstrap, kurtosis_bootstrap, sample_excess_kurtosis, sample_sd, sample_skewness, sample_variance, sd_bootstrap, skewness_bootstrap, st, variance_bootstrap):
-    spread_statistics = {
-        "Variance": sample_variance, "Standard deviation": sample_sd,
-        "Interquartile range": st.iqr, "Skewness": sample_skewness,
-        "Excess kurtosis": sample_excess_kurtosis,
+def _(iqr_replicates, kurtosis_replicates, sd_replicates, skewness_replicates, variance_replicates):
+    spread_replicates = {
+        "Variance": variance_replicates, "Standard deviation": sd_replicates,
+        "Interquartile range": iqr_replicates, "Skewness": skewness_replicates,
+        "Excess kurtosis": kurtosis_replicates,
     }
-    spread_results = {
-        "Variance": variance_bootstrap, "Standard deviation": sd_bootstrap,
-        "Interquartile range": iqr_bootstrap, "Skewness": skewness_bootstrap,
-        "Excess kurtosis": kurtosis_bootstrap,
-    }
-    return spread_results, spread_statistics
+    return (spread_replicates,)
 
 
 @app.cell
-def _(ages, mo, np, pd, spread_results, spread_statistics, st):
+def _(confidence_interval, mo, pd, spread_replicates):
     _rows = []
-    for _name, _statistic in spread_statistics.items():
-        for _level in (0.90, 0.95, 0.99):
-            _result = st.bootstrap(
-                (ages,), _statistic, confidence_level=_level, method="percentile",
-                n_resamples=0, bootstrap_result=spread_results[_name],
-                rng=np.random.default_rng(2032)
-            )
-            _rows.append({"Statistic": _name, "Confidence": f"{_level:.0%}",
-                          "Low": _result.confidence_interval.low,
-                          "High": _result.confidence_interval.high})
+    for _name, _values in spread_replicates.items():
+        for _level in (90, 95, 99):
+            _low, _high = confidence_interval(_values, _level)
+            _rows.append({"Statistic": _name, "Confidence": f"{_level}%", "Low": _low, "High": _high})
     spread_intervals = pd.DataFrame(_rows)
     mo.Html(spread_intervals.round(3).to_html(index=False, border=0, col_space=140))
     return (spread_intervals,)
 
 
 @app.cell
-def _(plt, spread_results):
-    _fig, _axes = plt.subplots(2, 3, figsize=(9, 5.2))
-    for _ax, (_name, _result) in zip(_axes.ravel(), spread_results.items()):
-        _low, _high = _result.confidence_interval
-        _ax.hist(_result.bootstrap_distribution, bins=30, color="#4C78A8", edgecolor="white")
-        _ax.axvline(_low, color="#E45756", linewidth=1.5)
-        _ax.axvline(_high, color="#E45756", linewidth=1.5)
-        _ax.set_title(f"{_name}\n95% ({_low:.2f}, {_high:.2f})", fontsize=9)
+def _(graph_confidence_interval, plt, spread_replicates):
+    _fig, _axes = plt.subplots(2, 3, figsize=(10, 5.2))
+    for _ax, (_name, _values) in zip(_axes.ravel(), spread_replicates.items()):
+        graph_confidence_interval(_values, 95, _name, ax=_ax)
+        _ax.set_title(_ax.get_title(), fontsize=9)
     _axes.ravel()[-1].axis("off")
     _fig.tight_layout()
-    plt.close(_fig)
     _fig
     return
 
@@ -575,7 +621,7 @@ def _(mo):
 
 
 @app.cell
-def _(sample_sd, sample_variance, delivery_times, np, st):
+def _(confidence_interval, delivery_times, generate_samples_b):
     student_delivery_variance_interval = None
     student_delivery_sd_interval = None
     print("Variance interval (days squared):", student_delivery_variance_interval)
@@ -587,21 +633,14 @@ def _(sample_sd, sample_variance, delivery_times, np, st):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
-student_delivery_variance_interval = st.bootstrap(
-    (delivery_times,), sample_variance, confidence_level=0.95,
-    method="percentile", n_resamples=4_000, batch=100,
-    rng=np.random.default_rng(2033)
-).confidence_interval
-student_delivery_sd_interval = st.bootstrap(
-    (delivery_times,), sample_sd, confidence_level=0.95,
-    method="percentile", n_resamples=4_000, batch=100,
-    rng=np.random.default_rng(2033)
-).confidence_interval
+student_delivery_samples = generate_samples_b(delivery_times, seed=2033)
+student_delivery_variance_interval = confidence_interval(student_delivery_samples.var(ddof=1).to_numpy(), 95)
+student_delivery_sd_interval = confidence_interval(student_delivery_samples.std(ddof=1).to_numpy(), 95)
 print("Variance interval (days squared):", student_delivery_variance_interval)
 print("Standard deviation interval (days):", student_delivery_sd_interval)
 ```
 
-`sample_variance` and `sample_sd` calculate variance and standard deviation with `ddof=1`. SciPy applies each calculation to every resample and returns the confidence interval. Variance is measured in days squared; standard deviation is measured in days.
+The same delivery resamples are used for both statistics. Pandas calculates the variance and standard deviation of each column with `ddof=1`; our `confidence_interval` function supplies the endpoints. Variance is measured in days squared; standard deviation is measured in days.
 """)}, lazy=True)
     return
 
@@ -651,7 +690,7 @@ def _(mo):
     ### Bootstrap interval for the first-period mean grade
     We will use `G1` as our worked example. The observed mean is our point estimate of the population's mean first-period grade.
 
-    The next cell passes the observed `G1` grades to `st.bootstrap`. It draws 4,000 samples with replacement, calculates the mean grade from each sample, and returns a 95% percentile interval using those bootstrap means. Each resample has as many grades as there are students in the original sample.
+    The next cell uses `generate_samples_b` to draw 4,000 samples with replacement from the observed `G1` grades. It calculates a mean for each sample, then uses `confidence_interval` to find the 95% percentile interval. Each resample has as many grades as there are students in the original sample.
 
     The calculation does not draw new grades from a normal distribution. It resamples the grades already observed in the file.
     """)
@@ -659,22 +698,20 @@ def _(mo):
 
 
 @app.cell
-def _(grades, np, st):
+def _(confidence_interval, generate_samples_b, grades):
     g1_grades = grades["G1"].to_numpy()
-    g1_bootstrap = st.bootstrap(
-        (g1_grades,), np.mean, confidence_level=0.95,
-        method="percentile", n_resamples=4_000, batch=100,
-        rng=np.random.default_rng(2034)
-    )
+    g1_samples = generate_samples_b(g1_grades, seed=2034)
+    g1_replicates = g1_samples.mean().to_numpy()
+    g1_interval = confidence_interval(g1_replicates, 95)
     print(f"Sample mean G1 grade: {g1_grades.mean():.3f}")
-    print(f"95% bootstrap interval: {g1_bootstrap.confidence_interval.low:.3f} to {g1_bootstrap.confidence_interval.high:.3f}")
-    return g1_bootstrap, g1_grades
+    print(f"95% bootstrap interval: {g1_interval[0]:.3f} to {g1_interval[1]:.3f}")
+    return g1_grades, g1_interval, g1_replicates
 
 
 @app.cell(hide_code=True)
-def _(g1_bootstrap, mo):
+def _(g1_interval, mo):
     mo.md(f"""
-    The 95% percentile bootstrap interval runs from **{g1_bootstrap.confidence_interval.low:.3f} to {g1_bootstrap.confidence_interval.high:.3f} grade points**.
+    The 95% percentile bootstrap interval runs from **{g1_interval[0]:.3f} to {g1_interval[1]:.3f} grade points**.
 
     This interval estimates the **population mean first-period grade**. It is not a range containing 95% of individual students' grades.
 
@@ -684,16 +721,8 @@ def _(g1_bootstrap, mo):
 
 
 @app.cell
-def _(g1_bootstrap, plt):
-    _fig, _ax = plt.subplots(figsize=(6, 3.4))
-    _ax.hist(g1_bootstrap.bootstrap_distribution, bins=30, color="#4C78A8", edgecolor="white")
-    _ax.axvline(g1_bootstrap.confidence_interval.low, color="#E45756", linewidth=1.5, label="95% interval endpoints")
-    _ax.axvline(g1_bootstrap.confidence_interval.high, color="#E45756", linewidth=1.5)
-    _ax.set(title="Bootstrap means of first-period grades", xlabel="Mean G1 grade", ylabel="Count")
-    _ax.legend(frameon=False)
-    _fig.tight_layout()
-    plt.close(_fig)
-    _fig
+def _(g1_replicates, graph_confidence_interval):
+    graph_confidence_interval(g1_replicates, 95, "Mean G1 grade")
     return
 
 
@@ -709,7 +738,7 @@ def _(mo):
 
 
 @app.cell
-def _(grades, np, st):
+def _(confidence_interval, generate_samples_b, grades):
     student_g2_interval = None
     student_g3_interval = None
     print("G2 mean interval:", student_g2_interval)
@@ -721,18 +750,12 @@ def _(grades, np, st):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
-student_g2_interval = st.bootstrap(
-    (grades["G2"].to_numpy(),), np.mean, confidence_level=0.95,
-    method="percentile", n_resamples=4_000, batch=100,
-    rng=np.random.default_rng(2035)
-).confidence_interval
-student_g3_interval = st.bootstrap(
-    (grades["G3"].to_numpy(),), np.mean, confidence_level=0.95,
-    method="percentile", n_resamples=4_000, batch=100,
-    rng=np.random.default_rng(2036)
-).confidence_interval
-print(f"G2 mean interval: {student_g2_interval.low:.3f} to {student_g2_interval.high:.3f}")
-print(f"G3 mean interval: {student_g3_interval.low:.3f} to {student_g3_interval.high:.3f}")
+student_g2_samples = generate_samples_b(grades["G2"], seed=2035)
+student_g2_interval = confidence_interval(student_g2_samples.mean().to_numpy(), 95)
+student_g3_samples = generate_samples_b(grades["G3"], seed=2036)
+student_g3_interval = confidence_interval(student_g3_samples.mean().to_numpy(), 95)
+print(f"G2 mean interval: {student_g2_interval[0]:.3f} to {student_g2_interval[1]:.3f}")
+print(f"G3 mean interval: {student_g3_interval[0]:.3f} to {student_g3_interval[1]:.3f}")
 ```
 
 The first interval estimates the population mean second-period grade. The second estimates the population mean final grade. Both are measured in grade points, and neither is an interval for individual grades.
@@ -749,7 +772,7 @@ def _(mo):
     - A 95% percentile interval uses the 2.5th and 97.5th percentiles of the **bootstrap statistics**, not the original observations.
     - The method can estimate uncertainty for means, medians, and many measures of spread and shape without specifying a normal population model.
     - The ordinary bootstrap still depends on independent observations and a reasonably representative sample. It cannot recover population features missing from the sample.
-    - SciPy's `bootstrap` calculates the intervals. We select the percentile method explicitly and seed every random calculation.
+    - Our general functions generate bootstrap samples, calculate percentile intervals, and plot the bootstrap statistics. The same functions work with ages, delivery times, and grades.
     - More resamples make the endpoints more stable. More original observations provide more information about the population; these are different improvements.
 
     ## Check your understanding
