@@ -335,15 +335,15 @@ def _(mean_intervals, mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Try it yourself: calculation
-    Build the 95% mean interval step by step: calculate the mean, standard error, critical value, and margin of error. Use these to find the two endpoints, then compare them with the 95% row of `mean_intervals`.
+    ### Try it yourself
+    Use SciPy’s `st.t.interval` to calculate a 95% confidence interval for the population mean using `ages`. Compare your result with the 95% row of `mean_intervals`.
     Replace `None` in the next cell with your calculation. The needed data and libraries are listed in the cell’s function arguments.
     """)
     return
 
 
 @app.cell
-def _(ages, np, st):
+def _(ages, st):
     student_mean_interval = None
     print("95% mean interval:", student_mean_interval)
     return
@@ -353,15 +353,12 @@ def _(ages, np, st):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
-# Calculate each part of the interval using the existing ages sample.
-student_mean = ages.mean()
-student_se = ages.std(ddof=1) / np.sqrt(len(ages))
-student_critical = st.t.ppf(0.975, len(ages) - 1)
-student_margin = student_critical * student_se
-student_mean_interval = (student_mean - student_margin, student_mean + student_margin)
-print("Margin of error:", student_margin)
+student_mean_interval = st.t.interval(
+    0.95, len(ages) - 1,
+    loc=ages.mean(), scale=st.sem(ages)
+)
 print("95% mean interval:", student_mean_interval)
-# st.t.interval(0.95, ...) gives the same endpoints.
+# The endpoints match the 95% row of mean_intervals.
 ```
 """)}, lazy=True)
     return
@@ -508,7 +505,7 @@ def _(difference_intervals, differences, mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Try it yourself: calculation
+    ### Try it yourself
     Calculate a 95% interval for the mean paired difference. Then predict how reversing the subtraction to `x1 - x2` changes the endpoints.
     Replace `None` in the next cell with your calculation. The needed data and libraries are listed in the cell’s function arguments.
     """)
@@ -620,7 +617,7 @@ def _(measurements, mo, variance_intervals):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Try it yourself: calculation
+    ### Try it yourself
     Calculate the 95% variance interval and convert it into an interval for the population standard deviation.
     Replace `None` in the next cell with your calculation. The needed data and libraries are listed in the cell’s function arguments.
     """)
@@ -764,7 +761,7 @@ def _(mo):
     - A chi-square variance interval requires independent observations from a normal population. Taking square roots of its endpoints gives a standard deviation interval.
     - SciPy and statsmodels give the same mean intervals here. Remember that SciPy takes the confidence level and statsmodels takes `alpha`.
 
-    ## Check your understanding
+    ### Try it yourself
     1. A sample mean is 12. Is 12 necessarily the population mean?
     2. Which interval is wider, 90% or 99%, for the same sample?
     3. We calculate 200 intervals using a valid 90% confidence method. About how many should contain the population value?
