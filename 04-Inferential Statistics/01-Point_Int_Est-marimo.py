@@ -332,10 +332,41 @@ def _(mean_intervals, mo):
 
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### The same mean intervals using statsmodels
+    We can calculate the same mean intervals with another library: **statsmodels**.
+
+    `sm.DescrStatsW(ages)` creates a summary of our sample. We supply no weights, so each age contributes equally. Its method `tconfint_mean` calculates the interval.
+
+    The two libraries ask for different inputs:
+
+    - SciPy asks for the confidence level: `0.95` for 95% confidence.
+    - statsmodels asks for `alpha`: `1 - 0.95 = 0.05` for the same confidence level.
+
+    The table below compares the results. `Matches SciPy` is `True` when both libraries give the same endpoints, allowing for tiny differences from computer arithmetic.
+    """)
+    return
+
+
+@app.cell
+def _(ages, mo, np, pd, sm, st):
+    _summary = sm.DescrStatsW(ages)
+    _rows = []
+    for _level in (0.90, 0.95, 0.99):
+        _low, _high = _summary.tconfint_mean(alpha=1 - _level)
+        _scipy = st.t.interval(_level, len(ages) - 1, loc=ages.mean(), scale=st.sem(ages))
+        _rows.append({"Confidence": f"{_level:.0%}", "Low": _low, "High": _high,
+                      "Matches SciPy": np.allclose((_low, _high), _scipy)})
+    mo.Html(pd.DataFrame(_rows).round(3).to_html(index=False, border=0))
+    return
+
+
 @app.cell
 def _(np):
     package_weights = np.random.default_rng(2027).normal(500, 12, size=40)
-    print("Package weights (grams):", package_weights)
+    print("First 10 package weights (grams):", package_weights[:10].round(2))
     return (package_weights,)
 
 
@@ -379,37 +410,6 @@ print("95% mean interval:", student_mean_interval)
 
 Both give approximately (495.624, 503.850) grams.
 """)}, lazy=True)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### The same mean intervals using statsmodels
-    We can calculate the same mean intervals with another library: **statsmodels**.
-
-    `sm.DescrStatsW(ages)` creates a summary of our sample. We supply no weights, so each age contributes equally. Its method `tconfint_mean` calculates the interval.
-
-    The two libraries ask for different inputs:
-
-    - SciPy asks for the confidence level: `0.95` for 95% confidence.
-    - statsmodels asks for `alpha`: `1 - 0.95 = 0.05` for the same confidence level.
-
-    The table below compares the results. `Matches SciPy` is `True` when both libraries give the same endpoints, allowing for tiny differences from computer arithmetic.
-    """)
-    return
-
-
-@app.cell
-def _(ages, mo, np, pd, sm, st):
-    _summary = sm.DescrStatsW(ages)
-    _rows = []
-    for _level in (0.90, 0.95, 0.99):
-        _low, _high = _summary.tconfint_mean(alpha=1 - _level)
-        _scipy = st.t.interval(_level, len(ages) - 1, loc=ages.mean(), scale=st.sem(ages))
-        _rows.append({"Confidence": f"{_level:.0%}", "Low": _low, "High": _high,
-                      "Matches SciPy": np.allclose((_low, _high), _scipy)})
-    mo.Html(pd.DataFrame(_rows).round(3).to_html(index=False, border=0))
     return
 
 
