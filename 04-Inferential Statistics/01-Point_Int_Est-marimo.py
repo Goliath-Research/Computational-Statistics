@@ -3,7 +3,6 @@
 #     "marimo",
 #     "seaborn",
 #     "scipy",
-#     "statsmodels",
 # ]
 # ///
 
@@ -20,10 +19,9 @@ def _():
     import matplotlib.pyplot as plt
     import seaborn as sns
     import scipy.stats as st
-    import statsmodels.stats.api as sm
 
     sns.set_style("whitegrid")
-    return mo, np, pd, plt, sm, sns, st
+    return mo, np, pd, plt, sns, st
 
 
 @app.cell(hide_code=True)
@@ -46,7 +44,7 @@ def _(mo):
     The range is an attempt to show how far the point estimate might sit from the population parameter.
 
     The sample in the next section is drawn from a normal population with mean 45 and standard deviation 8.
-    While you read the point estimates, treat 45 as unknown. A later section uses the known mean to check coverage.
+    We know those population values because this lesson chooses them for the simulation.
     """)
     return
 
@@ -77,8 +75,10 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## 2. A point estimate of mean age
-    The next cell draws 1,000 ages from that normal population, using seed 2026.
-    The sample mean is the point estimate of the population mean.
+    The next cell draws 1,000 ages from a normal population whose mean we set to 45 and whose standard deviation we set to 8.
+    We know that the population mean is 45 only because this is a simulation.
+    The sample mean estimates that value. It does not have to equal 45.
+    We use a seed of 2026 to ensure reproducibility.
     """)
     return
 
@@ -86,7 +86,7 @@ def _(mo):
 @app.cell
 def _(np):
     ages = np.random.default_rng(2026).normal(45, 8, size=1_000)
-    ages
+    print('First 10 ages:', ages[:10].round(0))
     return (ages,)
 
 
@@ -124,7 +124,7 @@ def _(ages, mo, pd):
         ],
     })
     mo.Html(
-        age_summary.round(3).to_html(index=False, border=0, col_space=110)
+        age_summary.round(2).to_html(index=False, border=0, col_space=110)
         .replace("<table ", '<table style="width: auto;" ')
     )
     return (age_summary,)
@@ -205,29 +205,29 @@ def _(mo):
 
     $$\bar x \pm t_{n-1,\,1-\alpha/2}\,\frac{s}{\sqrt n},$$
 
-    where \(s\) uses divisor \(n-1\). A higher confidence level uses a larger critical value, so the interval is wider.
-    `scipy.stats.t.interval` takes the confidence level.
-    `statsmodels` `tconfint_mean` takes \(\alpha = 1 - \text{confidence}\).
-    Both formulas assume the \(t\) model is appropriate. A large normal sample satisfies that assumption closely.
+    where \(s\) uses divisor \(n-1\). That is the standard error `scipy.stats.sem` returns, and it is the scale passed to `scipy.stats.t.interval`.
+    A higher confidence level uses a larger critical value, so the interval is wider.
+    The \(t\) model is appropriate for a normal sample. A large normal sample satisfies that assumption closely.
+
+    `Contains_45` checks whether the finished interval covers the known population mean.
+    It is not part of calculating the interval. The interval is centered on the sample mean.
+    In a real survey the population mean would be unknown, and this column could not be computed.
     """)
     return
 
 
 @app.cell
-def _(ages, mo, np, pd, sm, st):
+def _(ages, mo, pd, st):
     _mean = ages.mean()
     _sem = st.sem(ages)
     _rows = []
-    for _level, _alpha in [(0.90, 0.10), (0.95, 0.05), (0.99, 0.01)]:
-        _scipy = st.t.interval(_level, len(ages) - 1, loc=_mean, scale=_sem)
-        _sm = sm.DescrStatsW(ages).tconfint_mean(_alpha)
+    for _level in (0.90, 0.95, 0.99):
+        _low, _high = st.t.interval(_level, len(ages) - 1, loc=_mean, scale=_sem)
         _rows.append({
             "Confidence": f"{_level:.0%}",
-            "Scipy_low": _scipy[0],
-            "Scipy_high": _scipy[1],
-            "Statsmodels_low": _sm[0],
-            "Statsmodels_high": _sm[1],
-            "Contains_45": _scipy[0] <= 45 <= _scipy[1],
+            "Low": _low,
+            "High": _high,
+            "Contains_45": _low <= 45 <= _high,
         })
     mean_intervals = pd.DataFrame(_rows)
     print(f"Sample mean = {_mean:.3f}; standard error = {_sem:.3f}.")
@@ -243,7 +243,7 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     1. Which of the three intervals is widest?
-    2. Do the SciPy and statsmodels endpoints agree?
+    2. What does `Contains_45` check, and why can this lesson compute it?
     3. Does "95% confidence" mean that the population mean has a 95% chance of sitting in this particular interval?
     """)
     return
@@ -251,12 +251,11 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mean_intervals, mo):
-    _widths = mean_intervals["Scipy_high"] - mean_intervals["Scipy_low"]
+    _widths = mean_intervals["High"] - mean_intervals["Low"]
     _widest = mean_intervals.loc[_widths.idxmax(), "Confidence"]
-    _gap = float((mean_intervals["Scipy_low"] - mean_intervals["Statsmodels_low"]).abs().max())
     _answers = rf"""
 1. **Widest interval:** {_widest}. Raising the confidence level raises the critical value.
-2. **Libraries:** The largest absolute difference between the low endpoints is {_gap:.6f}. The two functions implement the same \(t\) interval. SciPy is given the confidence level, and statsmodels is given \(\alpha\).
+2. **Known mean:** `Contains_45` asks whether the interval covers 45. The lesson can compute it because the simulation set the population mean to 45. The interval is centered on the sample mean.
 3. **One interval:** No. The percentage describes the procedure across repeated samples.
 """
     mo.accordion({"Show answers": mo.md(_answers)})
@@ -488,7 +487,7 @@ def _(mo):
     - Divisor \(n\) and divisor \(n-1\) are two sample calculations. Neither one is automatically the known population variance.
     - The standard error estimates the typical sampling error. It is not the sampling error of the sample in hand.
     - A 95% interval from a valid procedure covers the parameter in about 95% of repeated samples. It does not assign a 95% probability to one finished interval.
-    - SciPy takes the confidence level. The statsmodels mean interval takes \(\alpha = 1 - \text{confidence}\).
+    - The \(t\) interval for a mean uses \(s/\sqrt{n}\), and \(s\) uses divisor \(n-1\). `scipy.stats.sem` is that standard error.
     - A paired comparison can be reduced to a one-sample interval for the differences.
     - The chi-square variance interval assumes a normal sample, and it is not centered on \(s^2\).
     - These \(t\) and chi-square formulas are tied to their sampling models. A later lesson uses the bootstrap when that model is not the tool you want.
