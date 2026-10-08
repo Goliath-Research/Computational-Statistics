@@ -414,7 +414,7 @@ def _(mo):
 @app.cell
 def _(confidence_interval, delivery_times, generate_samples_b):
     student_delivery_median_interval = None
-    print("Median interval (days):", student_delivery_median_interval)
+    print(f"Median interval (days): {student_delivery_median_interval[0]:.3f} to {student_delivery_median_interval[1]:.3f}")
     return
 
 
@@ -422,7 +422,7 @@ def _(confidence_interval, delivery_times, generate_samples_b):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
-student_delivery_median_interval = confidence_interval(generate_samples_b(delivery_times, seed=2030).median().to_numpy(), 95)
+student_delivery_median_interval = confidence_interval(generate_samples_b(delivery_times).median().to_numpy(), 95)
 ```
 
 The interval estimates the population median: the time separating the shorter half of deliveries from the longer half. It is not a range for the times of 95% of individual deliveries.
