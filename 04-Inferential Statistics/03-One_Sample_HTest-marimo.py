@@ -1,6 +1,9 @@
 # /// script
 # dependencies = [
 #     "marimo",
+#     "numpy",
+#     "pandas",
+#     "matplotlib",
 #     "seaborn",
 #     "scipy",
 #     "statsmodels",
@@ -8,6 +11,8 @@
 # ///
 
 import marimo
+
+__generated_with = "0.25.1"
 
 app = marimo.App(width="medium")
 
@@ -38,7 +43,7 @@ def _(mo):
     - Use a chi-square goodness-of-fit test on counts, with expected counts from a reference distribution.
     - Use a chi-square test of independence on a contingency table.
     - Use a one-sample \(z\) test for a proportion.
-    - Choose a one-sample \(z\) or \(t\) test for a mean and name what each treats as known.
+    - Explain the normal approximation used by the mean \(z\) test and the role of degrees of freedom in the \(t\) test.
     - Say "do not reject" when the p-value is above the significance level.
 
     ## 1. A decision, not a proof
@@ -84,14 +89,16 @@ def _(mo):
     \(H_0\): the counts come from the reference proportions.
     \(H_a\): they do not.
 
-    The categories below are fictitious. A reference population of 220,000 labels and two towns are constructed so the arithmetic is visible.
+    The counts below describe a fictitious reference population of 220,000 people and two towns. We treat the reference proportions as the population proportions to be tested.
     Town X uses nearly the reference proportions. Town Y puts many more labels in one category.
 
     The chi-square statistic uses counts:
 
     $$\chi^2 = \sum \frac{(O_i - E_i)^2}{E_i}, \qquad E_i = n \hat\pi_i.$$
 
-    The original notebook multiplied relative frequencies by 100 and passed those numbers to `chisquare`. That rescaling is not a sample size, so the p-value does not answer the count question. This lesson uses the town counts and expected counts \(n\hat\pi_i\).
+    Here \(O_i\) is the observed count in category \(i\), and \(E_i\) is its expected count under \(H_0\). Multiply each reference proportion by the town’s sample size to obtain the expected counts. Use counts in the test: converting proportions to percentages loses the actual sample size.
+
+    Each person must contribute to just one category, and observations must be independent. The usual guideline is that every expected count is at least 5. With four specified category probabilities, the test uses \(4-1=3\) degrees of freedom.
     """)
     return
 
@@ -183,6 +190,47 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    A shop normally receives 40% of its orders online, 35% in person, and 25% by phone. A random sample of 200 recent orders contains the following counts, in that order.
+    """)
+    return
+
+
+@app.cell
+def _(np):
+    order_counts = np.array([100, 60, 40])
+    return (order_counts,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Do these orders provide evidence that the population proportions differ from 40%, 35%, and 25%? State the hypotheses, calculate the test statistic and p-value, and interpret the result at significance level 0.05.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_order_result = None
+    print("Test result:", student_order_result)
+    return (student_order_result,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
+```python
+student_order_result = st.chisquare(order_counts, f_exp=200 * np.array([0.40, 0.35, 0.25]))
+```
+The chi-square statistic is approximately 8.429 and the p-value is 0.0148. Reject \(H_0\): the sample provides evidence that the order proportions have changed.
+""")}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 3. Chi-square test of independence
     Independence means that knowing one category does not change the probabilities of the other.
     \(H_0\): the two categorical variables are independent.
@@ -190,8 +238,10 @@ def _(mo):
 
     `chi2_contingency` builds the expected counts from the row and column totals. Pass the table of counts, without the margin totals.
 
-    The first table simulates 1,000 voters with race and party drawn separately, so the generating model is independence. A large p-value is the result that model leads you to expect. It is still one sample.
-    The second table is a fixed cross-classification of degrees. "Bachelors" corrects the spelling in the source notebook.
+    The first table simulates 1,000 voters with race and party drawn separately, so the generating model is independence. Even independent variables can produce an uneven table by chance. At significance level 0.05, repeated independent simulations can still reject independence about 5% of the time.
+    The second table records degree level and sex for 92 people who earned foreign-language degrees. We ask whether the distribution of degree levels differs between the two groups.
+
+    For each cell, the expected count is its row total multiplied by its column total, divided by the overall total. The degrees of freedom are \((r-1)(c-1)\), where \(r\) and \(c\) are the numbers of rows and columns. Each person contributes to one cell; observations must be independent.
     """)
     return
 
@@ -276,7 +326,7 @@ def _(degree_result, mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The degree table has small counts. The chi-square p-value is an approximation that is less reliable when some expected counts are very small. Read it as an illustration of the calculation.
+    For this degree table, the smallest **expected** count is approximately 5.57, so all expected counts meet the usual guideline of at least 5. The guideline concerns expected counts, rather than the observed counts. A large p-value means the sample does not provide enough evidence of an association; it does not establish independence.
     """)
     return
 
@@ -303,14 +353,60 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    A community centre surveys independent visitors about their preferred activity. The table records activity preference by visit period.
+    """)
+    return
+
+
+@app.cell
+def _(mo, pd):
+    activity_counts = pd.DataFrame({"Art": [30, 15], "Sport": [20, 35], "Music": [25, 25]}, index=["Morning", "Evening"])
+    mo.Html(activity_counts.to_html(border=0))
+    return (activity_counts,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Is activity preference associated with visit period in the population? State the hypotheses, calculate the test statistic and p-value, and interpret the result at significance level 0.05.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_activity_result = None
+    print("Test result:", student_activity_result)
+    return (student_activity_result,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
+```python
+student_activity_result = st.chi2_contingency(activity_counts)
+```
+The chi-square statistic is approximately 9.091 and the p-value is 0.0106. Reject \(H_0\): activity preference and visit period appear associated. The result also includes the degrees of freedom and expected counts.
+""")}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 4. One-sample test for a proportion
     For a large sample of yes/no outcomes, the \(z\) statistic compares the sample proportion \(\hat p\) with a hypothesized proportion \(p_0\):
 
     $$z = \frac{\hat p - p_0}{\sqrt{p_0(1-p_0)/n}}.$$
 
-    `proportions_ztest` uses this statistic. The alternative may be two-sided, `larger`, or `smaller`.
+    `proportions_ztest` uses this null standard error when we set `prop_var=p0`. Without that argument, it estimates the variance using the sample proportion. We use the null variance here to match the formula above.
+
+    Observations must be independent, and the normal approximation needs sufficiently many expected successes and failures. A common guideline is \(np_0 \geq 10\) and \(n(1-p_0) \geq 10\). The alternative may be two-sided, `larger`, or `smaller`.
     The code reads `../data/student-mat.csv`. Run the notebook with this lesson folder as the working directory.
-    The question is about the proportion of students recorded with internet access at home.
+    This file records students at two Portuguese secondary schools. The `internet` column says whether each student has internet access at home. We count `yes` as a success. Generalizing beyond these students requires an appropriate sampling design.
+
+    We show three research questions: is the population proportion above 0.80, above 0.90, or different from 0.85? Each row corresponds to a different alternative. These are teaching examples, rather than a reason to choose an alternative after inspecting the results.
     """)
     return
 
@@ -322,7 +418,7 @@ def _(mo, pd, proportions_ztest):
     internet_n = len(student_file)
     _rows = []
     for _p0, _alternative in [(0.80, "larger"), (0.90, "larger"), (0.85, "two-sided")]:
-        _z, _pvalue = proportions_ztest(internet_yes, internet_n, value=_p0, alternative=_alternative)
+        _z, _pvalue = proportions_ztest(internet_yes, internet_n, value=_p0, alternative=_alternative, prop_var=_p0)
         _rows.append({
             "H0": f"p = {_p0:.2f}",
             "Ha": {"larger": "p > p0", "smaller": "p < p0", "two-sided": "p ≠ p0"}[_alternative],
@@ -366,13 +462,59 @@ def _(internet_n, internet_yes, mo, proportion_results):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    In a random sample of 120 independent library visitors, 80 say they use the library’s online catalogue.
+    """)
+    return
+
+
+@app.cell
+def _():
+    catalogue_successes = 80
+    catalogue_n = 120
+    return catalogue_successes, catalogue_n
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Does this sample provide evidence that more than 60% of library visitors use the online catalogue? State the hypotheses, calculate the test statistic and p-value, and interpret the result at significance level 0.05.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_catalogue_result = None
+    print("Test result:", student_catalogue_result)
+    return (student_catalogue_result,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
+```python
+student_catalogue_result = proportions_ztest(catalogue_successes, catalogue_n, value=0.60, alternative="larger", prop_var=0.60)
+```
+The statistic is approximately 1.491 and the p-value is 0.0680. Do not reject \(H_0\): this sample does not supply enough evidence that the population proportion exceeds 60%.
+""")}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 5. One-sample \(z\) test for a mean
     The \(z\) test compares a sample mean with a hypothesized mean.
     `statsmodels` `ztest` estimates the standard error from the sample and treats that estimate as the denominator of a standard normal statistic.
-    That approximation is aimed at large samples. The normal model for the observations is a separate assumption.
+    Here the statistic is \(z=(\bar x-\mu_0)/(s/\sqrt n)\). A negative value means the sample mean is below the hypothesized mean. The p-value measures how extreme that value is under the chosen alternative.
+
+    This is a large-sample normal approximation using the **sample** standard deviation. A classical test with a known population standard deviation instead uses \(\sigma/\sqrt n\). The `ztest` calls below do not take a known population standard deviation. Observations must be independent; a large sample does not fix biased sampling.
     A \(t\) test keeps the same location comparison and uses a \(t\) reference distribution, which is the usual choice when the population standard deviation is unknown, including for smaller samples.
 
-    The heights below are 200 draws from a normal distribution with mean 165 cm and standard deviation 10 cm.
+    The heights below represent 200 fictitious students, generated from a normal distribution with mean 165 cm and standard deviation 10 cm. The seed makes the sample reproducible. The test estimates the standard deviation from these heights.
+
+    We compare the population mean with 170 cm. The three alternatives illustrate how the same statistic gives different p-values. In an actual investigation, choose the alternative before examining the sample.
     """)
     return
 
@@ -435,11 +577,57 @@ def _(heights, mo, z_results):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    A bottling line aims for a mean fill volume of 500 mL. The following simulated random sample represents 150 independent bottles. The seed keeps the lesson data reproducible.
+    """)
+    return
+
+
+@app.cell
+def _(np):
+    bottle_volumes = np.random.default_rng(2027).normal(502, 8, size=150)
+    print("First 10 bottle volumes (mL):", bottle_volumes[:10].round(2))
+    return (bottle_volumes,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Does the sample provide evidence that the population mean fill volume differs from 500 mL? State the hypotheses, calculate the test statistic and p-value, and interpret the result at significance level 0.05.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_bottle_result = None
+    print("Test result:", student_bottle_result)
+    return (student_bottle_result,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
+```python
+student_bottle_result = ztest(bottle_volumes, value=500, alternative="two-sided")
+```
+The statistic is approximately 2.858 and the p-value is 0.0043. Reject \(H_0\): the sample provides evidence that the population mean fill volume differs from 500 mL.
+""")}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 6. One-sample \(t\) test for a mean
     `scipy.stats.ttest_1samp` is the one-sample \(t\) test.
     Its alternative labels are `two-sided`, `less`, and `greater`.
     The next sample has 20 heights drawn from a normal distribution with mean 169 and standard deviation 5.
-    The original notebook drew that small sample and then plotted the large sample from the \(z\) section. The histogram here is the sample of 20.
+    These are 20 different fictitious students. The histogram shows this smaller sample.
+
+    The statistic is \(t=(\bar x-\mu_0)/(s/\sqrt n)\), with \(n-1\) degrees of freedom. Estimating the population standard deviation adds uncertainty: the \(t\) distribution has heavier tails than the normal distribution.
+
+    Observations must be independent. For a small sample, the population should be approximately normal, without strong skewness or extreme outliers. A \(t\) test can also be used for larger samples; 30 is not a strict cutoff.
     """)
     return
 
@@ -496,6 +684,48 @@ def _(mo, small_heights):
 2. **Cutoff:** No. Thirty is a rough classroom boundary. With an unknown population standard deviation, the \(t\) reference matches the normal-sample derivation at every sample size. The normal approximation to that \(t\) distribution improves as \(n\) grows.
 """
     mo.accordion({"Show answers": mo.md(_answers)})
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The following fixed sample records completion times, in minutes, for 12 independently selected participants completing a task. Assume the population of completion times is approximately normal.
+    """)
+    return
+
+
+@app.cell
+def _(np):
+    task_times = np.array([26, 29, 25, 31, 27, 28, 24, 30, 26, 27, 29, 25])
+    print("Task times (minutes):", task_times)
+    return (task_times,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Do these completion times provide evidence that the population mean is less than 30 minutes? State the hypotheses, calculate the test statistic and p-value, and interpret the result at significance level 0.05.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_task_result = None
+    print("Test result:", student_task_result)
+    return (student_task_result,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
+```python
+student_task_result = st.ttest_1samp(task_times, popmean=30, alternative="less")
+```
+The statistic is approximately −4.371 and the p-value is 0.00056. Reject \(H_0\): the sample provides evidence that the population mean completion time is below 30 minutes.
+""")}, lazy=True)
     return
 
 
