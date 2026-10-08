@@ -294,9 +294,7 @@ def _(confidence_interval, delivery_times, generate_samples_b):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
-student_delivery_samples = generate_samples_b(delivery_times, seed=2029)
-student_delivery_mean_interval = confidence_interval(student_delivery_samples.mean().to_numpy(), 95)
-print("Mean interval (days):", student_delivery_mean_interval)
+student_delivery_mean_interval = confidence_interval(generate_samples_b(delivery_times, seed=2029).mean().to_numpy(), 95)
 ```
 
 This interval estimates the population's average delivery time, in days. It is not a range containing 95% of individual delivery times.
@@ -424,9 +422,7 @@ def _(confidence_interval, delivery_times, generate_samples_b):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
-student_delivery_samples = generate_samples_b(delivery_times, seed=2030)
-student_delivery_median_interval = confidence_interval(student_delivery_samples.median().to_numpy(), 95)
-print("Median interval (days):", student_delivery_median_interval)
+student_delivery_median_interval = confidence_interval(generate_samples_b(delivery_times, seed=2030).median().to_numpy(), 95)
 ```
 
 The interval estimates the population median: the time separating the shorter half of deliveries from the longer half. It is not a range for the times of 95% of individual deliveries.
@@ -633,11 +629,8 @@ def _(confidence_interval, delivery_times, generate_samples_b):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
-student_delivery_samples = generate_samples_b(delivery_times, seed=2033)
-student_delivery_variance_interval = confidence_interval(student_delivery_samples.var(ddof=1).to_numpy(), 95)
-student_delivery_sd_interval = confidence_interval(student_delivery_samples.std(ddof=1).to_numpy(), 95)
-print("Variance interval (days squared):", student_delivery_variance_interval)
-print("Standard deviation interval (days):", student_delivery_sd_interval)
+student_delivery_variance_interval = confidence_interval(generate_samples_b(delivery_times, seed=2033).var(ddof=1).to_numpy(), 95)
+student_delivery_sd_interval = confidence_interval(generate_samples_b(delivery_times, seed=2033).std(ddof=1).to_numpy(), 95)
 ```
 
 The same delivery resamples are used for both statistics. Pandas calculates the variance and standard deviation of each column with `ddof=1`; our `confidence_interval` function supplies the endpoints. Variance is measured in days squared; standard deviation is measured in days.
@@ -750,12 +743,8 @@ def _(confidence_interval, generate_samples_b, grades):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
-student_g2_samples = generate_samples_b(grades["G2"], seed=2035)
-student_g2_interval = confidence_interval(student_g2_samples.mean().to_numpy(), 95)
-student_g3_samples = generate_samples_b(grades["G3"], seed=2036)
-student_g3_interval = confidence_interval(student_g3_samples.mean().to_numpy(), 95)
-print(f"G2 mean interval: {student_g2_interval[0]:.3f} to {student_g2_interval[1]:.3f}")
-print(f"G3 mean interval: {student_g3_interval[0]:.3f} to {student_g3_interval[1]:.3f}")
+student_g2_interval = confidence_interval(generate_samples_b(grades["G2"], seed=2035).mean().to_numpy(), 95)
+student_g3_interval = confidence_interval(generate_samples_b(grades["G3"], seed=2036).mean().to_numpy(), 95)
 ```
 
 The first interval estimates the population mean second-period grade. The second estimates the population mean final grade. Both are measured in grade points, and neither is an interval for individual grades.
