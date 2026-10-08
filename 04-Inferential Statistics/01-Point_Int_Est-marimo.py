@@ -651,7 +651,9 @@ def _(measurements, mo, variance_intervals):
     _row = variance_intervals.loc[variance_intervals["Confidence"] == "95%"].iloc[0]
     _mid = (_row.Low + _row.High) / 2
     _answers = rf"""
-1. **Center:** No. The 95% interval is ({_row.Low:.3f}, {_row.High:.3f}). Its midpoint is {_mid:.3f}, while $s^2$ is {_s2:.3f}.
+1. **Center:** No. The 95% interval is ({_row.Low:.3f}, {_row.High:.3f}). Its midpoint is {_mid:.3f}, while $s^2$ is {_s2:.3f}. 
+Unlike the mean interval, the variance interval does not have the form “estimate ± margin of error.” Its endpoints come from different chi-square 
+critical values, producing an asymmetric interval.
 2. **Assumption:** The observations are treated as a normal sample. The chi-square interval is not a general-purpose interval for every distribution.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
@@ -721,7 +723,7 @@ def _(mo):
 
 @app.cell
 def _(mo, np, pd, plt, st):
-    _rng = np.random.default_rng(2026)
+    _rng = np.random.default_rng(2027)
     _rows = []
     for _i in range(20):
         # Draw directly from the normal model whose true mean is exactly 45.
@@ -804,7 +806,7 @@ def _(mo):
     - A chi-square variance interval requires independent observations from a normal population. Taking square roots of its endpoints gives a standard deviation interval.
     - SciPy and statsmodels give the same mean intervals here. Remember that SciPy takes the confidence level and statsmodels takes `alpha`.
 
-    ### Try it yourself
+    ### Check your understanding
     1. A sample mean is 12. Is 12 necessarily the population mean?
     2. Which interval is wider, 90% or 99%, for the same sample?
     3. We calculate 200 intervals using a valid 90% confidence method. About how many should contain the population value?
