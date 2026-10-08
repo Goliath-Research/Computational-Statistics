@@ -1,12 +1,17 @@
 # /// script
 # dependencies = [
 #     "marimo",
+#     "numpy",
+#     "pandas",
+#     "matplotlib",
 #     "seaborn",
 #     "scipy",
 # ]
 # ///
 
 import marimo
+
+__generated_with = "0.25.1"
 
 app = marimo.App(width="medium")
 
@@ -19,9 +24,10 @@ def _():
     import matplotlib.pyplot as plt
     import seaborn as sns
     import scipy.stats as st
+    from pathlib import Path
 
     sns.set_style("whitegrid")
-    return mo, np, pd, plt, sns, st
+    return Path, mo, np, pd, plt, sns, st
 
 
 @app.cell(hide_code=True)
@@ -31,20 +37,33 @@ def _(mo):
 
     ## Learning goals
     By the end of this lesson, you should be able to:
-    - Describe a bootstrap sample as a draw with replacement from the observed sample.
-    - Build a percentile confidence interval from the bootstrap values of a statistic.
-    - Apply that interval to a mean, a median, a variance, and a shape summary.
-    - Explain what the interval does not assume about the population distribution.
-    - Read a percentile interval for a mean grade in the student file.
+    - Explain why a bootstrap sample can repeat some observations and omit others.
+    - Distinguish the original observations from bootstrap values of a statistic.
+    - Interpret a percentile bootstrap confidence interval.
+    - Calculate bootstrap intervals for center, spread, and shape using Python.
+    - Explain why bootstrapping cannot correct an unrepresentative sample.
+    - Apply the method to student grades and compare a bootstrap mean interval with a $t$ interval.
 
     ## 1. Resampling the sample you have
-    A **bootstrap sample** has the same size as the original sample and is drawn **with replacement**.
-    Repeating that draw produces an approximate sampling distribution for a statistic.
-    The **percentile interval** takes the \(\alpha/2\) and \(1-\alpha/2\) percentiles of those bootstrap statistics.
-    A 95% interval uses the 2.5th and 97.5th percentiles.
+    Suppose we collect one sample and calculate its mean. A different sample would usually give a different mean, but collecting many new samples may be expensive or impractical.
 
-    The percentile interval does not require the statistic to be a mean, and it does not start from a normal formula.
-    It still treats the original sample as a stand-in for the population, so a tiny or badly chosen sample remains a weak foundation.
+    The **bootstrap** uses the observations we already have to approximate how a statistic varies from sample to sample.
+
+    A **bootstrap sample** is drawn from the original observations **with replacement**. After selecting an observation, we leave it available to be selected again. This means some observations may appear more than once and others may not appear at all.
+
+    Each bootstrap sample has the same number of observations as the original sample. We calculate the statistic from each resample. For example, 4,000 bootstrap samples give 4,000 means, called **bootstrap replicates** of the mean.
+
+    ### From bootstrap replicates to an interval
+    A **percentile bootstrap interval** uses two percentiles of those calculated statistics. For a 95% interval, the endpoints are the 2.5th and 97.5th percentiles of the bootstrap replicates. The interval therefore includes the middle 95% of their values.
+
+    These percentiles come from the **bootstrap statistics**, not directly from the original observations. An interval for the mean estimates the population mean; it is not a range intended to contain 95% of individual observations.
+
+    As with other confidence intervals, 95% confidence describes the method across repeated original samples. Bootstrap coverage is approximate, and the actual percentage can differ from 95%.
+
+    ### What does the method assume?
+    We do not have to choose a normal or uniform population model to perform this bootstrap. However, the ordinary method used here assumes independent observations from the same population and a sample that represents that population reasonably well.
+
+    A very small sample may miss important population features. Resampling it cannot create those missing features. More resamples reduce randomness in the computed endpoints; they do not add new information about the population.
     """)
     return
 
@@ -67,7 +86,7 @@ def _(mo):
 1. **Size:** 3, the same size as the observed sample.
 2. **Repeats:** Yes. Sampling with replacement can draw the same observation more than once.
 3. **New values:** No. A bootstrap sample uses only values that were observed.
-""")})
+""")}, lazy=True)
     return
 
 
@@ -75,8 +94,13 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## 2. Simulated ages
-    The sample is 1,000 ages drawn uniformly from 18 to 85, with seed 2026.
-    The uniform draw is the population model for this simulation. The bootstrap procedure below does not use that fact.
+    We will generate 1,000 example ages between 18 and 85 using a uniform distribution. This is a simple model for teaching, rather than a description of actual voter ages.
+
+    The variable `ages` stores the observations. The seed `2026` reproduces the same sample whenever the cell is rerun. We display only the first 10 ages; calculations use all 1,000 unrounded values.
+
+    The uniform distribution is used only to generate the example. The bootstrap calculations will resample the observed ages without using the population formula.
+
+    In the histogram, each bar counts ages in a range. The two lines mark the sample mean and median.
     """)
     return
 
@@ -102,36 +126,57 @@ def _(ages, np, plt):
     return
 
 
-@app.cell
-def _(ages, np):
-    def bootstrap_replicates(sample, statistic, n_replicates=4_000, seed=2026):
-        """Draw n_replicates samples with replacement and apply statistic to each."""
-        rng = np.random.default_rng(seed)
-        draws = rng.choice(np.asarray(sample), size=(n_replicates, len(sample)), replace=True)
-        return np.array([statistic(draw) for draw in draws])
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Calculating an interval with SciPy
+    `st.bootstrap` does the resampling and interval calculation for us. The important arguments are:
 
-    def percentile_interval(replicates, confidence=95):
-        """Percentile confidence interval from bootstrap replicates."""
-        alpha = 100 - confidence
-        return tuple(np.percentile(replicates, [alpha / 2, alpha / 2 + confidence]))
+    - `data=(ages,)`: the sample in a one-item tuple. The comma is required.
+    - `statistic=np.mean`: the statistic to calculate. Use `np.median` for a median.
+    - `confidence_level=0.95`: the requested confidence level.
+    - `method="percentile"`: the method taught in this lesson. SciPy otherwise defaults to a different method called BCa.
+    - `n_resamples=4_000`: the number of bootstrap samples, not the number of observations in each sample.
+    - `batch=100`: process up to 100 resamples at a time to limit memory use.
+    - `rng=np.random.default_rng(2026)`: the seeded random generator.
 
-    return bootstrap_replicates, percentile_interval
+    The returned result contains `confidence_interval.low` and `.high`, plus `bootstrap_distribution`, the values of the statistic from all resamples. Its `standard_error` summarizes the spread of those bootstrap statistics.
+
+    The functions in this lesson accept `axis`, which lets SciPy calculate many resamples efficiently with `vectorized=True`.
+    """)
+    return
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## 3. Mean and median
-    For a symmetric population the mean and the median estimate the same center, but their sampling distributions need not have the same width.
+    The **mean** is the arithmetic average. The **median** is the middle value after sorting the observations. Both describe center, but they respond differently to the data.
+
+    The next calculation creates 4,000 bootstrap means and 4,000 bootstrap medians. The graph shows how these statistics vary across resamples. Its horizontal axis shows mean or median age, rather than individual ages.
+
+    A wider bootstrap distribution indicates greater variability of that estimate. For this uniform population, the median generally varies more than the mean. This is not a rule for every population.
+
+    The table reports 90%, 95%, and 99% percentile intervals for each statistic. For the same bootstrap distribution, higher confidence gives a wider interval.
     """)
     return
 
 
 @app.cell
-def _(ages, bootstrap_replicates, np):
-    mean_replicates = bootstrap_replicates(ages, np.mean)
-    median_replicates = bootstrap_replicates(ages, np.median, seed=2027)
-    return mean_replicates, median_replicates
+def _(ages, np, st):
+    mean_bootstrap = st.bootstrap(
+        (ages,), np.mean, confidence_level=0.95, method="percentile",
+        n_resamples=4_000, batch=100, vectorized=True,
+        rng=np.random.default_rng(2026)
+    )
+    median_bootstrap = st.bootstrap(
+        (ages,), np.median, confidence_level=0.95, method="percentile",
+        n_resamples=4_000, batch=100, vectorized=True,
+        rng=np.random.default_rng(2027)
+    )
+    mean_replicates = mean_bootstrap.bootstrap_distribution
+    median_replicates = median_bootstrap.bootstrap_distribution
+    return mean_bootstrap, mean_replicates, median_bootstrap, median_replicates
 
 
 @app.cell
@@ -148,55 +193,110 @@ def _(mean_replicates, median_replicates, plt):
 
 
 @app.cell
-def _(mean_replicates, median_replicates, mo, pd, percentile_interval):
-    center_intervals = pd.DataFrame([
-        {"Statistic": "Mean", "Confidence": level, "Low": percentile_interval(mean_replicates, level)[0], "High": percentile_interval(mean_replicates, level)[1]}
-        for level in (90, 95, 99)
-    ] + [
-        {"Statistic": "Median", "Confidence": level, "Low": percentile_interval(median_replicates, level)[0], "High": percentile_interval(median_replicates, level)[1]}
-        for level in (90, 95, 99)
-    ])
-    mo.Html(
-        center_intervals.round(2).to_html(index=False, border=0, col_space=110)
-        .replace("<table ", '<table style="width: auto;" ')
-    )
+def _(ages, mean_bootstrap, median_bootstrap, mo, np, pd, st):
+    _rows = []
+    for _name, _statistic, _previous in (
+        ("Mean", np.mean, mean_bootstrap), ("Median", np.median, median_bootstrap)
+    ):
+        for _level in (0.90, 0.95, 0.99):
+            # Reuse the existing replicates; no additional resamples are drawn.
+            _result = st.bootstrap(
+                (ages,), _statistic, confidence_level=_level, method="percentile",
+                n_resamples=0, bootstrap_result=_previous,
+                rng=np.random.default_rng(2028)
+            )
+            _rows.append({"Statistic": _name, "Confidence": f"{_level:.0%}",
+                          "Low": _result.confidence_interval.low,
+                          "High": _result.confidence_interval.high})
+    center_intervals = pd.DataFrame(_rows)
+    mo.Html(center_intervals.round(2).to_html(index=False, border=0, col_space=110))
     return (center_intervals,)
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Try it yourself
-    The sample is `np.array([2, 4, 4, 9])`.
-    One bootstrap draw, already chosen, is `[4, 2, 4, 4]`.
-    1. What is the mean of that bootstrap draw?
-    2. Store a 95% percentile interval for the mean of the four-point sample in `low` and `high`. Use `bootstrap_replicates` and `percentile_interval`.
+    ### Reading the mean intervals on a graph
+    Each panel below shows the **same bootstrap means**. The red lines mark the endpoints for the confidence level shown above that panel.
+
+    Compare the distance between the red lines: the 99% interval is wider than the 95% and 90% intervals. Higher confidence includes a larger part of the same bootstrap distribution.
+    """)
+    return
+
+
+@app.cell
+def _(center_intervals, mean_replicates, plt):
+    _fig, _axes = plt.subplots(1, 3, figsize=(9, 3))
+    for _ax, _level in zip(_axes, ("90%", "95%", "99%")):
+        _row = center_intervals.loc[
+            (center_intervals["Statistic"] == "Mean") & (center_intervals["Confidence"] == _level)
+        ].iloc[0]
+        _ax.hist(mean_replicates, bins=30, color="#4C78A8", edgecolor="white")
+        _ax.axvline(_row.Low, color="#E45756", linewidth=1.5)
+        _ax.axvline(_row.High, color="#E45756", linewidth=1.5)
+        _ax.set(title=f"{_level} mean interval", xlabel="Mean age (years)", ylabel="Count")
+    _fig.tight_layout()
+    plt.close(_fig)
+    _fig
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### New data: delivery times
+    An online store records delivery times for a random sample of 80 orders. Times are measured in days. Deliveries can occasionally take much longer than usual, so we simulate positive data with a longer right tail.
+
+    The next cell stores the times in `delivery_times`, using seed `2028`, and prints only the first 10. Assume orders are independent and the sample represents the store's deliveries.
     """)
     return
 
 
 @app.cell
 def _(np):
-    practice_sample = np.array([2.0, 4.0, 4.0, 9.0])
-    low = None
-    high = None
-    print("Interval:", low, high)
-    return high, low, practice_sample
+    delivery_times = np.random.default_rng(2028).lognormal(mean=1.2, sigma=0.5, size=80)
+    print("First 10 delivery times (days):", delivery_times[:10].round(2))
+    return (delivery_times,)
 
 
 @app.cell(hide_code=True)
-def _(bootstrap_replicates, mo, np, percentile_interval, practice_sample):
-    _draw_mean = np.mean([4, 2, 4, 4])
-    _low, _high = percentile_interval(bootstrap_replicates(practice_sample, np.mean, seed=7), 95)
-    _answers = f"""
-1. **Bootstrap mean:** {_draw_mean:.2f}.
-2. **Percentile interval:** ({_low:.2f}, {_high:.2f}), using seed 7 inside `bootstrap_replicates`. Another seed moves the endpoints slightly.
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Calculate 95% percentile bootstrap confidence intervals for the population mean and median delivery time. What does each interval estimate?
+    """)
+    return
 
+
+@app.cell
+def _(delivery_times, np, st):
+    student_delivery_mean_interval = None
+    student_delivery_median_interval = None
+    print("Mean interval (days):", student_delivery_mean_interval)
+    print("Median interval (days):", student_delivery_median_interval)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
 ```python
-low, high = percentile_interval(bootstrap_replicates(practice_sample, np.mean, seed=7), 95)
+student_delivery_mean_interval = st.bootstrap(
+    (delivery_times,), np.mean, confidence_level=0.95,
+    method="percentile", n_resamples=4_000, batch=100,
+    rng=np.random.default_rng(2029)
+).confidence_interval
+student_delivery_median_interval = st.bootstrap(
+    (delivery_times,), np.median, confidence_level=0.95,
+    method="percentile", n_resamples=4_000, batch=100,
+    rng=np.random.default_rng(2030)
+).confidence_interval
+print("Mean interval (days):", student_delivery_mean_interval)
+print("Median interval (days):", student_delivery_median_interval)
 ```
-"""
-    mo.accordion({"Show answers": mo.md(_answers)})
+
+The first interval estimates the mean time across the population of deliveries. The second estimates the population median: the time separating the shorter half of deliveries from the longer half. Neither interval is a range for the times of 95% of individual deliveries.
+""")}, lazy=True)
     return
 
 
@@ -204,58 +304,77 @@ low, high = percentile_interval(bootstrap_replicates(practice_sample, np.mean, s
 def _(mo):
     mo.md(r"""
     ## 4. Spread and shape
-    The same percentile function applies to the variance, the standard deviation, the interquartile range, the skewness, and the excess kurtosis.
-    Pandas `Series.var` uses divisor \(n-1\). NumPy `var` uses divisor \(n\) unless `ddof` is set.
-    The intervals below use divisor \(n-1\) for the variance and the standard deviation, matching Pandas.
-    Skewness and excess kurtosis use SciPy, so excess kurtosis is the Fisher definition from the shape lesson.
+    We now return to the **ages** sample to estimate other population properties:
+
+    - **Variance**, $s^2$: spread measured in years squared. We use `ddof=1`, so the sample variance divides by $n-1$.
+    - **Standard deviation**, $s$: spread measured in years. It is the square root of variance.
+    - **Interquartile range (IQR)**: the 75th percentile minus the 25th percentile, measured in years.
+    - **Skewness**: asymmetry. Positive values indicate a longer right tail, and negative values indicate a longer left tail.
+    - **Excess kurtosis**: a measure related to tail weight. The normal distribution has population excess kurtosis 0; negative values generally indicate lighter tails than normal, and positive values heavier tails.
+
+    For each statistic, SciPy resamples the ages, calculates the statistic, and finds the percentile interval. We use `bias=False` for the skewness and excess-kurtosis sample calculations, and `fisher=True` to request excess kurtosis.
+
+    The short functions in the next cell tell SciPy which statistic to calculate and which options to use. `axis` tells the calculation which direction contains the observations when SciPy handles a batch of resamples.
+
+    The table reports 90%, 95%, and 99% intervals. The graphs display the 95% intervals: the red lines mark the endpoints. These endpoints describe uncertainty about the population statistic, not the spread of individual ages.
     """)
     return
 
 
 @app.cell
-def _(ages, bootstrap_replicates, np, st):
-    def _variance(sample):
-        return np.var(sample, ddof=1)
+def _(ages, np, st):
+    def sample_variance(sample, axis=-1):
+        return np.var(sample, ddof=1, axis=axis)
 
-    def _std(sample):
-        return np.std(sample, ddof=1)
+    def sample_sd(sample, axis=-1):
+        return np.std(sample, ddof=1, axis=axis)
 
-    def _iqr(sample):
-        return np.subtract(*np.percentile(sample, [75, 25]))
+    def age_skewness(sample, axis=-1):
+        return st.skew(sample, bias=False, axis=axis)
 
-    spread_replicates = {
-        "Variance": bootstrap_replicates(ages, _variance, seed=1),
-        "Standard deviation": bootstrap_replicates(ages, _std, seed=2),
-        "Interquartile range": bootstrap_replicates(ages, _iqr, seed=3),
-        "Skewness": bootstrap_replicates(ages, st.skew, seed=4),
-        "Excess kurtosis": bootstrap_replicates(ages, st.kurtosis, seed=5),
+    def age_excess_kurtosis(sample, axis=-1):
+        return st.kurtosis(sample, fisher=True, bias=False, axis=axis)
+
+    spread_statistics = {
+        "Variance": sample_variance, "Standard deviation": sample_sd,
+        "Interquartile range": st.iqr, "Skewness": age_skewness,
+        "Excess kurtosis": age_excess_kurtosis,
     }
-    return (spread_replicates,)
+    spread_results = {}
+    for _name, _statistic in spread_statistics.items():
+        # A common seed uses the same resamples for comparisons between statistics.
+        spread_results[_name] = st.bootstrap(
+            (ages,), _statistic, confidence_level=0.95, method="percentile",
+            n_resamples=4_000, batch=100, vectorized=True,
+            rng=np.random.default_rng(2031)
+        )
+    return sample_sd, sample_variance, spread_results, spread_statistics
 
 
 @app.cell
-def _(mo, pd, percentile_interval, spread_replicates):
-    spread_intervals = pd.DataFrame([
-        {
-            "Statistic": name,
-            "Low": percentile_interval(values, 95)[0],
-            "High": percentile_interval(values, 95)[1],
-        }
-        for name, values in spread_replicates.items()
-    ])
-    mo.Html(
-        spread_intervals.round(3).to_html(index=False, border=0, col_space=140)
-        .replace("<table ", '<table style="width: auto;" ')
-    )
+def _(ages, mo, np, pd, spread_results, spread_statistics, st):
+    _rows = []
+    for _name, _statistic in spread_statistics.items():
+        for _level in (0.90, 0.95, 0.99):
+            _result = st.bootstrap(
+                (ages,), _statistic, confidence_level=_level, method="percentile",
+                n_resamples=0, bootstrap_result=spread_results[_name],
+                rng=np.random.default_rng(2032)
+            )
+            _rows.append({"Statistic": _name, "Confidence": f"{_level:.0%}",
+                          "Low": _result.confidence_interval.low,
+                          "High": _result.confidence_interval.high})
+    spread_intervals = pd.DataFrame(_rows)
+    mo.Html(spread_intervals.round(3).to_html(index=False, border=0, col_space=140))
     return (spread_intervals,)
 
 
 @app.cell
-def _(percentile_interval, plt, spread_replicates):
+def _(plt, spread_results):
     _fig, _axes = plt.subplots(2, 3, figsize=(9, 5.2))
-    for _ax, (_name, _values) in zip(_axes.ravel(), spread_replicates.items()):
-        _low, _high = percentile_interval(_values, 95)
-        _ax.hist(_values, bins=30, color="#4C78A8", edgecolor="white")
+    for _ax, (_name, _result) in zip(_axes.ravel(), spread_results.items()):
+        _low, _high = _result.confidence_interval
+        _ax.hist(_result.bootstrap_distribution, bins=30, color="#4C78A8", edgecolor="white")
         _ax.axvline(_low, color="#E45756", linewidth=1.5)
         _ax.axvline(_high, color="#E45756", linewidth=1.5)
         _ax.set_title(f"{_name}\n95% ({_low:.2f}, {_high:.2f})", fontsize=9)
@@ -271,8 +390,8 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     1. Which two percentiles form a 90% percentile interval?
-    2. Does a bootstrap interval for the median use a \(t\) critical value?
-    3. The age population in this simulation is uniform. Did `percentile_interval` use that fact?
+    2. Does a bootstrap interval for the median use a $t$ critical value?
+    3. The age population in this simulation is uniform. Did the bootstrap calculation use that fact?
     """)
     return
 
@@ -282,8 +401,49 @@ def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 1. **Percentiles:** The 5th and the 95th.
 2. **Median:** No. The interval reads percentiles of the bootstrap medians.
-3. **Uniform formula:** No. The function resamples the observed ages and takes percentiles. The uniform model was used only to create the sample.
-""")})
+3. **Uniform formula:** No. The calculation resamples the observed ages and takes percentiles of the resulting statistics. The uniform model was used only to create the sample.
+""")}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Using `delivery_times`, calculate 95% percentile bootstrap confidence intervals for the population variance and standard deviation. Report the units of each interval.
+    """)
+    return
+
+
+@app.cell
+def _(sample_sd, sample_variance, delivery_times, np, st):
+    student_delivery_variance_interval = None
+    student_delivery_sd_interval = None
+    print("Variance interval (days squared):", student_delivery_variance_interval)
+    print("Standard deviation interval (days):", student_delivery_sd_interval)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
+```python
+student_delivery_variance_interval = st.bootstrap(
+    (delivery_times,), sample_variance, confidence_level=0.95,
+    method="percentile", n_resamples=4_000, batch=100,
+    rng=np.random.default_rng(2033)
+).confidence_interval
+student_delivery_sd_interval = st.bootstrap(
+    (delivery_times,), sample_sd, confidence_level=0.95,
+    method="percentile", n_resamples=4_000, batch=100,
+    rng=np.random.default_rng(2033)
+).confidence_interval
+print("Variance interval (days squared):", student_delivery_variance_interval)
+print("Standard deviation interval (days):", student_delivery_sd_interval)
+```
+
+`sample_variance` and `sample_sd` calculate variance and standard deviation with `ddof=1`. SciPy applies each calculation to every resample and returns the confidence interval. Variance is measured in days squared; standard deviation is measured in days.
+""")}, lazy=True)
     return
 
 
@@ -291,22 +451,37 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## 5. Grades in the student file
-    The code reads `../data/student-mat.csv`. Run the notebook with this lesson folder as the working directory.
-    `G1`, `G2`, and `G3` are period grades on a 0–20 scale.
-    The table gives a 95% percentile interval for each mean, next to the ordinary \(t\) interval.
-    The two intervals answer the same question with different approximations. They will be close for these large samples and need not match exactly.
+    The student performance data provide another application of bootstrap intervals. The file `student-mat.csv` must be available in the notebook folder or its `../data` folder. It uses semicolons to separate columns.
+
+    Each row describes a student. The three grade columns are:
+
+    - **G1:** first-period grade.
+    - **G2:** second-period grade.
+    - **G3:** final grade.
+
+    All three grades are on a 0–20 scale. For each column, we calculate its sample mean and a 95% percentile bootstrap interval for the population mean. We also calculate the ordinary $t$ mean interval for comparison.
+
+    Both intervals estimate the same population mean, but they use different methods and need not have identical endpoints. With a sufficiently large sample and suitable data, they may be close.
+
+    The calculation treats students as independent observations. A confidence interval alone does not make this dataset representative of all students. The smoothed grade plots help compare distributions, but grades themselves are discrete values.
     """)
     return
 
 
 @app.cell
-def _(bootstrap_replicates, mo, np, pd, percentile_interval, st):
-    student_file = pd.read_csv("../data/student-mat.csv", sep=";")
+def _(Path, mo, np, pd, st):
+    _candidates = [Path("../data/student-mat.csv"), Path("student-mat.csv")]
+    _path = next((_candidate for _candidate in _candidates if _candidate.is_file()), None)
+    mo.stop(_path is None, mo.md("**Student data needed:** Place `student-mat.csv` in the notebook folder or its `../data` folder to run this section."))
+    student_file = pd.read_csv(_path, sep=";")
     grades = student_file[["G1", "G2", "G3"]].copy()
     _rows = []
     for _name in ["G1", "G2", "G3"]:
         _values = grades[_name].to_numpy()
-        _boot = percentile_interval(bootstrap_replicates(_values, np.mean, seed=2026), 95)
+        _boot = st.bootstrap(
+            (_values,), np.mean, confidence_level=0.95, method="percentile",
+            n_resamples=4_000, batch=100, rng=np.random.default_rng(2034)
+        ).confidence_interval
         _t = st.t.interval(0.95, len(_values) - 1, loc=_values.mean(), scale=st.sem(_values))
         _rows.append({
             "Grade": _name,
@@ -343,7 +518,7 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     1. Which grade has the lowest sample mean in the table?
-    2. Are the bootstrap and \(t\) intervals required to have the same endpoints?
+    2. Are the bootstrap and $t$ intervals required to have the same endpoints?
     """)
     return
 
@@ -353,9 +528,9 @@ def _(grade_intervals, mo):
     _lowest = grade_intervals.loc[grade_intervals["Mean"].idxmin(), "Grade"]
     _answers = rf"""
 1. **Lowest mean:** {_lowest}.
-2. **Endpoints:** No. One interval uses bootstrap percentiles. The other uses a \(t\) critical value and the standard error.
+2. **Endpoints:** No. One interval uses bootstrap percentiles. The other uses a $t$ critical value and the standard error.
 """
-    mo.accordion({"Show answers": mo.md(_answers)})
+    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
 
 
@@ -363,20 +538,20 @@ def _(grade_intervals, mo):
 def _(mo):
     mo.md(r"""
     ## Conclusions
-    - A bootstrap sample is drawn with replacement and has the original sample size.
-    - The percentile interval uses the tails of the bootstrap statistics. A 95% interval uses the 2.5th and 97.5th percentiles.
-    - The same construction applies to a mean, a median, a variance, a standard deviation, an interquartile range, skewness, and excess kurtosis.
-    - The procedure does not insert a normal or \(t\) formula. It still depends on the observed sample.
-    - State the divisor when the statistic is a variance or a standard deviation.
-    - For a large sample mean, the percentile interval and the \(t\) interval are two approximations and can differ slightly.
-    - Changing the number of replicates changes the Monte Carlo error in the endpoints. It does not change the definition of the interval.
+    - A bootstrap sample draws from the original observations **with replacement** and has the same sample size.
+    - We recalculate the statistic for every resample. The resulting bootstrap statistics approximate its variation across samples.
+    - A 95% percentile interval uses the 2.5th and 97.5th percentiles of the **bootstrap statistics**, not the original observations.
+    - The method can estimate uncertainty for means, medians, and many measures of spread and shape without specifying a normal population model.
+    - The ordinary bootstrap still depends on independent observations and a reasonably representative sample. It cannot recover population features missing from the sample.
+    - SciPy's `bootstrap` calculates the intervals. We select the percentile method explicitly and seed every random calculation.
+    - More resamples make the endpoints more stable. More original observations provide more information about the population; these are different improvements.
 
     ## Check your understanding
     1. A sample has 40 rows. How many rows does one bootstrap sample have?
-    2. What is replaced: the statistic, or the rows?
-    3. Which percentiles are the ends of a 99% percentile interval?
-    4. A bootstrap sample contains a value that was not in the original data. What went wrong?
-    5. Why can the median interval be wider than the mean interval?
+    2. What does “with replacement” mean?
+    3. Which percentiles form a 99% percentile bootstrap interval?
+    4. Does a 95% bootstrap interval for the mean contain 95% of individual observations?
+    5. Can increasing the number of resamples correct a sample that excludes an important part of the population?
     """)
     return
 
@@ -384,12 +559,12 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
-1. **Rows:** 40.
-2. **Replacement:** The rows. Each bootstrap sample recomputes the statistic.
-3. **99% ends:** The 0.5th percentile and the 99.5th percentile.
-4. **Support:** The draw was not taken from the observed sample. Bootstrap values are copies of observed values.
-5. **Width:** The median uses fewer features of the sample than the mean, so its bootstrap distribution is often wider. The figure in this lesson is the comparison for these ages.
-""")})
+1. **Rows:** 40, the same number as in the original sample.
+2. **Replacement:** After selecting a row, it remains available to be selected again. A resample may repeat rows and omit others.
+3. **99% endpoints:** The 0.5th and 99.5th percentiles of the bootstrap statistics.
+4. **Individual observations:** No. The interval estimates the population mean; it is not an interval for individual observations.
+5. **Representativeness:** No. Resampling cannot supply information missing from the original sample.
+""")}, lazy=True)
     return
 
 
