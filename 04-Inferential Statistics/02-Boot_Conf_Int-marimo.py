@@ -155,16 +155,20 @@ def _(ages, np, st):
         rng=np.random.default_rng(2026)
     )
     mean_replicates = mean_bootstrap.bootstrap_distribution
-    print("Sample mean age (years):", round(ages.mean(), 2))
-    print("95% interval for mean age (years):", mean_bootstrap.confidence_interval)
-    print("Bootstrap standard error (years):", round(mean_bootstrap.standard_error, 3))
+    print("Sample mean age (years):", ages.mean().round(3))
+    print("95% interval for mean age (years):", f"{mean_bootstrap.confidence_interval.low:.3f} to {mean_bootstrap.confidence_interval.high:.3f}")
+    print("Bootstrap standard error (years):", mean_bootstrap.standard_error.round(3))
     return mean_bootstrap, mean_replicates
 
 
 @app.cell(hide_code=True)
 def _(mean_bootstrap, mo):
     mo.md(f"""
-    The 95% percentile interval runs from **{mean_bootstrap.confidence_interval.low:.2f} to {mean_bootstrap.confidence_interval.high:.2f} years**. It estimates the mean age of the population of adult visitors represented by this sample. It does not describe the ages of 95% of individual visitors.
+    The 95% percentile interval runs from **{mean_bootstrap.confidence_interval.low:.3f} to {mean_bootstrap.confidence_interval.high:.3f} years**. 
+    
+    It estimates the mean age of the population of adult visitors represented by this sample. 
+    
+    It does not describe the ages of 95% of individual visitors.
     """)
     return
 
