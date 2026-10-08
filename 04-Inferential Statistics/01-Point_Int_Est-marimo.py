@@ -1,12 +1,18 @@
 # /// script
 # dependencies = [
 #     "marimo",
+#     "numpy",
+#     "pandas",
+#     "matplotlib",
+#     "statsmodels",
 #     "seaborn",
 #     "scipy",
 # ]
 # ///
 
 import marimo
+
+__generated_with = "0.25.1"
 
 app = marimo.App(width="medium")
 
@@ -19,9 +25,10 @@ def _():
     import matplotlib.pyplot as plt
     import seaborn as sns
     import scipy.stats as st
+    import statsmodels.stats.api as sm
 
     sns.set_style("whitegrid")
-    return mo, np, pd, plt, sns, st
+    return mo, np, pd, plt, sm, sns, st
 
 
 @app.cell(hide_code=True)
@@ -32,16 +39,19 @@ def _(mo):
     ## Learning goals
     By the end of this lesson, you should be able to:
     - Distinguish a point estimate from a confidence interval.
-    - Separate a known population variance from the two divisors used on a sample.
+    - Estimate a population mean and proportion from sample data.
+    - Distinguish sample variability, standard error, and margin of error.
+    - Explain the sample variance divisors \(n\) and \(n-1\).
     - Interpret a confidence level as a long-run coverage rate.
-    - Build a \(t\) interval for a mean and for a paired mean difference.
+    - Build a \(t\) interval for a mean using SciPy and statsmodels, and for a paired mean difference.
     - Build a chi-square interval for the variance of a normal population.
     - Explain why one computed interval either contains the parameter or does not.
 
     ## 1. Two kinds of estimate
     A **point estimate** is one number computed from a sample, such as a mean or a proportion.
     An **interval estimate** is a range built around that number.
-    The range is an attempt to show how far the point estimate might sit from the population parameter.
+    A confidence interval expresses uncertainty using a procedure with a stated long-run coverage rate.
+    An **estimator** is a rule, such as the sample mean; an **estimate** is the number that rule produces for one sample.
 
     The sample in the next section is drawn from a normal population with mean 45 and standard deviation 8.
     We know those population values because this lesson chooses them for the simulation.
@@ -67,7 +77,7 @@ def _(mo):
 1. **Point estimate:** (40 + 42 + 45 + 48 + 55) / 5 = 46.
 2. **Equality:** No. A sample mean estimates the population mean. It does not have to equal it.
 3. **Interval:** A range that, at a stated confidence level, covers the population mean in a known fraction of repeated samples.
-""")})
+""")}, lazy=True)
     return
 
 
@@ -85,6 +95,8 @@ def _(mo):
 
 @app.cell
 def _(np):
+    # A local seeded generator reproduces the sample when this cell is rerun.
+    # These are illustrative normal measurements, not a realistic model of all voter ages.
     ages = np.random.default_rng(2026).normal(45, 8, size=1_000)
     print('First 10 ages:', ages[:10].round(0))
     return (ages,)
@@ -134,13 +146,17 @@ def _(ages, mo, pd):
 def _(mo):
     mo.md(r"""
     The known population variance is \(8^2 = 64\).
-    Neither sample variance is that number.
+    Both sample variances estimate or summarize variability using the observed sample; neither is automatically the known value 64.
     Divisor \(n\) describes the sample.
-    Divisor \(n-1\) is the usual unbiased estimator of a normal population variance.
+    Divisor \(n-1\) gives an unbiased estimator of population variance for independent, identically distributed observations with finite variance; normality is not required for this property.
+    Estimating the mean from the same observations leaves \(n-1\) degrees of freedom.
+    In NumPy, `ddof` means **delta degrees of freedom**: the divisor is `n - ddof`.
+    The square root gives the sample standard deviation; taking this square root does not preserve unbiasedness.
     `scipy.stats.sem` uses divisor \(n-1\).
 
-    The original notebook labeled `a.var()` as the population variance and `st.sem(a)` as the sampling error.
-    The first is a sample calculation. The second is the **standard error of the mean**, an estimate of the typical distance between the sample mean and the population mean.
+    The **standard deviation** describes variability among observations.
+    The **standard error of the mean**, \(s/\sqrt n\), estimates the standard deviation of sample means across repeated samples.
+    It measures precision of the mean estimate, rather than spread of individual ages.
     The sampling error of this sample is \(\bar x - 45\), and it is known here only because the simulation set the population mean.
     """)
     return
@@ -157,13 +173,13 @@ def _(mo):
     2. Store the standard deviation with divisor \(n-1\) in `age_sd`.
     3. Store the proportion of ages below 50 in `proportion_under_50`.
 
-    The original notes said "less than 55" while the code used 50. This lesson uses 50.
+    `(ages < 50)` creates Boolean values. Their mean is the fraction that are `True`, because `True` counts as 1 and `False` as 0.
     """)
     return
 
 
 @app.cell
-def _():
+def _(ages):
     age_mean = None
     age_sd = None
     proportion_under_50 = None
@@ -189,7 +205,7 @@ age_sd = ages.std(ddof=1)
 proportion_under_50 = (ages < 50).mean()
 ```
 """
-    mo.accordion({"Show answers": mo.md(_answers)})
+    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
 
 
@@ -207,7 +223,14 @@ def _(mo):
 
     where \(s\) uses divisor \(n-1\). That is the standard error `scipy.stats.sem` returns, and it is the scale passed to `scipy.stats.t.interval`.
     A higher confidence level uses a larger critical value, so the interval is wider.
-    The \(t\) model is appropriate for a normal sample. A large normal sample satisfies that assumption closely.
+    The interval has exact coverage for independent observations from a normal population with unknown variance.
+    For sufficiently large independent samples from a population with finite variance, it can be approximately valid without normality; strong skewness and outliers can require larger samples.
+    A large sample alone cannot correct biased sampling or dependence.
+
+    The **margin of error** is the half-width, \(t_{n-1,1-\alpha/2}s/\sqrt n\), not a guaranteed bound on the actual estimation error.
+    Here \(\alpha = 1 - \text{confidence level}\); each tail has probability \(\alpha/2\).
+    `loc` sets the interval center, `scale` supplies the standard error, and `df=n-1` sets the degrees of freedom.
+    `ppf` is the inverse cumulative distribution function: it returns a quantile or critical value.
 
     `Contains_45` checks whether the finished interval covers the known population mean.
     It is not part of calculating the interval. The interval is centered on the sample mean.
@@ -219,9 +242,11 @@ def _(mo):
 @app.cell
 def _(ages, mo, pd, st):
     _mean = ages.mean()
+    # sem uses ddof=1 by default: sample SD divided by sqrt(sample size).
     _sem = st.sem(ages)
     _rows = []
     for _level in (0.90, 0.95, 0.99):
+        # interval accepts the central confidence level, such as 0.95.
         _low, _high = st.t.interval(_level, len(ages) - 1, loc=_mean, scale=_sem)
         _rows.append({
             "Confidence": f"{_level:.0%}",
@@ -258,7 +283,69 @@ def _(mean_intervals, mo):
 2. **Known mean:** `Contains_45` asks whether the interval covers 45. The lesson can compute it because the simulation set the population mean to 45. The interval is centered on the sample mean.
 3. **One interval:** No. The percentage describes the procedure across repeated samples.
 """
-    mo.accordion({"Show answers": mo.md(_answers)})
+    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+    return
+
+
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself: calculation
+    Calculate the 95% mean interval manually: sample mean, standard error, critical value, and margin of error. Compare it with `mean_intervals`.
+    Replace `None` in the next cell with your calculation. The required data and libraries are already available as function arguments.
+    """)
+    return
+
+
+@app.cell
+def _(ages, np, st):
+    student_mean_interval = None
+    print("95% mean interval:", student_mean_interval)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
+```python
+# In the exercise cell, use def _(ages, np, st):
+student_mean = ages.mean()
+student_se = ages.std(ddof=1) / np.sqrt(len(ages))
+student_critical = st.t.ppf(0.975, len(ages) - 1)
+student_margin = student_critical * student_se
+student_mean_interval = (student_mean - student_margin, student_mean + student_margin)
+print("Margin of error:", student_margin)
+print("95% mean interval:", student_mean_interval)
+# st.t.interval(0.95, ...) gives the same endpoints.
+```
+""")}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### The same mean intervals using statsmodels
+    The Jupyter reference also calculates these intervals with `DescrStatsW`.
+    With no weights supplied, this uses the same unweighted sample statistics.
+    SciPy takes the **confidence level**; `tconfint_mean` takes **alpha**, its complement.
+    For a 95% interval, use `0.95` in SciPy and `alpha=0.05` in statsmodels.
+    """)
+    return
+
+
+@app.cell
+def _(ages, mo, np, pd, sm, st):
+    _summary = sm.DescrStatsW(ages)
+    _rows = []
+    for _level in (0.90, 0.95, 0.99):
+        _low, _high = _summary.tconfint_mean(alpha=1 - _level)
+        _scipy = st.t.interval(_level, len(ages) - 1, loc=ages.mean(), scale=st.sem(ages))
+        _rows.append({"Confidence": f"{_level:.0%}", "Low": _low, "High": _high,
+                      "Matches SciPy": np.allclose((_low, _high), _scipy)})
+    mo.Html(pd.DataFrame(_rows).round(3).to_html(index=False, border=0))
     return
 
 
@@ -266,10 +353,20 @@ def _(mean_intervals, mo):
 def _(mo):
     mo.md(r"""
     ## 4. Paired difference of means
-    The two rows below are paired: each position is one pair.
-    The interval is a one-sample \(t\) interval for the mean of the differences.
+    We treat `x1` and `x2` as measurements on the same 10 subjects or matched units.
+    Each position is one pair; the numeric arrays alone cannot establish pairing.
+    This is an explicit teaching assumption, and an independent-samples comparison would require a different procedure.
+    Define \(d_i = x_{2,i}-x_{1,i}\): a positive difference means the second measurement is larger.
+    The interval is a one-sample \(t\) interval for the population mean of these differences:
+
+    $$\bar d \pm t_{n-1,1-\alpha/2}\frac{s_d}{\sqrt n}.$$
+
+    Pairs must be independent of other pairs. With only 10 pairs, the differences should be reasonably consistent with a normal population without strong outliers.
+    Normality concerns the **differences**, not each measurement series separately.
+    A smoothed density plot with 10 observations cannot verify this assumption.
     If the interval contains 0, the data are compatible with a mean difference of 0 at that confidence level.
-    That is a statement about the interval, not a hypothesis test written out in full.
+    Containing zero does not prove that the population means are equal.
+    Excluding zero corresponds to rejecting a zero mean difference in the matching two-sided \(t\) test at level \(\alpha\), under the same assumptions.
     """)
     return
 
@@ -278,6 +375,7 @@ def _(mo):
 def _(mo, np, pd, st):
     x1 = np.array([148, 128, 69, 34, 155, 123, 101, 150, 139, 98])
     x2 = np.array([151, 146, 32, 70, 155, 142, 134, 157, 150, 130])
+    # Subtract within each pair to preserve the matching.
     differences = x2 - x1
     _n = len(differences)
     _df = _n - 1
@@ -285,7 +383,9 @@ def _(mo, np, pd, st):
     _sd = differences.std(ddof=1)
     _rows = []
     for _level in (0.90, 0.95, 0.99):
+        # Two-sided interval: leave alpha/2 in each tail.
         _t = st.t.ppf(1 - (1 - _level) / 2, _df)
+        # Critical value times standard error gives the margin of error.
         _half = _t * _sd / np.sqrt(_n)
         _rows.append({
             "Confidence": f"{_level:.0%}",
@@ -335,7 +435,43 @@ def _(difference_intervals, differences, mo):
 1. **Zero:** {_contains}. The 95% interval is ({_row.Low:.2f}, {_row.High:.2f}). The mean difference is {differences.mean():.2f}.
 2. **Sample size:** There are 10 pairs. The interval uses the 10 differences, so \(n = 10\) and the degrees of freedom are 9.
 """
-    mo.accordion({"Show answers": mo.md(_answers)})
+    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+    return
+
+
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself: calculation
+    Calculate a 95% interval for the mean paired difference. Then predict how reversing the subtraction to `x1 - x2` changes the endpoints.
+    Replace `None` in the next cell with your calculation. The required data and libraries are already available as function arguments.
+    """)
+    return
+
+
+@app.cell
+def _(differences, st):
+    student_difference_interval = None
+    print("95% paired interval:", student_difference_interval)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
+```python
+# In the exercise cell, use def _(differences, st):
+student_difference_interval = st.t.interval(
+    0.95, len(differences) - 1,
+    loc=differences.mean(), scale=st.sem(differences)
+)
+print("95% paired interval:", student_difference_interval)
+# Reversing subtraction changes (L, U) into (-U, -L).
+# Width and whether zero is included stay the same.
+```
+""")}, lazy=True)
     return
 
 
@@ -348,7 +484,10 @@ def _(mo):
     $$\left(\frac{(n-1)s^2}{\chi^2_{1-\alpha/2,\,n-1}},\; \frac{(n-1)s^2}{\chi^2_{\alpha/2,\,n-1}}\right).$$
 
     The larger chi-square quantile is in the lower endpoint. The interval is not symmetric around \(s^2\).
-    The nine measurements below are the example from the original notebook.
+    The nine measurements below are the example from the Jupyter reference.
+    Observations must be independent and drawn from a normal population. This variance interval is particularly sensitive to departures from normality.
+    The formula follows from \((n-1)s^2/\sigma^2\) having a chi-square distribution with \(n-1\) degrees of freedom.
+    Variance and its interval have squared measurement units. Taking square roots of both endpoints gives an interval for the population standard deviation.
     """)
     return
 
@@ -362,7 +501,9 @@ def _(mo, np, pd, st):
     _rows = []
     for _level in (0.90, 0.95, 0.99):
         _alpha = 1 - _level
+        # Dividing by the larger quantile gives the LOWER variance endpoint.
         _low = _df * _s2 / st.chi2.ppf(1 - _alpha / 2, _df)
+        # Dividing by the smaller quantile gives the UPPER variance endpoint.
         _high = _df * _s2 / st.chi2.ppf(_alpha / 2, _df)
         _rows.append({"Confidence": f"{_level:.0%}", "Low": _low, "High": _high})
     variance_intervals = pd.DataFrame(_rows)
@@ -393,7 +534,48 @@ def _(measurements, mo, variance_intervals):
 1. **Center:** No. The 95% interval is ({_row.Low:.3f}, {_row.High:.3f}). Its midpoint is {_mid:.3f}, while \(s^2\) is {_s2:.3f}.
 2. **Assumption:** The observations are treated as a normal sample. The chi-square interval is not a general-purpose interval for every distribution.
 """
-    mo.accordion({"Show answers": mo.md(_answers)})
+    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+    return
+
+
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself: calculation
+    Calculate the 95% variance interval and convert it into an interval for the population standard deviation.
+    Replace `None` in the next cell with your calculation. The required data and libraries are already available as function arguments.
+    """)
+    return
+
+
+@app.cell
+def _(measurements, np, st):
+    student_variance_interval = None
+    student_sd_interval = None
+    print("Variance interval:", student_variance_interval)
+    print("Standard deviation interval:", student_sd_interval)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
+```python
+# In the exercise cell, use def _(measurements, np, st):
+student_df = len(measurements) - 1
+student_s2 = measurements.var(ddof=1)
+student_variance_interval = (
+    student_df * student_s2 / st.chi2.ppf(0.975, student_df),
+    student_df * student_s2 / st.chi2.ppf(0.025, student_df)
+)
+student_sd_interval = np.sqrt(student_variance_interval)
+print("Variance interval:", student_variance_interval)
+print("Standard deviation interval:", student_sd_interval)
+# Square roots preserve endpoint order because both endpoints are positive.
+```
+""")}, lazy=True)
     return
 
 
@@ -404,7 +586,10 @@ def _(mo):
     The population mean in this simulation is 45.
     The next cell draws 30 samples of size 40 and computes a 90% \(t\) interval for each.
     About 27 of the 30 intervals are expected to cover 45. One run of 30 samples will not hit 27 every time.
-    The red line in the figure is the known population mean.
+    Each sample is drawn directly from the normal model with mean 45 and standard deviation 8.
+    The red line is that known population mean. A generated finite array would generally have a mean different from 45.
+    Changing sample size changes interval width; under this valid normal model, a 90% interval still has 90% coverage.
+    The smaller sample size makes the intervals easier to see, not more likely to miss the true mean.
     """)
     return
 
@@ -412,10 +597,11 @@ def _(mo):
 @app.cell
 def _(mo, np, pd, plt, st):
     _rng = np.random.default_rng(2026)
-    _population = _rng.normal(45, 8, size=20_000)
     _rows = []
     for _i in range(30):
-        _sample = _rng.choice(_population, size=40, replace=False)
+        # Draw directly from the normal model whose true mean is exactly 45.
+        # A finite simulated population would have its own mean, not exactly 45.
+        _sample = _rng.normal(45, 8, size=40)
         _low, _high = st.t.interval(0.90, len(_sample) - 1, loc=_sample.mean(), scale=st.sem(_sample))
         _rows.append({
             "Sample": _i + 1,
@@ -465,7 +651,7 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     1. If none of these 30 intervals had missed 45, would the procedure be invalid?
-    2. Why is a sample of size 40 more useful for this picture than a sample of size 1,000?
+    2. If the sample size increased from 40 to 1,000, what would happen to interval width and the theoretical coverage rate?
     """)
     return
 
@@ -474,8 +660,8 @@ def _(mo):
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 1. **One experiment:** No. Twenty-seven is the expected count, not a quota for every batch of 30 intervals.
-2. **Width:** With 1,000 observations the intervals are very narrow and almost all of them cover 45, so the misses that the confidence level allows are hard to see.
-""")})
+2. **Width and coverage:** Larger samples generally give narrower intervals. The theoretical coverage remains 90% under this normal model: narrower intervals are accompanied by less variable sample means. The expected number covering 45 is still 27 out of 30.
+""")}, lazy=True)
     return
 
 
@@ -488,9 +674,12 @@ def _(mo):
     - The standard error estimates the typical sampling error. It is not the sampling error of the sample in hand.
     - A 95% interval from a valid procedure covers the parameter in about 95% of repeated samples. It does not assign a 95% probability to one finished interval.
     - The \(t\) interval for a mean uses \(s/\sqrt{n}\), and \(s\) uses divisor \(n-1\). `scipy.stats.sem` is that standard error.
-    - A paired comparison can be reduced to a one-sample interval for the differences.
+    - A paired comparison uses within-pair differences. Independent pairs and the distribution of those differences determine whether the small-sample procedure is appropriate.
     - The chi-square variance interval assumes a normal sample, and it is not centered on \(s^2\).
-    - These \(t\) and chi-square formulas are tied to their sampling models. A later lesson uses the bootstrap when that model is not the tool you want.
+    - Larger samples generally narrow mean intervals; higher confidence widens them for the same sample.
+    - SciPy and statsmodels give matching mean intervals when supplied equivalent settings.
+    - The exact \(t\) and chi-square results assume normal sampling. Mean intervals can also be approximately valid with sufficiently large independent samples; the variance interval is more sensitive to nonnormality.
+    - Seeds reproduce simulated examples; fixed measurement arrays need no seed.
 
     ## Check your understanding
     1. A sample mean is 12. Is 12 the population mean?
@@ -510,7 +699,7 @@ def _(mo):
 3. **Coverage count:** About \(0.90 \times 200 = 180\). The count in one set of 200 varies around that value.
 4. **Zero:** Yes. Values from \(-1.2\) through \(4.0\) are inside the interval.
 5. **Chi-square:** The lower tail quantile is the smaller number. Dividing by a smaller positive number produces the upper endpoint.
-""")})
+""")}, lazy=True)
     return
 
 

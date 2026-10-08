@@ -33,7 +33,7 @@ def _(mo):
     By the end of this lesson, you should be able to:
     - Describe a bootstrap sample as a draw with replacement from the observed sample.
     - Build a percentile confidence interval from the bootstrap values of a statistic.
-    - Apply that interval to a mean, a median, a spread, and a shape summary.
+    - Apply that interval to a mean, a median, a variance, and a shape summary.
     - Explain what the interval does not assume about the population distribution.
     - Read a percentile interval for a mean grade in the student file.
 
@@ -42,8 +42,6 @@ def _(mo):
     Repeating that draw produces an approximate sampling distribution for a statistic.
     The **percentile interval** takes the \(\alpha/2\) and \(1-\alpha/2\) percentiles of those bootstrap statistics.
     A 95% interval uses the 2.5th and 97.5th percentiles.
-
-    This lesson uses 4,000 bootstrap replicates. The original notebook used 10,000. The percentile method is the same. The endpoints move a little when the number of replicates changes.
 
     The percentile interval does not require the statistic to be a mean, and it does not start from a normal formula.
     It still treats the original sample as a stand-in for the population, so a tiny or badly chosen sample remains a weak foundation.
@@ -86,7 +84,7 @@ def _(mo):
 @app.cell
 def _(np):
     ages = np.random.default_rng(2026).uniform(18, 85, size=1_000)
-    ages
+    print('First 10 ages:', ages[:10].round(0))
     return (ages,)
 
 
