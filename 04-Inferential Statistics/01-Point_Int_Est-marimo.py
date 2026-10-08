@@ -332,18 +332,26 @@ def _(mean_intervals, mo):
 
 
 
+@app.cell
+def _(np):
+    package_weights = np.random.default_rng(2027).normal(500, 12, size=40)
+    print("Package weights (grams):", package_weights)
+    return (package_weights,)
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    Use SciPy’s `st.t.interval` to calculate a 95% confidence interval for the population mean using `ages`. Compare your result with the 95% row of `mean_intervals`.
-    Replace `None` in the next cell with your calculation. The needed data and libraries are listed in the cell’s function arguments.
+    A factory checks the weights of a random sample of 40 packages. The weights, in grams, are stored in `package_weights`. Assume the package weights follow a normal distribution and the observations are independent.
+
+    Calculate a 95% confidence interval for the mean weight of all packages produced by the factory.
     """)
     return
 
 
 @app.cell
-def _(ages, st):
+def _(package_weights, sm, st):
     student_mean_interval = None
     print("95% mean interval:", student_mean_interval)
     return
@@ -352,14 +360,24 @@ def _(ages, st):
 @app.cell(hide_code=True)
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
+**Using SciPy:**
+
 ```python
 student_mean_interval = st.t.interval(
-    0.95, len(ages) - 1,
-    loc=ages.mean(), scale=st.sem(ages)
+    0.95, len(package_weights) - 1,
+    loc=package_weights.mean(), scale=st.sem(package_weights)
 )
 print("95% mean interval:", student_mean_interval)
-# The endpoints match the 95% row of mean_intervals.
 ```
+
+**Using statsmodels:**
+
+```python
+student_mean_interval = sm.DescrStatsW(package_weights).tconfint_mean(alpha=0.05)
+print("95% mean interval:", student_mean_interval)
+```
+
+Both give approximately (495.624, 503.850) grams.
 """)}, lazy=True)
     return
 
@@ -507,7 +525,6 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     Calculate a 95% interval for the mean paired difference. Then predict how reversing the subtraction to `x1 - x2` changes the endpoints.
-    Replace `None` in the next cell with your calculation. The needed data and libraries are listed in the cell’s function arguments.
     """)
     return
 
@@ -619,7 +636,6 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     Calculate the 95% variance interval and convert it into an interval for the population standard deviation.
-    Replace `None` in the next cell with your calculation. The needed data and libraries are listed in the cell’s function arguments.
     """)
     return
 
