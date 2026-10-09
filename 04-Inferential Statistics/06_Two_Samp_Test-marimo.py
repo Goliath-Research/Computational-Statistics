@@ -778,50 +778,29 @@ def _(grade_after, grade_after_close, grade_before, mo, np, pd):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Seeing the pairing
-    In the central scatterplot below, each point is one student: the horizontal coordinate is the before-score and the vertical coordinate is that same student’s after-score. The dashed diagonal represents no change. Points above it indicate improved scores; points below it indicate decreased scores.
+    ### Reading the paired-data graphs
+    The left graph shows one point per student: the before-score is on the horizontal axis and that same student's after-score is on the vertical axis. The diagonal means no change. Points above it indicate an improved score; points below it indicate a decreased score.
 
-    The plots along the edges show the separate before and after score distributions. They summarize each measurement, but do not display the individual changes. The central plot preserves those links.
+    The right graph shows **after minus before** for each student. Zero means no change, positive values mean improved scores, and negative values mean decreased scores. The bar heights count students. This graph shows the size and spread of individual changes, rather than just the two separate score distributions.
+
+    These graphs describe the observed changes. The paired test then evaluates evidence about a population change. For the function calls below, we pass before first and after second, so the function calculates **before minus after**: its differences have the opposite sign to the displayed improvements.
     """)
     return
 
 
 @app.cell
-def _(grade_after, grade_before, plt, sns):
-    _grid = sns.jointplot(x=grade_before, y=grade_after, color="royalblue", height=6)
+def _(grade_after, grade_before, plt):
+    _fig, _axes = plt.subplots(1, 2, figsize=(12, 4))
     _low = min(grade_before.min(), grade_after.min()) - 5
     _high = max(grade_before.max(), grade_after.max()) + 5
-    _grid.ax_joint.plot([_low, _high], [_low, _high], linestyle="--", color="orangered", label="No change")
-    _grid.ax_joint.set(xlim=(_low, _high), ylim=(_low, _high), aspect="equal")
-    _grid.set_axis_labels("Before score", "After score: large-gain scenario")
-    _grid.ax_joint.legend()
-    _grid.fig.suptitle("Paired student scores", y=1.02)
-    plt.close(_grid.fig)
-    _grid.fig
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    The points lie above the no-change line in this large-gain sample: every simulated student improved. To analyze paired data, we now reduce each pair to one difference.
-
-    ### The differences used in the paired tests
-    The histograms below use **before minus after**, matching the order of the function arguments. Negative differences indicate improved scores; positive differences indicate decreased scores. The dashed line at zero marks no change, and bar heights count students.
-
-    Compare the large-gain and small-gain scenarios. Look at the location relative to zero, the spread, and any unusual differences. The paired t test evaluates the population mean of these differences. With only 20 observations, the histograms cannot establish that the population of differences is normal.
-    """)
-    return
-
-
-@app.cell
-def _(grade_after, grade_after_close, grade_before, plt):
-    _fig, _axes = plt.subplots(1, 2, figsize=(12, 4))
-    for _ax, _after, _title in zip(_axes, [grade_after, grade_after_close], ["Large-gain scenario", "Small-gain scenario"]):
-        _ax.hist(grade_before - _after, bins=8, color="mediumseagreen", edgecolor="white")
-        _ax.axvline(0, color="orangered", linestyle="--", label="No change")
-        _ax.set(title=_title, xlabel="Before − after (points)", ylabel="Number of students")
-        _ax.legend()
+    _axes[0].scatter(grade_before, grade_after, color="royalblue")
+    _axes[0].plot([_low, _high], [_low, _high], color="orangered", label="No change")
+    _axes[0].set(title="Before and after: large-gain scenario", xlabel="Before score", ylabel="After score", xlim=(_low, _high), ylim=(_low, _high), aspect="equal")
+    _axes[0].legend()
+    _axes[1].hist(grade_after - grade_before, bins=8, color="orange", edgecolor="white")
+    _axes[1].axvline(0, color="orangered", label="No change")
+    _axes[1].set(title="Individual score changes", xlabel="After − before (points)", ylabel="Number of students")
+    _axes[1].legend()
     _fig.tight_layout()
     plt.close(_fig)
     _fig
@@ -831,8 +810,29 @@ def _(grade_after, grade_after_close, grade_before, plt):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    The large-gain differences are well below zero. The small-gain differences lie on both sides of zero, so a small observed improvement must be considered alongside its variability. We will test each scenario separately; these are alternative examples using the same baseline students, not two independent groups.
+    Every point is above the diagonal, and all changes are positive in this large-gain sample. Every simulated student improved, although the amount of improvement varies.
+
+    The same graphs below show the small-gain scenario. Here the changes lie on both sides of zero: some students improve and others score lower. We will use separate tests to assess the population mean change in each scenario. The two scenarios share the same baseline students; they are alternative examples, not independent groups.
     """)
+    return
+
+
+@app.cell
+def _(grade_after_close, grade_before, plt):
+    _fig, _axes = plt.subplots(1, 2, figsize=(12, 4))
+    _low = min(grade_before.min(), grade_after_close.min()) - 5
+    _high = max(grade_before.max(), grade_after_close.max()) + 5
+    _axes[0].scatter(grade_before, grade_after_close, color="royalblue")
+    _axes[0].plot([_low, _high], [_low, _high], color="orangered", label="No change")
+    _axes[0].set(title="Before and after: small-gain scenario", xlabel="Before score", ylabel="After score", xlim=(_low, _high), ylim=(_low, _high), aspect="equal")
+    _axes[0].legend()
+    _axes[1].hist(grade_after_close - grade_before, bins=8, color="orange", edgecolor="white")
+    _axes[1].axvline(0, color="orangered", label="No change")
+    _axes[1].set(title="Individual score changes", xlabel="After − before (points)", ylabel="Number of students")
+    _axes[1].legend()
+    _fig.tight_layout()
+    plt.close(_fig)
+    _fig
     return
 
 
@@ -1134,14 +1134,14 @@ def _(mo):
     - Graphs help us understand the observations and the quantities being tested. A hypothesis test adds an assessment of sampling uncertainty; a graph alone does not supply a significance decision.
     - Compare the p-value with the chosen significance level and answer the original question. Insufficient evidence to reject a null hypothesis does not establish equality. These simulated examples illustrate the procedures rather than establish teaching effects.
 
-    ### Try it yourself
-    1. Scores from two unrelated classes: independent or paired? Scores from the same students before and after a course?
-    2. Does Welch's t test require equal population variances?
-    3. Does a Mann–Whitney rejection automatically establish a difference in population means?
-    4. Why can lower observations produce a higher cumulative distribution function?
-    5. For a paired t test with a small sample, which distribution should be approximately normal?
-    6. With before as sample 1 and after as sample 2, which direction represents improved scores? Which represents reduced completion times?
-    7. Does a nonparametric test eliminate the need to check assumptions?
+    ## Check your understanding
+    1. A researcher compares test scores from two different classes. Each student belongs to only one class, and no students are matched across classes. Are the samples independent or paired?
+    2. A researcher measures the same students' test scores before and after a course. Each before-score is matched with that student's after-score. Are the samples independent or paired?
+    3. A researcher wants to compare the population mean delivery times of two independent delivery services. Which test taught in this lesson could they use?
+    4. A researcher records the same employees' completion times before and after practice. Which test taught in this lesson could they use to assess whether the population mean completion time decreases?
+    5. A researcher wants to compare the full delivery-time distributions of two independent services, rather than only their means. Which test taught in this lesson could they use?
+    6. A test comparing the population mean scores of two classes gives p = 0.03. At significance level 0.05, what is the decision, and how would you state the conclusion in the context of the problem?
+    7. The same comparison instead gives p = 0.20. At significance level 0.05, what can you conclude? Does this result establish that the population mean scores are equal?
     """)
     return
 
@@ -1149,13 +1149,13 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
-    1. The unrelated classes are independent; repeated measurements on the same students are paired.
-    2. No. Welch's test estimates the variances separately.
-    3. No. Its rank-based hypothesis differs from a mean comparison.
-    4. At a fixed threshold, a population with lower values can have a larger proportion at or below that threshold.
-    5. The population distribution of paired differences, rather than each separate measurement distribution.
-    6. Improved scores give before minus after < 0 (`smaller`); reduced completion times give before minus after > 0 (`larger`).
-    7. No. Sampling design, independence, and the assumptions specific to the chosen procedure still matter.
+    1. Independent samples: the students are in separate groups without a matched-pair link.
+    2. Paired samples: both measurements belong to the same student.
+    3. The independent-samples t test used in the lesson, provided its assumptions are appropriate for these data.
+    4. The paired t test, provided its assumptions are appropriate. Keep each employee's two measurements together and formulate the alternative as a decrease in population mean completion time.
+    5. The two-sample Kolmogorov–Smirnov test, provided its assumptions are appropriate for these data.
+    6. Reject the null hypothesis because 0.03 ≤ 0.05. The data provide sufficient evidence that the population mean scores of the two classes differ. A two-sided result alone does not state which population mean is higher.
+    7. Do not reject the null hypothesis because 0.20 > 0.05. The data do not provide sufficient evidence of different population mean scores. This does not establish equality.
     """)}, lazy=True)
     return
 
