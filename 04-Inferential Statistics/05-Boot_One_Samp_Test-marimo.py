@@ -1,5 +1,5 @@
 # /// script
-# dependencies = ["marimo", "numpy", "pandas", "matplotlib", "scipy", "statsmodels"]
+# dependencies = ["marimo", "numpy", "pandas", "matplotlib", "scipy", "statsmodels", "seaborn"]
 # ///
 
 import marimo
@@ -14,10 +14,11 @@ def _():
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
+    import seaborn as sns
     from scipy.stats import skew
     from statsmodels.distributions.empirical_distribution import ECDF
     plt.style.use("seaborn-v0_8-whitegrid")
-    return ECDF, mo, np, pd, plt, skew
+    return ECDF, mo, np, pd, plt, skew, sns
 
 
 @app.cell(hide_code=True)
@@ -54,7 +55,7 @@ def _(np):
 
 @app.cell
 def _(heights, np, plt, sample_mean):
-    _fig, _ax = plt.subplots(figsize=(6, 3.3))
+    _fig, _ax = plt.subplots(figsize=(8, 4))
     _ax.hist(heights, bins=np.arange(157.5, 175.5, 1), color="#4C78A8", edgecolor="white")
     _ax.axvline(sample_mean, color="black", label=f"Sample mean {sample_mean:.2f}")
     _ax.set(title="Community-centre visitors", xlabel="Height (cm)", ylabel="Number of visitors")
@@ -112,10 +113,31 @@ def _(height_samples):
 
 @app.cell
 def _(mean_distribution, plt, sample_mean):
-    _fig, _ax = plt.subplots(figsize=(6, 3.3))
+    _fig, _ax = plt.subplots(figsize=(8, 4))
     _ax.hist(mean_distribution, bins=30, color="#54A24B", edgecolor="white")
     _ax.axvline(sample_mean, color="black", label=f"Observed mean {sample_mean:.2f}")
     _ax.set(title="Bootstrap distribution of the sample mean", xlabel="Mean height (cm)", ylabel="Number of resamples")
+    _ax.legend()
+    _fig.tight_layout()
+    plt.close(_fig)
+    _fig
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    The histogram shows the bootstrap means directly. A kernel density estimate (KDE) gives a smooth view of the same distribution. The smoothing is for visualization; the p-values below are calculated from the simulated values.
+    """)
+    return
+
+
+@app.cell
+def _(mean_distribution, plt, sample_mean, sns):
+    _fig, _ax = plt.subplots(figsize=(8, 4))
+    sns.kdeplot(x=mean_distribution, color="mediumseagreen", fill=True, ax=_ax)
+    _ax.axvline(sample_mean, color="black", label=f"Observed mean {sample_mean:.2f}")
+    _ax.set(title="Bootstrap distribution of the sample mean", xlabel="Mean height (cm)", ylabel="Density")
     _ax.legend()
     _fig.tight_layout()
     plt.close(_fig)
@@ -154,19 +176,33 @@ def _(mean_distribution, sample_mean):
     return (mean_null_170,)
 
 
+@app.cell
+def _(mean_null_170, plt, sample_mean, sns):
+    _fig, _ax = plt.subplots(figsize=(8, 4))
+    sns.kdeplot(x=mean_null_170, color="dodgerblue", fill=True, ax=_ax)
+    _ax.axvline(170, color="orangered", linestyle="--", label="Hypothesized mean 170")
+    _ax.axvline(sample_mean, color="black", label=f"Observed mean {sample_mean:.2f}")
+    _ax.set(title="Bootstrap reference for a mean of 170 cm", xlabel="Mean height (cm)", ylabel="Density")
+    _ax.legend()
+    _fig.tight_layout()
+    plt.close(_fig)
+    _fig
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ### Critical regions
     At significance level \(\alpha=0.05\), a left-tailed test rejects for unusually low statistics; a right-tailed test rejects for unusually high statistics. An equal-tailed two-sided test allocates 0.025 to each tail, with cutoffs at the 2.5th and **97.5th** percentiles.
 
-    The following plotting function will also be used with variance and skewness. Orange lines show the critical cutoffs; the black line shows the observed statistic.
+    The three-panel comparison below shows all three critical regions for the same reference distribution. Orange shading marks the rejection regions. Individual test graphs then add the observed statistic as a black line. The plotting function is reused for mean, variance, and skewness.
     """)
     return
 
 
 @app.cell
-def _(np, plt):
+def _(np, plt, sns):
     def graph_bootstrap_test(null_distribution, observed, alternative="two-sided", alpha=0.05, measure="Statistic"):
         """Plot the reference distribution, observed statistic, and critical cutoffs."""
         if alternative == "smaller":
@@ -175,12 +211,23 @@ def _(np, plt):
             percentiles = [100 * (1 - alpha)]
         else:
             percentiles = [100 * alpha / 2, 100 * (1 - alpha / 2)]
-        fig, ax = plt.subplots(figsize=(6, 3.3))
-        ax.hist(null_distribution, bins=30, color="#9ECAE1", edgecolor="white")
+        fig, ax = plt.subplots(figsize=(8, 4))
+        sns.kdeplot(x=null_distribution, color="lightskyblue", fill=True, ax=ax)
+        # Draw an unfilled KDE to obtain coordinates for the shaded tail regions.
+        sns.kdeplot(x=null_distribution, color="steelblue", ax=ax)
+        density_x, density_y = ax.lines[-1].get_data()
+        cutoffs = np.percentile(null_distribution, percentiles)
+        if alternative == "smaller":
+            tail = density_x <= cutoffs[0]
+        elif alternative == "larger":
+            tail = density_x >= cutoffs[0]
+        else:
+            tail = (density_x <= cutoffs[0]) | (density_x >= cutoffs[1])
+        ax.fill_between(density_x, 0, density_y, where=tail, color="orangered", alpha=0.5, label="Critical region")
         for cutoff in np.percentile(null_distribution, percentiles):
             ax.axvline(cutoff, color="#F58518", linestyle="--", label=f"Critical value {cutoff:.3f}")
         ax.axvline(observed, color="black", linewidth=2, label=f"Observed {observed:.3f}")
-        ax.set(title=f"Bootstrap reference: {alternative} alternative", xlabel=measure, ylabel="Number of resamples")
+        ax.set(title=f"Bootstrap reference: {alternative} alternative", xlabel=measure, ylabel="Density")
         ax.legend(fontsize=8)
         fig.tight_layout()
         plt.close(fig)
@@ -190,8 +237,34 @@ def _(np, plt):
 
 
 @app.cell
-def _(graph_bootstrap_test, mean_null_170, sample_mean):
-    graph_bootstrap_test(mean_null_170, sample_mean, measure="Mean height (cm)")
+def _(mean_null_170, np, plt, sns):
+    alpha = 0.05
+    _fig, _axes = plt.subplots(1, 3, figsize=(12, 4), sharey=True)
+    for _ax, _alternative, _title in zip(_axes, ["smaller", "larger", "two-sided"], ["Critical region: left", "Critical region: right", "Critical region: two-sided"]):
+        sns.kdeplot(x=mean_null_170, color="lightskyblue", fill=True, ax=_ax)
+        sns.kdeplot(x=mean_null_170, color="steelblue", ax=_ax)
+        _x, _y = _ax.lines[-1].get_data()
+        if _alternative == "smaller":
+            _cutoffs = np.percentile(mean_null_170, [100 * alpha])
+            _tail = _x <= _cutoffs[0]
+            _label = "α = 0.05"
+        elif _alternative == "larger":
+            _cutoffs = np.percentile(mean_null_170, [100 * (1 - alpha)])
+            _tail = _x >= _cutoffs[0]
+            _label = "α = 0.05"
+        else:
+            _cutoffs = np.percentile(mean_null_170, [100 * alpha / 2, 100 * (1 - alpha / 2)])
+            _tail = (_x <= _cutoffs[0]) | (_x >= _cutoffs[1])
+            _label = "α/2 = 0.025 in each tail"
+        _ax.fill_between(_x, 0, _y, where=_tail, color="orangered", alpha=0.6)
+        for _cutoff in _cutoffs:
+            _ax.axvline(_cutoff, color="orangered", linestyle="--")
+        _ax.set_ylim(0, max(_y) * 1.2)
+        _ax.text(0.5, 0.92, _label, transform=_ax.transAxes, ha="center", color="darkred")
+        _ax.set(title=_title, xlabel="Mean height (cm)", ylabel="Density")
+    _fig.tight_layout()
+    plt.close(_fig)
+    _fig
     return
 
 
@@ -221,6 +294,12 @@ def _(mo):
     ### A smaller alternative
     For \(H_0:\mu=170\) against \(H_a:\mu<170\), count reference means **at or below the observed mean** and divide by the number of resamples. The comparison uses the observed mean, not the hypothesized value 170.
     """)
+    return
+
+
+@app.cell
+def _(graph_bootstrap_test, mean_null_170, sample_mean):
+    graph_bootstrap_test(mean_null_170, sample_mean, alternative="smaller", measure="Mean height (cm)")
     return
 
 
@@ -259,6 +338,12 @@ def _(mo):
 
 
 @app.cell
+def _(graph_bootstrap_test, mean_null_170, sample_mean):
+    graph_bootstrap_test(mean_null_170, sample_mean, alternative="larger", measure="Mean height (cm)")
+    return
+
+
+@app.cell
 def _(mean_null_170, np, sample_mean):
     mean_right_p = np.mean(mean_null_170 >= sample_mean)
     print(f"Right-tailed p-value: {mean_right_p:.4g}")
@@ -276,8 +361,14 @@ def _(mean_null_170, mean_null_ecdf, np, sample_mean):
 def _(mo):
     mo.md(r"""
     ### A two-sided alternative
-    For \(H_a:\mu\ne170\), this lesson uses an **equal-tailed** p-value: double the smaller one-sided tail probability and cap the result at 1. It corresponds to allocating significance equally between the two tails. Other two-sided definitions are possible, especially for asymmetric distributions.
+    For \(H_a:\mu\neq 170\), this lesson uses an **equal-tailed** p-value: double the smaller one-sided tail probability and cap the result at 1. It corresponds to allocating significance equally between the two tails. Other two-sided definitions are possible, especially for asymmetric distributions.
     """)
+    return
+
+
+@app.cell
+def _(graph_bootstrap_test, mean_null_170, sample_mean):
+    graph_bootstrap_test(mean_null_170, sample_mean, alternative="two-sided", measure="Mean height (cm)")
     return
 
 
@@ -414,8 +505,7 @@ def _(get_p_value, np):
 def _(mo):
     mo.md(r"""
     ### Does the population mean height differ from 170 cm?
-    Test \(H_0:\mu=170\) against \(H_a:\mu
-    e170\), at significance level 0.05.
+    Test \(H_0:\mu=170\) against \(H_a:\mu\neq 170\), at significance level 0.05.
     """)
     return
 
@@ -443,8 +533,7 @@ def _(height_mean_170_p, mo):
 def _(mo):
     mo.md(r"""
     ### Does the population mean height differ from 168 cm?
-    This is a new hypothesized value: \(H_0:\mu=168\), \(H_a:\mu
-    e168\). We reuse the bootstrap means, but adjust the reference values to this hypothesis.
+    This is a new hypothesized value: \(H_0:\mu=168\), \(H_a:\mu\neq 168\). We reuse the bootstrap means, but adjust the reference values to this hypothesis.
     """)
     return
 
@@ -521,8 +610,7 @@ def _(height_samples, heights, np):
 def _(mo):
     mo.md(r"""
     ### Does the population variance differ from 20 cm²?
-    Test \(H_0:\sigma^2=20\) against \(H_a:\sigma^2
-    e20\).
+    Test \(H_0:\sigma^2=20\) against \(H_a:\sigma^2\neq 20\).
     """)
     return
 
@@ -596,7 +684,7 @@ def _(mo):
     ```python
     student_delivery_variance_p = get_p_value(delivery_samples.var(ddof=1).to_numpy() - np.var(delivery_times, ddof=1) + 6, np.var(delivery_times, ddof=1))
     ```
-    Test \(H_0:\sigma^2=6\) against \(H_a:\sigma^2\ne6\). The estimated p-value is 0.777, so there is insufficient evidence to reject the null hypothesis. The sample does not provide sufficient evidence that the population variance differs from 6 hours².
+    Test \(H_0:\sigma^2=6\) against \(H_a:\sigma^2\neq 6\). The estimated p-value is 0.777, so there is insufficient evidence to reject the null hypothesis. The sample does not provide sufficient evidence that the population variance differs from 6 hours².
     """)}, lazy=True)
     return
 
