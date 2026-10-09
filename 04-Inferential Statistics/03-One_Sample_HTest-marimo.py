@@ -39,12 +39,10 @@ def _(mo):
 
     ## Learning goals
     By the end of this lesson, you should be able to:
-    - State a null hypothesis, an alternative, and a significance level before looking at the p-value.
-    - Use a chi-square goodness-of-fit test on counts, with expected counts from a reference distribution.
-    - Use a chi-square test of independence on a contingency table.
-    - Use a one-sample \(z\) test for a proportion.
-    - Explain the normal approximation used by the mean \(z\) test and the role of degrees of freedom in the \(t\) test.
-    - Say "do not reject" when the p-value is above the significance level.
+    - Formulate null and alternative hypotheses for a statistical question.
+    - Apply chi-square tests to assess a categorical distribution or an association between categorical variables.
+    - Apply one-sample hypothesis tests for population proportions and means.
+    - Interpret test results and communicate conclusions in the context of the problem.
 
     ## 1. A decision, not a proof
     A hypothesis test compares a sample with a stated model.
@@ -85,20 +83,19 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## 2. Chi-square goodness of fit
-    The goodness-of-fit test asks whether sample **counts** match a reference distribution.
-    \(H_0\): the counts come from the reference proportions.
-    \(H_a\): they do not.
+    The goodness-of-fit test asks whether a sample's categorical distribution matches a specified distribution.
+    \(H_0\): the population follows the reference proportions.
+    \(H_a\): at least one population proportion differs.
 
-    The counts below describe a fictitious reference population of 220,000 people and two towns. We treat the reference proportions as the population proportions to be tested.
-    Town X uses nearly the reference proportions. Town Y puts many more labels in one category.
+    The data describe a fictitious reference population and two towns. We treat the reference proportions as the specified distribution. Town X has proportions close to the reference; Town Y has a much larger proportion in one category.
 
-    The chi-square statistic uses counts:
+    You can describe the sample using frequencies or proportions. The test must retain the sample size. With observed proportions \(q_i\), reference proportions \(p_i\), and sample size \(n\),
 
-    $$\chi^2 = \sum \frac{(O_i - E_i)^2}{E_i}, \qquad E_i = n \hat\pi_i.$$
+    $$\chi^2=n\sum_i\frac{(q_i-p_i)^2}{p_i}.$$
 
-    Here \(O_i\) is the observed count in category \(i\), and \(E_i\) is its expected count under \(H_0\). Multiply each reference proportion by the town’s sample size to obtain the expected counts. Use counts in the test: converting proportions to percentages loses the actual sample size.
+    Equivalently, use observed frequencies \(O_i=nq_i\) and expected frequencies \(E_i=np_i\) in `chisquare`. Passing percentages directly would scale the calculation to a total of 100 instead of the actual sample size.
 
-    Each person must contribute to just one category, and observations must be independent. The usual guideline is that every expected count is at least 5. With four specified category probabilities, the test uses \(4-1=3\) degrees of freedom.
+    Observations must be independent. The usual approximation guideline is that each expected frequency is at least 5. With four specified category probabilities, the test has three degrees of freedom.
     """)
     return
 
@@ -238,7 +235,7 @@ def _(mo):
 
     `chi2_contingency` builds the expected counts from the row and column totals. Pass the table of counts, without the margin totals.
 
-    The first table simulates 1,000 voters with race and party drawn separately, so the generating model is independence. Even independent variables can produce an uneven table by chance. At significance level 0.05, repeated independent simulations can still reject independence about 5% of the time.
+    The first table describes 1,000 simulated community-centre visitors, classified by visit period (Morning, Afternoon, Evening) and preferred activity (Art, Music, Sport). The two variables are generated independently. Even independent variables can produce an uneven table by chance. At significance level 0.05, repeated independent simulations can still reject independence about 5% of the time.
     The second table records degree level and sex for 92 people who earned foreign-language degrees. We ask whether the distribution of degree levels differs between the two groups.
 
     For each cell, the expected count is its row total multiplied by its column total, divided by the overall total. The degrees of freedom are \((r-1)(c-1)\), where \(r\) and \(c\) are the numbers of rows and columns. Each person contributes to one cell; observations must be independent.
@@ -249,45 +246,45 @@ def _(mo):
 @app.cell
 def _(np, pd):
     _rng = np.random.default_rng(10)
-    voters = pd.DataFrame({
-        "race": _rng.choice(["black", "hispanic", "white"], size=1_000, p=[0.20, 0.30, 0.50]),
-        "party": _rng.choice(["democrat", "independent", "republican"], size=1_000, p=[0.40, 0.20, 0.40]),
+    visitors = pd.DataFrame({
+        "visit_period": _rng.choice(["Morning", "Afternoon", "Evening"], size=1_000, p=[0.20, 0.30, 0.50]),
+        "activity": _rng.choice(["Art", "Music", "Sport"], size=1_000, p=[0.40, 0.20, 0.40]),
     })
-    voter_counts = pd.crosstab(voters["race"], voters["party"])
-    return voter_counts, voters
+    visitor_counts = pd.crosstab(visitors["visit_period"], visitors["activity"]).reindex(index=["Morning", "Afternoon", "Evening"], columns=["Art", "Music", "Sport"])
+    return visitor_counts, visitors
 
 
 @app.cell
-def _(mo, pd, st, voter_counts):
-    _stat, _pvalue, _df, _expected = st.chi2_contingency(voter_counts)
-    voter_result = pd.DataFrame({
+def _(mo, pd, st, visitor_counts):
+    _stat, _pvalue, _df, _expected = st.chi2_contingency(visitor_counts)
+    visitor_result = pd.DataFrame({
         "Chi_square": [_stat],
         "df": [_df],
         "p_value": [_pvalue],
         "Decision_at_0.05": ["Reject H0" if _pvalue <= 0.05 else "Do not reject H0"],
     })
     mo.Html(
-        voter_counts.to_html(border=0, col_space=120)
+        visitor_counts.to_html(border=0, col_space=120)
         .replace("<table ", '<table style="width: auto;" ')
     )
-    return (voter_result,)
+    return (visitor_result,)
 
 
 @app.cell
-def _(mo, voter_result):
+def _(mo, visitor_result):
     mo.Html(
-        voter_result.round(4).to_html(index=False, border=0, col_space=130)
+        visitor_result.round(4).to_html(index=False, border=0, col_space=130)
         .replace("<table ", '<table style="width: auto;" ')
     )
     return
 
 
 @app.cell
-def _(plt, voter_counts):
+def _(plt, visitor_counts):
     _fig, _ax = plt.subplots(figsize=(6, 3.4))
-    voter_counts.plot(kind="bar", ax=_ax, rot=0, color=["#4C78A8", "#F58518", "#54A24B"])
-    _ax.set(title="Simulated voters", ylabel="Count", xlabel="Race")
-    _ax.legend(frameon=False, title="Party")
+    visitor_counts.plot(kind="bar", ax=_ax, rot=0, color=["#4C78A8", "#F58518", "#54A24B"])
+    _ax.set(title="Community-centre visitors", ylabel="Count", xlabel="Visit period")
+    _ax.legend(frameon=False, title="Activity")
     _fig.tight_layout()
     plt.close(_fig)
     _fig
@@ -336,7 +333,7 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     1. Why are the row and column totals left out of `chi2_contingency`?
-    2. The voter race and party were simulated independently. What decision fits that design if the p-value is large?
+    2. Visit period and activity preference were simulated independently. What decision fits that design if the p-value is large?
     """)
     return
 
@@ -398,11 +395,12 @@ def _(mo):
     ## 4. One-sample test for a proportion
     For a large sample of yes/no outcomes, the \(z\) statistic compares the sample proportion \(\hat p\) with a hypothesized proportion \(p_0\):
 
-    $$z = \frac{\hat p - p_0}{\sqrt{p_0(1-p_0)/n}}.$$
+    $$z=\frac{\hat p-p_0}{\sqrt{\hat p(1-\hat p)/n}}.$$
 
-    `proportions_ztest` uses this null standard error when we set `prop_var=p0`. Without that argument, it estimates the variance using the sample proportion. We use the null variance here to match the formula above.
+    This implementation uses `proportions_ztest` with its default **sample-based variance**. The denominator estimates the standard error from the sample proportion \(\hat p\). A different convention uses \(p_0\) in the variance; the calculations in this lesson consistently use the sample-based version.
+    The alternatives are `two-sided`, `larger`, and `smaller`.
 
-    Observations must be independent, and the normal approximation needs sufficiently many expected successes and failures. A common guideline is \(np_0 \geq 10\) and \(n(1-p_0) \geq 10\). The alternative may be two-sided, `larger`, or `smaller`.
+    Observations must be independent, and the normal approximation needs sufficiently many expected successes and failures. A common guideline is \(np_0 \geq 10\) and \(n(1-p_0) \geq 10\).
     The code reads `../data/student-mat.csv`. Run the notebook with this lesson folder as the working directory.
     This file records students at two Portuguese secondary schools. The `internet` column says whether each student has internet access at home. We count `yes` as a success. Generalizing beyond these students requires an appropriate sampling design.
 
@@ -467,23 +465,31 @@ def _(student_file):
 def _(mo):
     mo.md(r"""
     ### A reusable proportion-test function
-    `one_sample_prop` takes a sample coded as 0 and 1 and the hypothesized population proportion. It returns the test statistic and p-value. The alternative can be `larger`, `smaller`, or `two-sided`.
+    `one_sample_prop` takes a sample coded as 0 and 1, a hypothesized population proportion, a significance level, and an alternative. It prints the test name, both hypotheses, the sample proportion, the statistic, the p-value, and the decision. It also returns the statistic and p-value for later use.
 
-    The function passes the success count and sample size to `proportions_ztest`. Setting `prop_var=population_prop` uses the null variance in the formula above. We will call the same function for each question below.
-
-    The choice of variance matters near the significance threshold. For these data, the null variance gives a p-value of about 0.0510 for the 80% question, whereas using the sample proportion in the variance gives about 0.0398. The calculations below consistently use the null variance.
+    The function uses `proportions_ztest` with its default sample-based variance. The significance level defaults to 0.05; the hypothesized proportion is a required argument.
     """)
     return
 
 
 @app.cell
-def _(proportions_ztest):
-    def one_sample_prop(sample, population_prop, alternative="two-sided"):
-        """Return the z statistic and p-value for a binary sample."""
-        return proportions_ztest(
-            sample.sum(), len(sample), value=population_prop,
-            alternative=alternative, prop_var=population_prop,
+def _(np, proportions_ztest):
+    def one_sample_prop(sample, population_prop, alpha=0.05, alternative="two-sided"):
+        """Report a one-sample proportion z test for a sample coded as 0 and 1."""
+        signs = {"two-sided": "≠", "smaller": "<", "larger": ">"}
+        print("--- One-sample z test for a proportion ---")
+        print(f"H0: p = {population_prop:g}")
+        print(f"Ha: p {signs[alternative]} {population_prop:g}")
+        print(f"Sample proportion = {np.mean(sample):.3f}")
+        z_stat, pval = proportions_ztest(
+            np.sum(sample), len(sample), value=population_prop, alternative=alternative
         )
+        print(f"z statistic = {z_stat:.3f}; p-value = {pval:.4f}")
+        if pval <= alpha:
+            print(f"p-value ≤ {alpha:g}: Reject H0.")
+        else:
+            print(f"p-value > {alpha:g}: Do not reject H0.")
+        return z_stat, pval
     return (one_sample_prop,)
 
 
@@ -501,15 +507,13 @@ def _(mo):
 @app.cell
 def _(internet, one_sample_prop):
     internet_80_z, internet_80_p = one_sample_prop(internet, 0.80, alternative="larger")
-    print("z statistic:", round(internet_80_z, 3))
-    print("p-value:", round(internet_80_p, 4))
     return internet_80_p, internet_80_z
 
 
 @app.cell(hide_code=True)
 def _(internet_80_p, mo):
     mo.md(rf"""
-    The p-value is **{internet_80_p:.4f}**, just above 0.05. Do not reject \(H_0\): at this significance level, the sample does not provide enough evidence that the population proportion exceeds 80%. The sample proportion is above 80%, but that alone does not establish a population difference.
+    The p-value is **{internet_80_p:.4f}**, below 0.05. Reject \(H_0\): the sample provides evidence that the population proportion exceeds 80%, under the sampling and independence assumptions of the test.
     """)
     return
 
@@ -527,8 +531,6 @@ def _(mo):
 @app.cell
 def _(internet, one_sample_prop):
     internet_90_z, internet_90_p = one_sample_prop(internet, 0.90, alternative="larger")
-    print("z statistic:", round(internet_90_z, 3))
-    print("p-value:", round(internet_90_p, 4))
     return internet_90_p, internet_90_z
 
 
@@ -553,8 +555,6 @@ def _(mo):
 @app.cell
 def _(internet, one_sample_prop):
     internet_85_z, internet_85_p = one_sample_prop(internet, 0.85)
-    print("z statistic:", round(internet_85_z, 3))
-    print("p-value:", round(internet_85_p, 4))
     return internet_85_p, internet_85_z
 
 
@@ -638,9 +638,9 @@ def _():
 def _(mo):
     mo.accordion({"Show answers": mo.md(r"""
 ```python
-student_catalogue_result = proportions_ztest(catalogue_successes, catalogue_n, value=0.60, alternative="larger", prop_var=0.60)
+student_catalogue_result = proportions_ztest(catalogue_successes, catalogue_n, value=0.60, alternative="larger")
 ```
-The statistic is approximately 1.491 and the p-value is 0.0680. Do not reject \(H_0\): this sample does not supply enough evidence that the population proportion exceeds 60%.
+The statistic is approximately 1.549 and the p-value is 0.0607. Do not reject \(H_0\): this sample does not supply enough evidence that the population proportion exceeds 60%.
 """)}, lazy=True)
     return
 
@@ -656,6 +656,8 @@ def _(mo):
     This is a large-sample normal approximation using the **sample** standard deviation. A classical test with a known population standard deviation instead uses \(\sigma/\sqrt n\). The `ztest` calls below do not take a known population standard deviation. Observations must be independent; a large sample does not fix biased sampling.
     A \(t\) test keeps the same location comparison and uses a \(t\) reference distribution, which is the usual choice when the population standard deviation is unknown, including for smaller samples.
 
+    Our `one_sample_ztest` function prints a complete test report and returns the statistic and p-value.
+
     The heights below represent 200 fictitious students, generated from a normal distribution with mean 165 cm and standard deviation 10 cm. The seed makes the sample reproducible. The test estimates the standard deviation from these heights.
 
     We compare the population mean with 170 cm. The three alternatives illustrate how the same statistic gives different p-values. In an actual investigation, choose the alternative before examining the sample.
@@ -664,7 +666,26 @@ def _(mo):
 
 
 @app.cell
-def _(np, pd, plt, ztest):
+def _(ztest, np):
+    def one_sample_ztest(sample, population_value, alpha=0.05, alternative="two-sided"):
+        """Report a one-sample z test for a population mean."""
+        signs = {"two-sided": "≠", "smaller": "<", "larger": ">"}
+        print("--- One-sample z test for a mean ---")
+        print(f"H0: mean = {population_value:g}")
+        print(f"Ha: mean {signs[alternative]} {population_value:g}")
+        print(f"Sample mean = {np.mean(sample):.3f}")
+        z_stat, pval = ztest(sample, value=population_value, alternative=alternative)
+        print(f"z statistic = {z_stat:.3f}; p-value = {pval:.4f}")
+        if pval <= alpha:
+            print(f"p-value ≤ {alpha:g}: Reject H0.")
+        else:
+            print(f"p-value > {alpha:g}: Do not reject H0.")
+        return z_stat, pval
+    return (one_sample_ztest,)
+
+
+@app.cell
+def _(np, one_sample_ztest, pd, plt):
     heights = np.random.default_rng(2026).normal(165, 10, size=200)
     _fig, _ax = plt.subplots(figsize=(6, 3.3))
     _ax.hist(heights, bins=20, color="#4C78A8", edgecolor="white")
@@ -676,7 +697,7 @@ def _(np, pd, plt, ztest):
     plt.close(_fig)
     _rows = []
     for _alternative in ("two-sided", "smaller", "larger"):
-        _z, _pvalue = ztest(heights, value=170, alternative=_alternative)
+        _z, _pvalue = one_sample_ztest(heights, 170, alternative=_alternative)
         _rows.append({
             "Ha": {"two-sided": "mean ≠ 170", "smaller": "mean < 170", "larger": "mean > 170"}[_alternative],
             "z": _z,
@@ -694,6 +715,18 @@ def _(mo, z_results):
         z_results.round(4).to_html(index=False, border=0, col_space=130)
         .replace("<table ", '<table style="width: auto;" ')
     )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo, z_results):
+    _two = z_results.iloc[0]
+    _lower = z_results.iloc[1]
+    mo.md(f"""
+    The two-sided test has p-value {_two['p_value']:.4f}: **{_two['Decision_at_0.05']}**. {"The sample provides evidence that the population mean differs from 170 cm." if _two['p_value'] <= 0.05 else "The sample does not provide enough evidence that the population mean differs from 170 cm."}
+
+    The lower-tailed test has p-value {_lower['p_value']:.4f}: **{_lower['Decision_at_0.05']}**. {"The sample provides evidence that the population mean is below 170 cm." if _lower['p_value'] <= 0.05 else "The sample does not provide enough evidence that the population mean is below 170 cm."}
+    """)
     return
 
 
@@ -765,7 +798,7 @@ def _(mo):
     mo.md(r"""
     ## 6. One-sample \(t\) test for a mean
     `scipy.stats.ttest_1samp` is the one-sample \(t\) test.
-    Its alternative labels are `two-sided`, `less`, and `greater`.
+    Its alternative labels are `two-sided`, `less`, and `greater`. Our reporting function `one_sample_ttest` accepts `two-sided`, `smaller`, and `larger`, and translates them for SciPy. It also reports the degrees of freedom.
     The next sample has 20 heights drawn from a normal distribution with mean 169 and standard deviation 5.
     These are 20 different fictitious students. The histogram shows this smaller sample.
 
@@ -777,7 +810,28 @@ def _(mo):
 
 
 @app.cell
-def _(np, pd, plt, st):
+def _(st, np):
+    def one_sample_ttest(sample, population_value, alpha=0.05, alternative="two-sided"):
+        """Report a one-sample t test for a population mean."""
+        signs = {"two-sided": "≠", "smaller": "<", "larger": ">"}
+        print("--- One-sample t test for a mean ---")
+        print(f"H0: mean = {population_value:g}")
+        print(f"Ha: mean {signs[alternative]} {population_value:g}")
+        print(f"Sample mean = {np.mean(sample):.3f}")
+        scipy_alternative = {"two-sided": "two-sided", "smaller": "less", "larger": "greater"}[alternative]
+        t_stat, pval = st.ttest_1samp(sample, population_value, alternative=scipy_alternative)
+        print(f"t statistic = {t_stat:.3f}; p-value = {pval:.4f}")
+        print(f"Degrees of freedom = {len(sample) - 1}")
+        if pval <= alpha:
+            print(f"p-value ≤ {alpha:g}: Reject H0.")
+        else:
+            print(f"p-value > {alpha:g}: Do not reject H0.")
+        return t_stat, pval
+    return (one_sample_ttest,)
+
+
+@app.cell
+def _(np, one_sample_ttest, pd, plt):
     small_heights = np.random.default_rng(7).normal(169, 5, size=20)
     _fig, _ax = plt.subplots(figsize=(6, 3.3))
     _ax.hist(small_heights, bins=8, color="#54A24B", edgecolor="white")
@@ -788,8 +842,8 @@ def _(np, pd, plt, st):
     _fig.tight_layout()
     plt.close(_fig)
     _rows = []
-    for _alternative, _label in [("two-sided", "mean ≠ 170"), ("less", "mean < 170"), ("greater", "mean > 170")]:
-        _t, _pvalue = st.ttest_1samp(small_heights, 170, alternative=_alternative)
+    for _alternative, _label in [("two-sided", "mean ≠ 170"), ("smaller", "mean < 170"), ("larger", "mean > 170")]:
+        _t, _pvalue = one_sample_ttest(small_heights, 170, alternative=_alternative)
         _rows.append({
             "Ha": _label,
             "t": _t,
@@ -808,6 +862,18 @@ def _(mo, t_results):
         t_results.round(4).to_html(index=False, border=0, col_space=120)
         .replace("<table ", '<table style="width: auto;" ')
     )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo, t_results):
+    _two = t_results.iloc[0]
+    _lower = t_results.iloc[1]
+    mo.md(f"""
+    The two-sided test has p-value {_two['p_value']:.4f}: **{_two['Decision_at_0.05']}**. {"The sample provides evidence that the population mean differs from 170 cm." if _two['p_value'] <= 0.05 else "The sample does not provide enough evidence that the population mean differs from 170 cm."}
+
+    The lower-tailed test has p-value {_lower['p_value']:.4f}: **{_lower['Decision_at_0.05']}**. {"The sample provides evidence that the population mean is below 170 cm." if _lower['p_value'] <= 0.05 else "The sample does not provide enough evidence that the population mean is below 170 cm."}
+    """)
     return
 
 
@@ -877,14 +943,11 @@ The statistic is approximately −4.371 and the p-value is 0.00056. Reject \(H_0
 def _(mo):
     mo.md(r"""
     ## Conclusions
-    - Write \(H_0\), \(H_a\), and the significance level before interpreting the p-value.
-    - A p-value above the significance level means do not reject \(H_0\). It does not prove \(H_0\).
-    - Goodness of fit compares observed counts with expected counts \(n\hat\pi_i\). Relative frequencies alone hide the sample size.
-    - Independence uses a contingency table of counts. Leave the margin totals out of the test call.
-    - A one-sample proportion \(z\) test compares \(\hat p\) with \(p_0\) using the null standard error.
-    - A one-sample \(z\) test for a mean, as implemented by `ztest`, treats the estimated standard error as a normal denominator. The \(t\) test uses a \(t\) reference distribution when the population standard deviation is unknown.
-    - The alternative controls which tail is the p-value. A two-sided test is not the smaller of the two one-sided tests.
-    - Small expected counts make the chi-square approximation less trustworthy.
+    - Hypotheses express the population question and the direction of the proposed difference.
+    - Chi-square goodness of fit assesses a categorical distribution; chi-square independence assesses association between categorical variables.
+    - One-sample proportion and mean tests compare sample evidence with a hypothesized population value.
+    - The p-value and significance level determine whether to reject the null hypothesis. Failing to reject does not establish that it is true.
+    - Statistical conclusions must answer the original question and account for the test's assumptions.
 
     ## Check your understanding
     1. Expected counts are [10, 10] and observed counts are [10, 10]. What is \(\chi^2\)?
