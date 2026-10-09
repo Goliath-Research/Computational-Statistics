@@ -685,7 +685,7 @@ def _(ztest, np):
 
 
 @app.cell
-def _(np, one_sample_ztest, pd, plt):
+def _(np, plt):
     heights = np.random.default_rng(2026).normal(165, 10, size=200)
     _fig, _ax = plt.subplots(figsize=(6, 3.3))
     _ax.hist(heights, bins=20, color="#4C78A8", edgecolor="white")
@@ -695,39 +695,86 @@ def _(np, one_sample_ztest, pd, plt):
     _ax.legend(frameon=False, fontsize=8)
     _fig.tight_layout()
     plt.close(_fig)
-    _rows = []
-    for _alternative in ("two-sided", "smaller", "larger"):
-        _z, _pvalue = one_sample_ztest(heights, 170, alternative=_alternative)
-        _rows.append({
-            "Ha": {"two-sided": "mean ≠ 170", "smaller": "mean < 170", "larger": "mean > 170"}[_alternative],
-            "z": _z,
-            "p_value": _pvalue,
-            "Decision_at_0.05": "Reject H0" if _pvalue <= 0.05 else "Do not reject H0",
-        })
-    z_results = pd.DataFrame(_rows)
     _fig
-    return heights, z_results
+    return (heights,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Does the population mean differ from 170 cm?
+    Test \(H_0:\mu=170\) against \(H_a:\mu ≠ 170\), at significance level 0.05.
+    """)
+    return
 
 
 @app.cell
-def _(mo, z_results):
-    mo.Html(
-        z_results.round(4).to_html(index=False, border=0, col_space=130)
-        .replace("<table ", '<table style="width: auto;" ')
-    )
+def _(heights, one_sample_ztest):
+    z_two_stat, z_two_p = one_sample_ztest(heights, 170, alternative="two-sided")
+    return z_two_stat, z_two_p
+
+
+@app.cell(hide_code=True)
+def _(mo, z_two_p):
+    _interpretation = "The sample provides evidence that the population mean differs from 170 cm." if z_two_p <= 0.05 else "The sample does not provide sufficient evidence that the population mean differs from 170 cm."
+    mo.md(_interpretation)
     return
 
 
 @app.cell(hide_code=True)
-def _(mo, z_results):
-    _two = z_results.iloc[0]
-    _lower = z_results.iloc[1]
-    mo.md(f"""
-    The two-sided test has p-value {_two['p_value']:.4f}: **{_two['Decision_at_0.05']}**. {"The sample provides evidence that the population mean differs from 170 cm." if _two['p_value'] <= 0.05 else "The sample does not provide enough evidence that the population mean differs from 170 cm."}
-
-    The lower-tailed test has p-value {_lower['p_value']:.4f}: **{_lower['Decision_at_0.05']}**. {"The sample provides evidence that the population mean is below 170 cm." if _lower['p_value'] <= 0.05 else "The sample does not provide enough evidence that the population mean is below 170 cm."}
+def _(mo):
+    mo.md(r"""
+    ### Does the population mean fall below 170 cm?
+    Test \(H_0:\mu=170\) against \(H_a:\mu < 170\), at significance level 0.05.
     """)
     return
+
+
+@app.cell
+def _(heights, one_sample_ztest):
+    z_lower_stat, z_lower_p = one_sample_ztest(heights, 170, alternative="smaller")
+    return z_lower_stat, z_lower_p
+
+
+@app.cell(hide_code=True)
+def _(mo, z_lower_p):
+    _interpretation = "The sample provides evidence that the population mean is below 170 cm." if z_lower_p <= 0.05 else "The sample does not provide sufficient evidence that the population mean is below 170 cm."
+    mo.md(_interpretation)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Does the population mean exceed 170 cm?
+    Test \(H_0:\mu=170\) against \(H_a:\mu > 170\), at significance level 0.05.
+    """)
+    return
+
+
+@app.cell
+def _(heights, one_sample_ztest):
+    z_upper_stat, z_upper_p = one_sample_ztest(heights, 170, alternative="larger")
+    return z_upper_stat, z_upper_p
+
+
+@app.cell(hide_code=True)
+def _(mo, z_upper_p):
+    _interpretation = "The sample provides evidence that the population mean is above 170 cm." if z_upper_p <= 0.05 else "The sample does not provide sufficient evidence that the population mean is above 170 cm."
+    mo.md(_interpretation)
+    return
+
+
+@app.cell
+def _(mo, pd, z_two_stat, z_two_p, z_lower_stat, z_lower_p, z_upper_stat, z_upper_p):
+    z_results = pd.DataFrame({
+        "Ha": ["mean ≠ 170", "mean < 170", "mean > 170"],
+        "z": [z_two_stat, z_lower_stat, z_upper_stat],
+        "p_value": [z_two_p, z_lower_p, z_upper_p],
+    })
+    z_results["Decision_at_0.05"] = ["Reject H0" if _p <= 0.05 else "Do not reject H0" for _p in z_results["p_value"]]
+    mo.Html(z_results.round(4).to_html(index=False, border=0, col_space=120))
+    return (z_results,)
 
 
 @app.cell(hide_code=True)
@@ -831,7 +878,7 @@ def _(st, np):
 
 
 @app.cell
-def _(np, one_sample_ttest, pd, plt):
+def _(np, plt):
     small_heights = np.random.default_rng(7).normal(169, 5, size=20)
     _fig, _ax = plt.subplots(figsize=(6, 3.3))
     _ax.hist(small_heights, bins=8, color="#54A24B", edgecolor="white")
@@ -841,40 +888,87 @@ def _(np, one_sample_ttest, pd, plt):
     _ax.legend(frameon=False, fontsize=8)
     _fig.tight_layout()
     plt.close(_fig)
-    _rows = []
-    for _alternative, _label in [("two-sided", "mean ≠ 170"), ("smaller", "mean < 170"), ("larger", "mean > 170")]:
-        _t, _pvalue = one_sample_ttest(small_heights, 170, alternative=_alternative)
-        _rows.append({
-            "Ha": _label,
-            "t": _t,
-            "df": len(small_heights) - 1,
-            "p_value": _pvalue,
-            "Decision_at_0.05": "Reject H0" if _pvalue <= 0.05 else "Do not reject H0",
-        })
-    t_results = pd.DataFrame(_rows)
     _fig
-    return small_heights, t_results
+    return (small_heights,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Does the population mean differ from 170 cm?
+    Test \(H_0:\mu=170\) against \(H_a:\mu ≠ 170\), at significance level 0.05.
+    """)
+    return
 
 
 @app.cell
-def _(mo, t_results):
-    mo.Html(
-        t_results.round(4).to_html(index=False, border=0, col_space=120)
-        .replace("<table ", '<table style="width: auto;" ')
-    )
+def _(small_heights, one_sample_ttest):
+    t_two_stat, t_two_p = one_sample_ttest(small_heights, 170, alternative="two-sided")
+    return t_two_stat, t_two_p
+
+
+@app.cell(hide_code=True)
+def _(mo, t_two_p):
+    _interpretation = "The sample provides evidence that the population mean differs from 170 cm." if t_two_p <= 0.05 else "The sample does not provide sufficient evidence that the population mean differs from 170 cm."
+    mo.md(_interpretation)
     return
 
 
 @app.cell(hide_code=True)
-def _(mo, t_results):
-    _two = t_results.iloc[0]
-    _lower = t_results.iloc[1]
-    mo.md(f"""
-    The two-sided test has p-value {_two['p_value']:.4f}: **{_two['Decision_at_0.05']}**. {"The sample provides evidence that the population mean differs from 170 cm." if _two['p_value'] <= 0.05 else "The sample does not provide enough evidence that the population mean differs from 170 cm."}
-
-    The lower-tailed test has p-value {_lower['p_value']:.4f}: **{_lower['Decision_at_0.05']}**. {"The sample provides evidence that the population mean is below 170 cm." if _lower['p_value'] <= 0.05 else "The sample does not provide enough evidence that the population mean is below 170 cm."}
+def _(mo):
+    mo.md(r"""
+    ### Does the population mean fall below 170 cm?
+    Test \(H_0:\mu=170\) against \(H_a:\mu < 170\), at significance level 0.05.
     """)
     return
+
+
+@app.cell
+def _(small_heights, one_sample_ttest):
+    t_lower_stat, t_lower_p = one_sample_ttest(small_heights, 170, alternative="smaller")
+    return t_lower_stat, t_lower_p
+
+
+@app.cell(hide_code=True)
+def _(mo, t_lower_p):
+    _interpretation = "The sample provides evidence that the population mean is below 170 cm." if t_lower_p <= 0.05 else "The sample does not provide sufficient evidence that the population mean is below 170 cm."
+    mo.md(_interpretation)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Does the population mean exceed 170 cm?
+    Test \(H_0:\mu=170\) against \(H_a:\mu > 170\), at significance level 0.05.
+    """)
+    return
+
+
+@app.cell
+def _(small_heights, one_sample_ttest):
+    t_upper_stat, t_upper_p = one_sample_ttest(small_heights, 170, alternative="larger")
+    return t_upper_stat, t_upper_p
+
+
+@app.cell(hide_code=True)
+def _(mo, t_upper_p):
+    _interpretation = "The sample provides evidence that the population mean is above 170 cm." if t_upper_p <= 0.05 else "The sample does not provide sufficient evidence that the population mean is above 170 cm."
+    mo.md(_interpretation)
+    return
+
+
+@app.cell
+def _(mo, pd, t_two_stat, t_two_p, t_lower_stat, t_lower_p, t_upper_stat, t_upper_p, small_heights):
+    t_results = pd.DataFrame({
+        "Ha": ["mean ≠ 170", "mean < 170", "mean > 170"],
+        "t": [t_two_stat, t_lower_stat, t_upper_stat],
+        "p_value": [t_two_p, t_lower_p, t_upper_p],
+    })
+    t_results["df"] = len(small_heights) - 1
+    t_results["Decision_at_0.05"] = ["Reject H0" if _p <= 0.05 else "Do not reject H0" for _p in t_results["p_value"]]
+    mo.Html(t_results.round(4).to_html(index=False, border=0, col_space=120))
+    return (t_results,)
 
 
 @app.cell(hide_code=True)
@@ -977,7 +1071,7 @@ def _(mo):
     ## References
     - Dekking, F. M., Kraaikamp, C., Lopuhaä, H. P., and Meester, L. E. (2005). *A Modern Introduction to Probability and Statistics*. Springer.
     - Good, P. (2005). *Permutation, Parametric, and Bootstrap Tests of Hypotheses* (3rd ed.). Springer.
-    - [UCI Machine Learning Repository: Student Performance](https://archive.ics.uci.edu/dataset/320/student+performance), for the internet variable.
+    - [UCI Machine Learning Repository: Student Performance](https://archive.ics.uci.edu/dataset/320/student+performance).
     """)
     return
 
