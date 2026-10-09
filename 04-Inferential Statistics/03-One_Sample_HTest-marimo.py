@@ -411,28 +411,172 @@ def _(mo):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Exploring the student data
+    Each row describes one student. First, read the semicolon-separated file and inspect the first five rows. The full dataset remains available for the calculations; the preview displays only five students.
+    """)
+    return
+
+
 @app.cell
-def _(mo, pd, proportions_ztest):
+def _(mo, pd):
     student_file = pd.read_csv("../data/student-mat.csv", sep=";")
-    internet_yes = int((student_file["internet"] == "yes").sum())
-    internet_n = len(student_file)
-    _rows = []
-    for _p0, _alternative in [(0.80, "larger"), (0.90, "larger"), (0.85, "two-sided")]:
-        _z, _pvalue = proportions_ztest(internet_yes, internet_n, value=_p0, alternative=_alternative, prop_var=_p0)
-        _rows.append({
-            "H0": f"p = {_p0:.2f}",
-            "Ha": {"larger": "p > p0", "smaller": "p < p0", "two-sided": "p ≠ p0"}[_alternative],
-            "z": _z,
-            "p_value": _pvalue,
-            "Decision_at_0.05": "Reject H0" if _pvalue <= 0.05 else "Do not reject H0",
-        })
-    proportion_results = pd.DataFrame(_rows)
-    print(f"Internet = yes for {internet_yes} of {internet_n} students; sample proportion = {internet_yes / internet_n:.3f}.")
-    mo.Html(
-        proportion_results.round(4).to_html(index=False, border=0, col_space=120)
-        .replace("<table ", '<table style="width: auto;" ')
-    )
-    return internet_n, internet_yes, proportion_results
+    print("Rows and columns:", student_file.shape)
+    mo.Html(student_file.head().to_html(index=False, border=0))
+    return (student_file,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    The `internet` column describes **internet access at home**, rather than how often students use the internet. Inspect its values and count the students in each category.
+    """)
+    return
+
+
+@app.cell
+def _(mo, student_file):
+    print("Internet categories:", student_file["internet"].unique())
+    internet_counts = student_file["internet"].value_counts().rename_axis("Internet access").reset_index(name="Students")
+    mo.Html(internet_counts.to_html(index=False, border=0))
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Encode `yes` as 1 and `no` as 0. The sum then counts the students with access, and the mean is the sample proportion with access. This binary sample is the input to our reusable proportion-test function.
+    """)
+    return
+
+
+@app.cell
+def _(student_file):
+    internet = (student_file["internet"] == "yes").astype(int).to_numpy()
+    internet_yes = int(internet.sum())
+    internet_n = len(internet)
+    print("Students with internet access:", internet_yes)
+    print("Number of students:", internet_n)
+    print("Sample proportion:", round(internet.mean(), 3))
+    return internet, internet_n, internet_yes
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### A reusable proportion-test function
+    `one_sample_prop` takes a sample coded as 0 and 1 and the hypothesized population proportion. It returns the test statistic and p-value. The alternative can be `larger`, `smaller`, or `two-sided`.
+
+    The function passes the success count and sample size to `proportions_ztest`. Setting `prop_var=population_prop` uses the null variance in the formula above. We will call the same function for each question below.
+
+    The choice of variance matters near the significance threshold. For these data, the null variance gives a p-value of about 0.0510 for the 80% question, whereas using the sample proportion in the variance gives about 0.0398. The calculations below consistently use the null variance.
+    """)
+    return
+
+
+@app.cell
+def _(proportions_ztest):
+    def one_sample_prop(sample, population_prop, alternative="two-sided"):
+        """Return the z statistic and p-value for a binary sample."""
+        return proportions_ztest(
+            sample.sum(), len(sample), value=population_prop,
+            alternative=alternative, prop_var=population_prop,
+        )
+    return (one_sample_prop,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Is the population proportion above 80%?
+    Let \(p\) be the population proportion of students with internet access at home.
+    We test \(H_0:p=0.80\) against \(H_a:p>0.80\), at \(\alpha=0.05\).
+    The alternative looks for a proportion above 0.80, so this is a right-tailed test.
+    """)
+    return
+
+
+@app.cell
+def _(internet, one_sample_prop):
+    internet_80_z, internet_80_p = one_sample_prop(internet, 0.80, alternative="larger")
+    print("z statistic:", round(internet_80_z, 3))
+    print("p-value:", round(internet_80_p, 4))
+    return internet_80_p, internet_80_z
+
+
+@app.cell(hide_code=True)
+def _(internet_80_p, mo):
+    mo.md(rf"""
+    The p-value is **{internet_80_p:.4f}**, just above 0.05. Do not reject \(H_0\): at this significance level, the sample does not provide enough evidence that the population proportion exceeds 80%. The sample proportion is above 80%, but that alone does not establish a population difference.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Is the population proportion above 90%?
+    Now test \(H_0:p=0.90\) against \(H_a:p>0.90\), again at \(\alpha=0.05\).
+    The sample has not changed, but the reference proportion has. The sample proportion is below 0.90, so it points in the opposite direction from this alternative.
+    """)
+    return
+
+
+@app.cell
+def _(internet, one_sample_prop):
+    internet_90_z, internet_90_p = one_sample_prop(internet, 0.90, alternative="larger")
+    print("z statistic:", round(internet_90_z, 3))
+    print("p-value:", round(internet_90_p, 4))
+    return internet_90_p, internet_90_z
+
+
+@app.cell(hide_code=True)
+def _(internet_90_p, mo):
+    mo.md(rf"""
+    The p-value is **{internet_90_p:.4f}**, above 0.05. Do not reject \(H_0\). The sample does not provide evidence that the population proportion exceeds 90%. This result does **not** establish that the population proportion is 90% or less.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Does the population proportion differ from 85%?
+    Test \(H_0:p=0.85\) against \(H_a:p\ne0.85\), at \(\alpha=0.05\).
+    This is a two-sided question: either a lower or a higher proportion would count as a departure from the null hypothesis. A test can detect evidence against equality; it cannot prove equality.
+    """)
+    return
+
+
+@app.cell
+def _(internet, one_sample_prop):
+    internet_85_z, internet_85_p = one_sample_prop(internet, 0.85)
+    print("z statistic:", round(internet_85_z, 3))
+    print("p-value:", round(internet_85_p, 4))
+    return internet_85_p, internet_85_z
+
+
+@app.cell(hide_code=True)
+def _(internet_85_p, mo):
+    mo.md(rf"""
+    The p-value is **{internet_85_p:.4f}**, above 0.05. Do not reject \(H_0\): there is insufficient evidence that the population proportion differs from 85%. This does not prove it equals 85%.
+    """)
+    return
+
+
+@app.cell
+def _(internet_80_z, internet_80_p, internet_90_z, internet_90_p, internet_85_z, internet_85_p, mo, pd):
+    proportion_results = pd.DataFrame({
+        "H0": ["p = 0.80", "p = 0.90", "p = 0.85"],
+        "Ha": ["p > 0.80", "p > 0.90", "p ≠ 0.85"],
+        "z": [internet_80_z, internet_90_z, internet_85_z],
+        "p_value": [internet_80_p, internet_90_p, internet_85_p],
+    })
+    proportion_results["Decision_at_0.05"] = ["Reject H0" if _p <= 0.05 else "Do not reject H0" for _p in proportion_results["p_value"]]
+    mo.Html(proportion_results.round(4).to_html(index=False, border=0))
+    return (proportion_results,)
 
 
 @app.cell(hide_code=True)
