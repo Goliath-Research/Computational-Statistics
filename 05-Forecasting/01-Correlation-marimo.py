@@ -59,7 +59,7 @@ def _(mo):
 
     - A **positive** coefficient means that larger values of one variable tend to arrive with larger values of the other.
     - A **negative** coefficient means that larger values of one tend to arrive with smaller values of the other.
-    - A coefficient **near zero** means that a straight line through the cloud would be nearly flat. The points can still form a curve, or two clumps, or some other pattern a straight line cannot see.
+    - A **Pearson coefficient near zero** indicates little linear association. The scatter may still show a curve, two clumps, or another nonlinear pattern.
 
     Strength and sign answer different questions. A coefficient of \(0.95\) and a coefficient of \(-0.95\) are equally strong. They point in opposite directions. The number describes the **pairs that were measured**.
     """)
@@ -194,19 +194,38 @@ def _(mo):
     ## 3. A curve is not "no relationship"
     Pearson's \(r\) answers a narrow question: how well does a **straight line** describe the pairs?
 
-    The course file `corrExamples.csv` sits in this lesson's folder. It holds 30 synthetic pairs used again in the bootstrap and permutation lessons. Two of its columns are easy to misread if you look only at the coefficient:
+    The course file `corrExamples.csv` holds 30 synthetic pairs used again in the bootstrap and permutation lessons. The next cell generates these data using the original Jupyter recipe and seed, then saves them in this lesson's folder as `corrExamples.csv` every time it runs, overwriting any existing file. Two of its columns are easy to misread if you look only at the coefficient:
 
     - `y_nc` is unstructured noise, loosely attached to `x`.
     - `y_nc2` is a **curve**: the square of `x`, plus a little vertical noise.
 
-    The short names were chosen when the file was saved. "nc" is not a verdict you should trust until you have seen the scatter. This lesson reads the file and does not rewrite it.
+    The short names were chosen when the file was saved. "nc" is not a verdict you should trust until you have seen the scatter. The saved CSV is replaced each time the data cell runs.
     """)
     return
 
 
 @app.cell
-def _(lesson_dir, mo, pd):
-    examples = pd.read_csv(lesson_dir / "corrExamples.csv")
+def _(lesson_dir, mo, np, pd):
+    _csv_path = lesson_dir / "corrExamples.csv"
+    # Preserve the original Jupyter dataset without changing NumPy's global seed.
+    _rng = np.random.RandomState(30)
+    _x = _rng.uniform(-3, 3, size=30)
+    _noise = _rng.uniform(3, 5, size=30)
+    _noise_weak = _rng.uniform(10, 30, size=30)
+    _saved_examples = pd.DataFrame(
+        {
+            "x": _x,
+            "y_spc": 1.5 * _x + _noise,
+            "y_snc": -0.9 * _x + _noise + 30,
+            "y_wpc": 1.7 * _x + _noise_weak,
+            "y_wnc": -1.7 * _x + 1.8 * _noise_weak,
+            "y_nc": _rng.uniform(10, 20, size=30) * _noise,
+            "y_nc2": _x * _x + _noise,
+        }
+    )
+    _saved_examples.to_csv(_csv_path, index=False)
+    print("Created:", _csv_path.name)
+    examples = _saved_examples
     print("Rows:", len(examples), "  Columns:", ", ".join(examples.columns))
     mo.Html(examples.head().round(4).to_html(index=False, border=0))
     return (examples,)
@@ -269,7 +288,7 @@ def _(examples, mo, np):
 def _(mo):
     mo.md(r"""
     ## 4. Pearson's \(r\) and a hypothesis test
-    For pairs \((x_i, y_i)\), Pearson's \(r\) is the average product of the standardized values. Subtract each variable's mean, divide by its standard deviation, multiply the pairs, and average the products. The result is \(-1\), \(0\), or \(1\) when the points sit on a falling line, show no straight-line association, or sit on a rising line. Values in between describe a noisier line.
+    For pairs \((x_i, y_i)\), Pearson's \(r\) is the sample covariance divided by the product of the sample standard deviations. The result is \(-1\), \(0\), or \(1\) when the points sit on a falling line, show no straight-line association, or sit on a rising line. Values in between describe a noisier line.
 
     A test asks whether a coefficient as far from zero as the one we observed would be surprising if the **population** linear correlation were zero.
 
@@ -278,7 +297,7 @@ def _(mo):
     - \(H_0\): the population linear correlation with `x` is \(0\).
     - \(H_a\): the population linear correlation with `x` is not \(0\).
 
-    The p-value is the evidence against \(H_0\), under the sampling model used by `scipy.stats.pearsonr`. We will use a 5% significance level. A small p-value does not turn a modest coefficient into a strong one. These columns were simulated, so a small p-value mostly confirms that the straight line we built is still visible in a sample of 30.
+    The p-value is the probability, under \(H_0\) and the test assumptions, of obtaining a correlation at least as far from zero as the observed one. Computing Pearson's coefficient does not require normality. The default p-value from `scipy.stats.pearsonr` uses a normal-theory null distribution for independent observation pairs; its exact justification assumes a bivariate normal population. These synthetic examples illustrate the calculation, rather than establish that assumption. We will use a 5% significance level. A small p-value does not turn a modest coefficient into a strong one. These columns were simulated, so a small p-value mostly confirms that the straight line we built is still visible in a sample of 30.
     """)
     return
 
@@ -370,10 +389,10 @@ def _(mo):
 
     The hypotheses for each test below are the rank versions of the same idea:
 
-    - \(H_0\): there is no monotone association (the population rank correlation is 0).
-    - \(H_a\): there is a monotone association.
+    - \(H_0\): the population rank correlation is \(0\).
+    - \(H_a\): the population rank correlation is not \(0\).
 
-    The 5% level is the same rule as in Section 4. The p-value is not a measure of how steep the pattern is.
+    The 5% level is the same rule as in Section 4. A zero rank correlation does not rule out every relationship. The p-value is not a measure of how steep the pattern is. SciPy's default Spearman p-value is approximate; for samples as small as the 30 pairs and nine students here, permutation testing is preferable for inference. The later permutation lesson develops that approach.
     """)
     return
 
@@ -401,7 +420,7 @@ def _(examples, mo, pd, st):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    Compare this table with the Pearson table. The strong lines stay strong, because a steep line is monotone. The curve stays near zero on both rank correlations, because a U-shape is not monotone. The weak lines are the subtle row: Spearman does not reject \(H_0\) at 5% for `y_wpc` or `y_wnc`, even though Pearson did. With 30 points and a loose cloud, the choice of coefficient can change the 5% decision. That is a reason to report the coefficient and the picture, not only a reject-or-not label.
+    Compare this table with the Pearson table. The strong linear patterns stay strong because their observations largely preserve the same or opposite order. Steepness alone does not determine correlation strength. The curve stays near zero on both rank correlations, because a U-shape is not monotone. The weak lines are the subtle row: Spearman does not reject \(H_0\) at 5% for `y_wpc` or `y_wnc`, even though Pearson did. With 30 points and a loose cloud, the choice of coefficient can change the 5% decision. That is a reason to report the coefficient and the picture, not only a reject-or-not label.
 
     Ranks are easier to see in a tiny grade book. The next cell uses nine fixed students, not a random draw. History and algebra move together. History and physical education do not.
     """)
@@ -536,13 +555,13 @@ def _(grade_correlations, mo):
 def _(mo):
     mo.md(r"""
     ## Conclusions
-    A correlation coefficient is a compact description of paired numbers. The sign is the direction of a straight-line or monotone pattern. The absolute value is the strength. A test of "zero association" then asks whether a coefficient of that size would be surprising if there were no linear, or no monotone, association in the population the sample represents.
+    A correlation coefficient is a compact description of paired numbers. The sign is the direction of a straight-line or monotone pattern. The absolute value is the strength. A test of zero population correlation then asks whether a coefficient at least that far from zero would be surprising under the null hypothesis and the test assumptions. A zero coefficient does not rule out every form of dependence.
 
     Three distinctions keep the number honest.
 
     - **Shape.** Pearson's \(r\) sees a straight line. Spearman's coefficient and Kendall's \(\tau\) see a monotone pattern. A symmetric curve can hide from all three. The scatter is not optional.
     - **Evidence versus strength.** In the course file, the weak positive column rejects a zero Pearson correlation at 5% with a coefficient near \(0.4\). The strong columns have coefficients near \(1\) and \(-1\). Both facts belong in the sentence.
-    - **Cause.** Grades can move together because they record the same students. Temperature and drink sales can move together because of the season. The coefficient records the co-movement. It does not name the mechanism, and it does not predict what would happen if someone changed only one variable.
+    - **Cause.** Grades can move together because factors such as study habits affect both subjects. Temperature and drink sales can move together because of the season. The coefficient records the co-movement. It does not name the mechanism, and it does not predict what would happen if someone changed only one variable.
 
     The later lessons keep these pairs and ask a different question: how far the coefficient might move if we drew a new sample of the same size, and how a permutation test builds a world in which the pairing is arbitrary.
     """)
@@ -567,7 +586,7 @@ def _(mo):
             "Show answers": mo.md(r"""
 1. **Two facts:** Report the coefficient, so a reader can see the strength and the sign, and report the p-value, so a reader can see the evidence against a zero association. A p-value of 0.03 can sit next to a modest coefficient, as `y_wpc` does.
 2. **Ranks:** Spearman's rank correlation, or Kendall's \(\tau\), describes monotone association and replaces the raw values by their order. A curve that rises and then falls still needs the scatter.
-3. **Another explanation:** A third factor can move both variables. The two variables can also be repeated measures on the same people, as history grades and algebra grades are.
+3. **Another explanation:** A third factor can move both variables. For example, study habits can affect both history and algebra grades. Measuring both grades on the same students establishes the pairing; it does not itself explain the correlation.
 """)
         },
         lazy=True,
