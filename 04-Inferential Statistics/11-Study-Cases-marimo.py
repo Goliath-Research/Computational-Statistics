@@ -1,5 +1,5 @@
 # /// script
-# dependencies = ["marimo", "numpy", "pandas", "matplotlib", "seaborn"]
+# dependencies = ["marimo", "numpy", "pandas", "matplotlib", "seaborn", "statsmodels"]
 # ///
 
 import marimo
