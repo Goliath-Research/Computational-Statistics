@@ -3,14 +3,14 @@
 import numpy as np
 import pandas as pd
 
-from statsmodels.distributions.empirical_distribution import ECDF
+
 
 from abc import ABC, abstractmethod
 
 from itertools import combinations
 
 #import seaborn as sns
-import time
+
 
 
 
@@ -20,20 +20,14 @@ class Samples(ABC):
     Abstract class for generating samples using a resampling method 
     '''
 
-    def __init__(self, sample_data: np.ndarray, num_samples: int = 10000):
-        '''    
-        It creates the sample distribution using a resampling (bootstrap or permutation)
-        sample_data:    sample data (must be representative of the population)        
-        num_samples:    number of samples to generate for the bootstrap method        
-        '''
-        self._sample_data: np.ndarray = sample_data         # sample data   
-        self._num_samples: int = num_samples                # number of samples to generate
-        self._sample_size: int = len(self._sample_data)     # sample size        
-        self._samples: np.ndarray = np.zeros((self._sample_size, self._num_samples))
-        
+    def __init__(self, sample_data, num_samples=4_000, seed=2026):
+        """Generate samples with observations in rows and resamples in columns."""
+        self._sample_data = np.asarray(sample_data)
+        self._num_samples = num_samples
+        self._sample_size = len(self._sample_data)
+        self._rng = np.random.default_rng(seed)
         self.generate_samples()
-
-        self._sample_distribution: np.ndarray = self._samples.mean(axis=0)  # sample distribution
+        self._sample_distribution = self._samples.mean(axis=0)
         
         
 
@@ -63,10 +57,12 @@ class Samples(ABC):
         if not isinstance(value, int) or value <= 0:
             raise ValueError("num_samples must be a positive integer")
         self._num_samples = value
+        self.generate_samples()
+        self._sample_distribution = self._samples.mean(axis=0)
 
     @property
-    def samples(self) -> pd.DataFrame:
-        '''Getter method for accessing the DataFrame of _samples'''
+    def samples(self) -> np.ndarray:
+        '''Access the NumPy array: observations in rows, resamples in columns'''
         return self._samples  
     
     
@@ -79,15 +75,8 @@ class BSamples(Samples):
     '''    
 
     def generate_samples(self):
-        '''
-        It returns a DataFrame where each column (num_samples columns) is a sample with replacement.
-        It uses _sample_data to generate the samples.
-        '''                  
-        # Generating the samples WITH replacement
-        sample_boot = np.random.choice(self._sample_data, replace=True,
-                                       size=(self._sample_size, self._num_samples))
-        # Now, sample_boot is a 2D NumPy array with shape (self._sample_size, self._num_samples)
-        self._samples = sample_boot
+        """Draw all bootstrap observations with replacement using NumPy."""
+        self._samples = self._rng.choice(self._sample_data, replace=True, size=(self._sample_size, self._num_samples))
         
                          
 
@@ -98,23 +87,9 @@ class PSamples(Samples):
     '''
     
     def generate_samples(self):
-        '''
-        It returns a 2D NumPy array where each column is a sample without replacement.        
-        '''
-        n = len(self._sample_data)
-        # Generate an array of indices (0, 1, 2, ..., n-1)
-        indices = np.tile(np.arange(n), (self._num_samples, 1))
-        # Shuffle each row of the indices array to create permutations
-        np.apply_along_axis(np.random.shuffle, 1, indices)
-        # Use the shuffled indices to generate the samples array
-        self._samples = self._sample_data[indices.T]
-        """
-        n = len(self._sample_data)
-        self._samples = np.empty((n, self._num_samples))  
-        # Generate all permutations at once
-        for i in range(self._num_samples):
-            self._samples[:, i] = np.random.permutation(self._sample_data)
-        """
+        """Independently shuffle each column without replacement."""
+        repeated = np.broadcast_to(self._sample_data[:, None], (self._sample_size, self._num_samples))
+        self._samples = self._rng.permuted(repeated, axis=0)
 
 
 
@@ -171,42 +146,30 @@ class ResamplingHT(ABC):
         return (lower_limit, upper_limit)
 
 
-    def get_p_value(self, alternative='two-sided') -> float:
-        '''
-        It returns the p-value.                
-        alternative: 'two-sided', 'smaller', or 'larger'    
-        '''   
-        ecdf = ECDF(self._sample_distribution)         
-        if alternative=='two-sided':
-            p_val = 2 * min(ecdf(self._obs_stat), 1 - ecdf(self._obs_stat))            
-        elif alternative=='smaller':
-            p_val = ecdf(self._obs_stat)
-        else:   #alternative=='larger'
-            p_val = 1-ecdf(self._obs_stat)
-        #print('stat = %.4f    p-value: %.4f' %(self._obs_stat, p_val))
-        return p_val
+    def get_p_value(self, alternative=None):
+        """Use two-sided differences for two samples, and upper-tail distances for k > 2."""
+        if alternative is None:
+            alternative = "two-sided" if self._k == 2 else "larger"
+        values = np.asarray(self._sample_distribution)
+        tolerance = 100 * np.finfo(float).eps * max(1, abs(self._obs_stat))
+        left = (np.count_nonzero(values <= self._obs_stat + tolerance) + 1) / (len(values) + 1)
+        right = (np.count_nonzero(values >= self._obs_stat - tolerance) + 1) / (len(values) + 1)
+        if alternative == "smaller":
+            return float(left)
+        if alternative == "larger":
+            return float(right)
+        return float(min(1, 2 * min(left, right)))
     
 
     def get_homogeneous_subsets(self, alpha=0.05):
-        '''
-        It returns a list of homogeneous subsets.
-        '''
-        # Getting homogeneous subsets          
-        self.bonferroni_correction()        
-        homog_subsets = []   
-        for i in range(self._k):
-            current_subset = [i]
-            for j in range(self._k):
-                if i == j:
-                    continue
-                if all(self._corrected_p_values[current_subset, j] > alpha):
-                    current_subset.append(j) 
-            # Sort and convert to 1-based index for better readability
-            current_subset = sorted(current_subset)
-            current_subset = [x for x in current_subset]
-            if current_subset not in homog_subsets:
-                homog_subsets.append(current_subset)     
-        return homog_subsets
+        """Return maximal subsets whose every pair is not rejected after Bonferroni."""
+        adjusted = self.bonferroni_correction()
+        compatible = []
+        for size in range(1, self._k + 1):
+            for subset in combinations(range(self._k), size):
+                if all(adjusted[i, j] > alpha for i, j in combinations(subset, 2)):
+                    compatible.append(set(subset))
+        return [sorted(a) for a in compatible if not any(a < b for b in compatible)]
     
 
 
@@ -218,31 +181,17 @@ class BootstrapIndependentHT(ResamplingHT):
     Class for independent samples hypothesis testing using the bootstrap method.    
     '''
 
-    def __init__(self, *arrays):
-        '''
-        (class BootstrapIndependentHT)
-        Verifying the inputs and initializing the class                
-        '''   
-        # Verifying the inputs
+    def __init__(self, *arrays, num_samples=4_000, seed=2026):
         self._k = len(arrays)
-        if self._k < 2:
-            raise ValueError("At least 2 arrays are required.")   
-        # Converting inputs to numpy arrays
-        try:
-            self._arrays = [np.array(array) for array in arrays]
-        except:
-            raise ValueError("Failed to convert inputs to NumPy arrays.")   
-        # Converting arrays to Sample objects
-        self._sample_objects = [BSamples(array) for array in arrays]
-
-        # Getting the overall size
-        self._overall_size: int = sum([s.sample_size for s in self._sample_objects])
-        # Getting the overall mean                        
-        self._overall_mean: float = np.concatenate(self._arrays).mean()
-        # Initializing _corrected_p_values for Bonferroni Test
+        self._arrays = [np.asarray(a) for a in arrays]
+        self._num_samples = num_samples
+        self._seed = seed
+        self._sample_size = len(self._arrays[0])
+        self._overall_mean = np.concatenate(self._arrays).mean()
         self._corrected_p_values = np.ones((self._k, self._k))
-        # Initializing the parent class
-        super().__init__()               
+        self._sample_objects = [BSamples(a, num_samples=num_samples, seed=seed + j) for j, a in enumerate(self._arrays)]
+        self._overall_size = sum(len(a) for a in self._arrays)
+        super().__init__()
 
 
     def get_sample_distribution_2(self) -> np.ndarray:
@@ -260,19 +209,12 @@ class BootstrapIndependentHT(ResamplingHT):
         return arr0.mean(axis=0) - arr1.mean(axis=0)
 
         
-    def get_sample_distribution_k(self) -> np.ndarray:    
-        '''        
-        (class BootstrapIndependentHT)
-        The sampling distribution will be the square of... k samples (k>2)
-        '''     
-        # Shifting the samples for sharing the mean
-        arr_shifted = [self._sample_objects[k].samples - self._sample_objects[k].sample_data.mean() 
-                            + self._overall_mean for k in range(self._k)]
-        # Computing the statistic
-        sample_dist = sum([((arr_shifted[k].mean(axis=0) - self._overall_mean)**2) *  
-                            (self._sample_objects[k].sample_size / self._overall_size) 
-                            for k in range(self._k)])                     
-        return np.sqrt(sample_dist)
+    def get_sample_distribution_k(self):
+        """Apply the observed weighted-dispersion definition to each null resample."""
+        means = np.stack([obj.samples.mean(axis=0) - obj.sample_data.mean() + self._overall_mean for obj in self._sample_objects])
+        sizes = np.array([obj.sample_size for obj in self._sample_objects])
+        grand = np.average(means, axis=0, weights=sizes)
+        return np.sqrt(np.average((means - grand) ** 2, axis=0, weights=sizes))
 
 
     def get_sample_distribution(self) -> np.ndarray:
@@ -313,38 +255,14 @@ class BootstrapIndependentHT(ResamplingHT):
 
 
     def bonferroni_correction(self):
-        '''
-        (class BootstrapIndependentHT)
-        It compute a bootstrap test for all possible pairs of groups, adjusting the p-values
-        according to the Bonferroni correction.        
-        '''
-        pairwise_p_values = np.ones((self._k, self._k))
-        for pair in combinations(range(self._k), 2): 
-            # Computing the sample distribution for pair            
-            s0 = self._sample_objects[pair[0]]
-            s1 = self._sample_objects[pair[1]]        
-            # Computing the overall mean of the pair
-            overall_mean = np.concatenate((s0.sample_data, s1.sample_data)).mean()
-            # Shifting the samples for sharing the mean
-            arr0 = s0.samples - s0.sample_data.mean() + overall_mean 
-            arr1 = s1.samples - s1.sample_data.mean() + overall_mean    
-            # Returning the difference in means   
-            self._sample_distribution = arr0.mean(axis=0) - arr1.mean(axis=0)
-            # Computing the observed statistic for pair            
-            self._obs_stat = s0.sample_data.mean() - s1.sample_data.mean()                 
-            # Computing the p-value for pair            
-            pairwise_p_values[pair[0]][pair[1]] = self.get_p_value()
-            pairwise_p_values[pair[1]][pair[0]] = pairwise_p_values[pair[0]][pair[1]]
-        # Calculate the number of unique pairwise comparisons        
-        num_comparisons = self._k * (self._k - 1) / 2
-        # Perform Bonferroni correction         
-        self._corrected_p_values = pairwise_p_values * num_comparisons
-        self._corrected_p_values = np.minimum(self._corrected_p_values, 1.0)
-        self._corrected_p_values = np.maximum(self._corrected_p_values, 0.0)        
-        # Updating self._sample_distribution and self._obs_stat
-        self._sample_distribution = self.get_sample_distribution()
-        self._obs_stat = self.get_observed_stat()   
-        return self._corrected_p_values 
+        """Test each pair using its own resampling null, then adjust across all pairs."""
+        adjusted = np.ones((self._k, self._k))
+        pairs = list(combinations(range(self._k), 2))
+        for offset, (i, j) in enumerate(pairs):
+            pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=self._seed + 100 + offset)
+            adjusted[i, j] = adjusted[j, i] = min(1, pair_model.get_p_value("two-sided") * len(pairs))
+        self._corrected_p_values = adjusted
+        return adjusted
     
 
     def confidence_intervals(self) -> np.ndarray:
@@ -365,38 +283,16 @@ class BootstrapRelatedHT(ResamplingHT):
     Class for related samples hypothesis testing using the bootstrap method.
     '''
 
-    def __init__(self, *arrays):
-        '''
-        Verifying the inputs and initializing the class  
-        '''   
-        # Verifying the inputs            
+    def __init__(self, *arrays, num_samples=4_000, seed=2026):
         self._k = len(arrays)
-        if self._k < 2:
-            raise ValueError("At least 2 samples are required.")     
-        
-        # Converting inputs to numpy arrays
-        try:
-            self._arrays = [np.array(array) for array in arrays]
-        except:
-            raise ValueError('Failed to convert inputs to NumPy arrays.')    
-        
-        # All arrays must have the same size
-        self._sample_size = len(arrays[0])
-        try:
-            assert all(len(sample) == self._sample_size for sample in self._arrays)
-        except:            
-            raise ValueError("All samples must be the same length.")    
-        # The block resampling procedure respects the observation pairing of 
-        # blocks of related observations.   
-              
-        # Generating indexes        
-        self._boot_indexes = BSamples(np.arange(self._sample_size)) 
-        
-        # Getting the overall mean
-        self._overall_mean: float = np.concatenate(self._arrays).mean()
-        
-        # Initializing the parent class
-        super().__init__()          
+        self._arrays = [np.asarray(a) for a in arrays]
+        self._num_samples = num_samples
+        self._seed = seed
+        self._sample_size = len(self._arrays[0])
+        self._overall_mean = np.concatenate(self._arrays).mean()
+        self._corrected_p_values = np.ones((self._k, self._k))
+        self._boot_indexes = BSamples(np.arange(self._sample_size), num_samples=num_samples, seed=seed)
+        super().__init__()
                  
 
     
@@ -480,38 +376,14 @@ class BootstrapRelatedHT(ResamplingHT):
 
 
     def bonferroni_correction(self):
-        '''
-        (class BootstrapRelatedHT)
-        It compute a bootstrap test for all possible pairs of groups, adjusting the p-values
-        according to the Bonferroni correction.        
-        '''        
-        pairwise_p_values = np.ones((self._k, self._k))
-        for pair in combinations(range(self._k), 2): 
-            # Computing the sample distribution for pair            
-            s0 = self._arrays[pair[0]][self._boot_indexes.samples]
-            s1 = self._arrays[pair[1]][self._boot_indexes.samples]              
-            # Computing the overall mean of the pair
-            overall_mean = np.concatenate((s0, s1)).mean()            
-            # Shifting the samples for sharing the mean
-            s0_shifted = s0 - self._arrays[pair[0]].mean() + overall_mean 
-            s1_shifted = s1 - self._arrays[pair[1]].mean() + overall_mean    
-            # Returning the difference in means   
-            self._sample_distribution = s0_shifted.mean(axis=0) - s1_shifted.mean(axis=0)                          
-            # Computing the observed statistic for pair                    
-            self._obs_stat = self._arrays[pair[0]].mean() - self._arrays[pair[1]].mean()            
-            # Computing the p-value for pair            
-            pairwise_p_values[pair[0]][pair[1]] = self.get_p_value()
-            pairwise_p_values[pair[1]][pair[0]] = pairwise_p_values[pair[0]][pair[1]]
-        # Calculate the number of unique pairwise comparisons        
-        num_comparisons = self._k * (self._k - 1) / 2
-        # Perform Bonferroni correction         
-        self._corrected_p_values = pairwise_p_values * num_comparisons
-        self._corrected_p_values = np.minimum(self._corrected_p_values, 1.0)
-        self._corrected_p_values = np.maximum(self._corrected_p_values, 0.0)               
-        # Updating self._sample_distribution and self._obs_stat
-        self._sample_distribution = self.get_sample_distribution()
-        self._obs_stat = self.get_observed_stat()   
-        return self._corrected_p_values 
+        """Test each pair using its own resampling null, then adjust across all pairs."""
+        adjusted = np.ones((self._k, self._k))
+        pairs = list(combinations(range(self._k), 2))
+        for offset, (i, j) in enumerate(pairs):
+            pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=self._seed + 100 + offset)
+            adjusted[i, j] = adjusted[j, i] = min(1, pair_model.get_p_value("two-sided") * len(pairs))
+        self._corrected_p_values = adjusted
+        return adjusted
 
 
     def confidence_intervals(self) -> np.ndarray:
@@ -534,39 +406,19 @@ class PermutationIndependentHT(ResamplingHT):
     Class for independent samples hypothesis testing using the permutation method.    
     '''
 
-    def __init__(self, *arrays):
-        '''
-        Verifying the inputs and initializing the class                
-        '''   
-        # Verifying the inputs        
+    def __init__(self, *arrays, num_samples=4_000, seed=2026):
         self._k = len(arrays)
-        if self._k < 2:
-            raise ValueError("At least 2 samples are required.")   
-        
-        # Converting inputs to numpy arrays
-        try:
-            self._arrays = [np.array(array) for array in arrays]
-        except:
-            raise ValueError("Failed to convert inputs to NumPy arrays.")  
-        
-        # Getting every sample size
-        self._sample_sizes: np.array = np.array([len(s) for s in self._arrays])        
-        
-        # Getting the shuffled np.ndarray
-        #self._sample_objects = PSamples(np.concatenate(self._arrays))
-        sample_objects = PSamples(np.concatenate(self._arrays))
-
-        # Getting a list of _k shuffled NumPy arrays             
-        self._sample_list = np.split(sample_objects.samples, np.cumsum(self._sample_sizes)[:-1])        
-
-        # Getting the overall size
-        self._overall_size: int = self._sample_sizes.sum()        
-
-        # Getting the overall mean                        
-        self._overall_mean: float = np.concatenate(self._arrays).mean()        
-
-        # Initializing the parent class
-        super().__init__()     
+        self._arrays = [np.asarray(a) for a in arrays]
+        self._num_samples = num_samples
+        self._seed = seed
+        self._sample_size = len(self._arrays[0])
+        self._overall_mean = np.concatenate(self._arrays).mean()
+        self._corrected_p_values = np.ones((self._k, self._k))
+        self._sample_sizes = np.array([len(a) for a in self._arrays])
+        self._overall_size = self._sample_sizes.sum()
+        pooled = PSamples(np.concatenate(self._arrays), num_samples=num_samples, seed=seed)
+        self._sample_list = np.split(pooled.samples, np.cumsum(self._sample_sizes)[:-1])
+        super().__init__()
 
 
 
@@ -636,46 +488,22 @@ class PermutationIndependentHT(ResamplingHT):
 
   
     def bonferroni_correction(self):
-        '''
-        (class PermutationIndependentHT)
-        It compute a bootstrap test for all possible pairs of groups, adjusting the p-values
-        according to the Bonferroni correction.        
-        '''
-        pairwise_p_values = np.ones((self._k, self._k))
-        for pair in combinations(range(self._k), 2): 
-            # Computing the sample distribution for pair     
-            #arr0 = self._arrays_list[pair[0]]
-            #arr1 = self._arrays_list[pair[1]]   
-            arr0 = self._sample_list[pair[0]]
-            arr1 = self._sample_list[pair[1]]
-            # Computing the difference in means
-            self._sample_distribution = arr0.mean(axis=0) - arr1.mean(axis=0)    
-            # Computing the observed statistic for pair      
-            self._obs_stat = self._arrays[pair[0]].mean() - self._arrays[pair[1]].mean()      
-            # Computing the p-value for pair            
-            pairwise_p_values[pair[0]][pair[1]] = self.get_p_value()
-            pairwise_p_values[pair[1]][pair[0]] = pairwise_p_values[pair[0]][pair[1]]
-        # Calculate the number of unique pairwise comparisons        
-        num_comparisons = self._k * (self._k - 1) / 2
-        # Perform Bonferroni correction         
-        self._corrected_p_values = pairwise_p_values * num_comparisons
-        self._corrected_p_values = np.minimum(self._corrected_p_values, 1.0)
-        self._corrected_p_values = np.maximum(self._corrected_p_values, 0.0)        
-        # Updating self._sample_distribution and self._obs_stat
-        self._sample_distribution = self.get_sample_distribution()
-        self._obs_stat = self.get_observed_stat()           
-        return self._corrected_p_values 
+        """Test each pair using its own resampling null, then adjust across all pairs."""
+        adjusted = np.ones((self._k, self._k))
+        pairs = list(combinations(range(self._k), 2))
+        for offset, (i, j) in enumerate(pairs):
+            pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=self._seed + 100 + offset)
+            adjusted[i, j] = adjusted[j, i] = min(1, pair_model.get_p_value("two-sided") * len(pairs))
+        self._corrected_p_values = adjusted
+        return adjusted
         
     
 
-    def confidence_intervals(self) -> np.ndarray:
-        '''      
-        (class PermutationIndependentHT)
-        It returns a np.array with the confidence intervals for each sample data.
-        '''
-        ci = [self.get_confidence_interval(BSamples(self._arrays[k], num_samples = 100).samples.mean(axis=0))           
-              for k in range(self._k)]
-        return np.array(ci)
+    def confidence_intervals(self):
+        """Estimate group means with unshifted bootstrap draws, not permutations."""
+        bootstrap = BootstrapIndependentHT(*self._arrays, num_samples=self._num_samples, seed=self._seed + 200)
+        bootstrap.confidence = self.confidence
+        return bootstrap.confidence_intervals()
     
 
 
@@ -687,43 +515,20 @@ class PermutationRelatedHT(ResamplingHT):
     Class for related samples hypothesis testing using the permutation method.    
     '''
 
-    def __init__(self, *arrays):
-        '''
-        Verifying the inputs and initializing the class       
-        '''   
-        # Verifying the inputs
+    def __init__(self, *arrays, num_samples=4_000, seed=2026):
         self._k = len(arrays)
-        if self._k < 2:
-            raise ValueError("At least 2 samples are required.")  
-            
-        # Converting inputs to numpy arrays 
-        try:
-            self._arrays = [np.array(array) for array in arrays]            
-        except:            
-            raise ValueError("Failed to convert inputs to NumPy arrays.")
-        
-        # All arrays must have the same size
-        self._sample_size = len(arrays[0])
-        try:
-            assert all(len(sample) == self._sample_size for sample in self._arrays)
-        except:            
-            raise ValueError("All samples must be the same length.")    
-                
-        # The block resampling procedure respects the observation pairing of 
-        # blocks of related observations.    
-        sample_objects = np.array([PSamples(np.array(pair)) for pair in zip(*self._arrays)]) 
-        
-        # Creating _sample_list
-        shape_sample = (self._sample_size, len(sample_objects[0].samples[0]))            
-        self._sample_list = np.empty((self._k, shape_sample[0], shape_sample[1]))
-                
-        # Vectorized operation
-        samples_matrix = np.array([[obj.samples[i] for obj in sample_objects] for i in range(self._k)])
-        # Assign to _sample_list
-        self._sample_list = samples_matrix        
-                       
-        # Initializing the parent class
-        super().__init__()   
+        self._arrays = [np.asarray(a) for a in arrays]
+        self._num_samples = num_samples
+        self._seed = seed
+        self._sample_size = len(self._arrays[0])
+        self._overall_mean = np.concatenate(self._arrays).mean()
+        self._corrected_p_values = np.ones((self._k, self._k))
+        data = np.column_stack(self._arrays)
+        rng = np.random.default_rng(seed)
+        repeated = np.broadcast_to(data[:, :, None], (len(data), self._k, num_samples))
+        shuffled = rng.permuted(repeated, axis=1)
+        self._sample_list = [shuffled[:, j, :] for j in range(self._k)]
+        super().__init__()
 
 
     
@@ -794,42 +599,20 @@ class PermutationRelatedHT(ResamplingHT):
 
 
     def bonferroni_correction(self):
-        '''        
-        (class PermutationRelatedHT)
-        It compute a bootstrap test for all possible pairs of groups, adjusting the p-values
-        according to the Bonferroni correction.        
-        '''
-        pairwise_p_values = np.ones((self._k, self._k))
-        for pair in combinations(range(self._k), 2): 
-            # Computing the sample distribution for pair     
-            arr0 = self._sample_list[pair[0]]
-            arr1 = self._sample_list[pair[1]]   
-            # Computing the difference in means
-            self._sample_distribution = arr0.mean(axis=0) - arr1.mean(axis=0)    
-            # Computing the observed statistic for pair      
-            self._obs_stat = self._arrays[pair[0]].mean() - self._arrays[pair[1]].mean()      
-            # Computing the p-value for pair            
-            pairwise_p_values[pair[0]][pair[1]] = self.get_p_value()
-            pairwise_p_values[pair[1]][pair[0]] = pairwise_p_values[pair[0]][pair[1]]
-        # Calculate the number of unique pairwise comparisons        
-        num_comparisons = self._k * (self._k - 1) / 2
-        # Perform Bonferroni correction         
-        self._corrected_p_values = pairwise_p_values * num_comparisons
-        self._corrected_p_values = np.minimum(self._corrected_p_values, 1.0)
-        self._corrected_p_values = np.maximum(self._corrected_p_values, 0.0)        
-        # Updating self._sample_distribution and self._obs_stat
-        self._sample_distribution = self.get_sample_distribution()
-        self._obs_stat = self.get_observed_stat()           
-        return self._corrected_p_values 
+        """Test each pair using its own resampling null, then adjust across all pairs."""
+        adjusted = np.ones((self._k, self._k))
+        pairs = list(combinations(range(self._k), 2))
+        for offset, (i, j) in enumerate(pairs):
+            pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=self._seed + 100 + offset)
+            adjusted[i, j] = adjusted[j, i] = min(1, pair_model.get_p_value("two-sided") * len(pairs))
+        self._corrected_p_values = adjusted
+        return adjusted
         
     
 
-    def confidence_intervals(self) -> np.ndarray:
-        '''          
-        (class PermutationRelatedHT)
-        It returns a np.array with the confidence intervals for each sample data.
-        '''
-        ci = [self.get_confidence_interval(BSamples(self._arrays[k], 
-                    num_samples = 100).samples.mean(axis=0))  for k in range(self._k)]
-        return np.array(ci)
+    def confidence_intervals(self):
+        """Estimate group means with unshifted bootstrap draws, not permutations."""
+        bootstrap = BootstrapRelatedHT(*self._arrays, num_samples=self._num_samples, seed=self._seed + 200)
+        bootstrap.confidence = self.confidence
+        return bootstrap.confidence_intervals()
        

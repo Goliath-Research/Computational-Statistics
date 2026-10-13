@@ -292,8 +292,8 @@ def _(mo):
 
 @app.cell
 def _(lesson_dir, pd, mo):
-    tips = pd.read_csv(lesson_dir / "tips.csv")
-    mo.Html(tips.head(10).to_html(index=False, border=0))
+    tips = sns.load_dataset("tips")
+    mo.Html(tips.head(10).to_html(index=False, border=0))    
     return (tips,)
 
 
