@@ -78,7 +78,7 @@ def _(lesson_dir, mo, pd, rs):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Check your understanding
+    ### Try it yourself
     1. What is being estimated when we treat 0.983 as more than a description of these 30 rows?
     2. Why would a second sample of 30 pairs from the same process not give exactly the same coefficient?
     3. Does a coefficient this large, by itself, tell you how the y values were generated?
@@ -121,7 +121,7 @@ def _(examples, rs):
 @app.cell
 def _(observed_strong, plt, rs, sns, strong_bootstrap):
     _low, _high = rs.percentile_interval(strong_bootstrap, confidence=95)
-    _fig, _ax = plt.subplots(figsize=(6.8, 3.6))
+    _fig, _ax = plt.subplots(figsize=(6.2, 2.8))
     sns.kdeplot(strong_bootstrap, fill=True, color="#4C78A8", ax=_ax)
     _ax.axvline(observed_strong, color="#E45756", linewidth=2, label=f"Observed r = {observed_strong:.3f}")
     _ax.axvline(_low, color="#333333", linestyle="--", label=f"95% interval [{_low:.3f}, {_high:.3f}]")
@@ -141,6 +141,11 @@ def _(mo):
     `strong_bootstrap` holds the 4,000 paired correlations. Replace `None` with the 95% percentile interval, as a pair of endpoints.
 
     `rs.percentile_interval(strong_bootstrap, confidence=95)` returns `(low, high)`.
+
+    Then answer these questions about the resample.
+    4. Why must a bootstrap copy take x and y from the same row?
+    5. Why is the observed correlation near the middle of the blue curve, rather than out in a tail?
+    6. What would a near-zero cloud of correlations be describing if someone had resampled the two columns independently?
     """)
     return
 
@@ -153,34 +158,15 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(mo, rs, strong_bootstrap):
+def _(mo, observed_strong, rs, strong_bootstrap):
     _low, _high = rs.percentile_interval(strong_bootstrap, confidence=95)
     _answers = f"""
 1. **Interval:** ({_low:.3f}, {_high:.3f}).
 2. **Where zero sits:** Both endpoints are positive, so 0 is outside the interval.
 3. **Code:** `strong_positive_interval = rs.percentile_interval(strong_bootstrap, confidence=95)`
-"""
-    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Check your understanding
-    1. Why must a bootstrap copy take x and y from the same row?
-    2. Why is the observed correlation near the middle of the blue curve, rather than out in a tail?
-    3. What would a near-zero cloud of correlations be describing if someone had resampled the two columns independently?
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo, observed_strong, strong_bootstrap):
-    _answers = f"""
-1. **The pair is the observation:** The correlation is a fact about matched pairs. A row is one pair. Splitting the columns invents matches that never occurred.
-2. **It is a sampling distribution of the estimate:** The bootstrap copies re-estimate the same coefficient. They cluster around the original estimate, {observed_strong:.3f}. The bootstrap mean in this run is {strong_bootstrap.mean():.3f}.
-3. **A broken pairing:** Independent draws from the two columns destroy the association. The resulting correlations describe a world in which the matching is arbitrary, not the uncertainty of the coefficient we actually observed.
+4. **The pair is the observation:** The correlation is a fact about matched pairs. A row is one pair. Splitting the columns invents matches that never occurred.
+5. **It is a sampling distribution of the estimate:** The bootstrap copies re-estimate the same coefficient. They cluster around the original estimate, {observed_strong:.3f}. The bootstrap mean in this run is {strong_bootstrap.mean():.3f}.
+6. **A broken pairing:** Independent draws from the two columns destroy the association. The resulting correlations describe a world in which the matching is arbitrary, not the uncertainty of the coefficient we actually observed.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -235,7 +221,7 @@ def _(example_intervals, mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Check your understanding
+    ### Try it yourself
     1. For the strong negative column, the interval lies entirely below zero. What decision does the rule in this section give?
     2. The curved column's interval covers zero. What question does that answer, and which question does it leave open?
     3. The weak positive coefficient is near 0.4, but its interval can still cover 0. What does that say about a sample of 30?
@@ -300,7 +286,7 @@ def _(mo, pd, rs, students):
 
 @app.cell
 def _(plt, sns, students):
-    _fig, _ax = plt.subplots(figsize=(6.2, 3.6))
+    _fig, _ax = plt.subplots(figsize=(5.8, 2.8))
     sns.scatterplot(data=students, x="G2", y="G3", s=28, color="#4C78A8", edgecolor="white", ax=_ax)
     _ax.set(title="Final grade against the second-period grade", xlabel="G2", ylabel="G3")
     _fig.tight_layout()
@@ -314,6 +300,11 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     Replace `None` with the pair name from `grade_intervals` that has the largest Pearson correlation. Use the label in the Pair column, such as `"G1 and G2"`.
+
+    Then answer these questions about the grade intervals.
+    4. Why is the row, rather than a randomly matched pair of grades, the right unit to resample?
+    5. All three intervals exclude zero and the coefficients are large. What does that say about the ordering of students, and what does it not say about cause?
+    6. These students are one mathematics course in the file, not every mathematics student. How should that limit the sentence you write?
     """)
     return
 
@@ -328,33 +319,14 @@ def _():
 @app.cell(hide_code=True)
 def _(grade_intervals, mo):
     _row = grade_intervals.loc[grade_intervals["Pearson r"].idxmax()]
+    _g2g3 = grade_intervals.loc[grade_intervals["Pair"] == "G2 and G3"].iloc[0]
     _answers = f"""
 1. **Pair:** {_row["Pair"]}.
 2. **Coefficient:** {_row["Pearson r"]:.3f}, with 95% interval ({_row["95% low"]:.3f}, {_row["95% high"]:.3f}).
 3. **Code:** `strongest_grade_pair = "{_row["Pair"]}"`
-"""
-    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Check your understanding
-    1. Why is the row, rather than a randomly matched pair of grades, the right unit to resample?
-    2. All three intervals exclude zero and the coefficients are large. What does that say about the ordering of students, and what does it not say about cause?
-    3. These students are one mathematics course in the file, not every mathematics student. How should that limit the sentence you write?
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(grade_intervals, mo):
-    _g2g3 = grade_intervals.loc[grade_intervals["Pair"] == "G2 and G3"].iloc[0]
-    _answers = f"""
-1. **The student is the pair:** G2 and G3 on the same row are two measurements of one person. Resampling rows keeps that person intact.
-2. **Stable ordering, not a mechanism:** G2 and G3 have r = {_g2g3["Pearson r"]:.3f}. Students who rank high in the second period tend to rank high at the end. The interval does not isolate the effect of changing the second-period grade while holding everything else fixed.
-3. **Scope:** The interval estimates the linear association in the population this course file can represent. It is not a result about every school.
+4. **The student is the pair:** G2 and G3 on the same row are two measurements of one person. Resampling rows keeps that person intact.
+5. **Stable ordering, not a mechanism:** G2 and G3 have r = {_g2g3["Pearson r"]:.3f}. Students who rank high in the second period tend to rank high at the end. The interval does not isolate the effect of changing the second-period grade while holding everything else fixed.
+6. **Scope:** The interval estimates the linear association in the population this course file can represent. It is not a result about every school.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -400,7 +372,7 @@ def _(lesson_dir, mo, pd, rs):
 
 @app.cell
 def _(employees, plt):
-    _fig, _axes = plt.subplots(1, 2, figsize=(8.2, 3.6))
+    _fig, _axes = plt.subplots(1, 2, figsize=(7.6, 2.8))
     _axes[0].scatter(
         employees["YearsAtCompany"], employees["MonthlyIncome"], s=12, color="#4C78A8", alpha=0.45, edgecolor="none"
     )
@@ -423,7 +395,7 @@ def _(employees, plt):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Check your understanding
+    ### Try it yourself
     1. Which interval excludes 0, and which covers 0?
     2. A positive association between years and income is visible in the scatter. Why is that not an estimate of the raise a particular employee would get from one more year?
     3. The distance interval covers 0. Why is the careful sentence "no linear association shows up in this file" rather than "distance and tenure are unrelated"?

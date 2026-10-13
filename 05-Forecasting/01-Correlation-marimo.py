@@ -71,7 +71,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Check your understanding
+    ### Try it yourself
     1. A store records daily temperature and daily sales of cold drinks. The correlation is \(0.8\). What does the sign say, and what does it leave open?
     2. Why is \(-0.9\) a strong association rather than a weak one?
     3. If a coefficient is \(0.02\), what kind of pattern might the scatter still contain?
@@ -106,7 +106,7 @@ def _(mo):
 
 
 @app.cell
-def _(np, pd):
+def _(mo, np, pd):
     _rng = np.random.default_rng(2026)
     _n = 40
     _x = _rng.uniform(-3, 3, size=_n)
@@ -122,7 +122,7 @@ def _(np, pd):
             "weak_negative": -0.9 * _x + 1.9 * _noise_weak_neg,
         }
     )
-    patterns.head()
+    mo.Html(patterns.head().to_html(index=False, border=0))
     return (patterns,)
 
 
@@ -135,7 +135,7 @@ def _(np, patterns, plt):
         ("weak_negative", "Weak negative", "#54A24B"),
     ]
     _x = patterns["x"].to_numpy()
-    _fig, _axes = plt.subplots(2, 2, figsize=(8, 6.2), sharex=True, sharey=False)
+    _fig, _axes = plt.subplots(2, 2, figsize=(7.2, 4.6), sharex=True, sharey=False)
     for _ax, (_key, _title, _color) in zip(_axes.ravel(), _specs):
         _y = patterns[_key].to_numpy()
         _ax.scatter(_x, _y, s=28, color=_color, edgecolor="white", linewidth=0.4)
@@ -168,6 +168,11 @@ def _(mo):
     The five pairs below are a smaller version of the same idea. In the next cell, replace `None` with the Pearson correlation of `example_x` and `example_y`.
 
     `np.corrcoef(example_x, example_y)[0, 1]` returns that coefficient. Run the cell after you edit it.
+
+    Then use the four panels above.
+    4. Which series should have a coefficient close to \(-1\), and which feature of the recipe made it negative?
+    5. The weak series use the same x values as the strong series. What was changed to loosen the line?
+    6. If you change the seed and rebuild the noise, which part of the recipe stays fixed, and which part changes?
     """)
     return
 
@@ -189,30 +194,8 @@ def _(example_x, example_y):
 
 
 @app.cell(hide_code=True)
-def _(example_x, example_y, mo, np):
+def _(example_x, example_y, mo, np, pattern_correlations):
     _r = float(np.corrcoef(example_x, example_y)[0, 1])
-    _answers = f"""
-1. **Coefficient:** {_r:.3f}.
-2. **Sign:** Positive. The points wobble, and the larger x values still tend to have the larger y values.
-3. **Code:** `example_r = np.corrcoef(example_x, example_y)[0, 1]`
-"""
-    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Check your understanding
-    1. In the four panels, which series should have a coefficient close to \(-1\), and which feature of the recipe made it negative?
-    2. The weak series use the same x values as the strong series. What was changed to loosen the line?
-    3. If you change the seed and rebuild the noise, which part of the recipe stays fixed, and which part changes?
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo, pattern_correlations):
     _negative = pattern_correlations.loc[
         pattern_correlations["Series"] == "strong_negative", "Pearson r"
     ].iloc[0]
@@ -220,9 +203,12 @@ def _(mo, pattern_correlations):
         pattern_correlations["Series"] == "weak_positive", "Pearson r"
     ].iloc[0]
     _answers = f"""
-1. **Strong negative:** The series `strong_negative`, with Pearson r = {_negative:.3f}. It is negative because y was built as a **negative** multiple of x, plus a little noise.
-2. **What loosened the line:** Each series has its own noise, and the weak series use a larger noise scale relative to the multiple of x (2.0 against a multiple of 1, versus 0.45 against a multiple of 1.6). The weak positive coefficient in this run is {_weak:.3f}.
-3. **Seed:** The formulas stay fixed: which series is positive, which is negative, and how large the noise term is. A new seed draws a new set of points, so the coefficient moves a little. The same seed repeats the same points.
+1. **Coefficient:** {_r:.3f}.
+2. **Sign:** Positive. The points wobble, and the larger x values still tend to have the larger y values.
+3. **Code:** `example_r = np.corrcoef(example_x, example_y)[0, 1]`
+4. **Strong negative:** The series `strong_negative`, with Pearson r = {_negative:.3f}. It is negative because y was built as a **negative** multiple of x, plus a little noise.
+5. **What loosened the line:** Each series has its own noise, and the weak series use a larger noise scale relative to the multiple of x (2.0 against a multiple of 1, versus 0.45 against a multiple of 1.6). The weak positive coefficient in this run is {_weak:.3f}.
+6. **Seed:** The formulas stay fixed: which series is positive, which is negative, and how large the noise term is. A new seed draws a new set of points, so the coefficient moves a little. The same seed repeats the same points.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -255,7 +241,7 @@ def _(lesson_dir, mo, pd):
 @app.cell
 def _(examples, np, plt):
     _x = examples["x"].to_numpy()
-    _fig, _axes = plt.subplots(1, 2, figsize=(8, 3.6), sharex=True)
+    _fig, _axes = plt.subplots(1, 2, figsize=(7.4, 2.8), sharex=True)
     for _ax, _column, _title, _color in [
         (_axes[0], "y_nc", "Unstructured cloud", "#4C78A8"),
         (_axes[1], "y_nc2", "Curved pattern", "#E45756"),
@@ -284,7 +270,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Check your understanding
+    ### Try it yourself
     1. Why can `y_nc2` show a clear pattern and still have a Pearson correlation near zero?
     2. What would you miss if you ranked the columns by the coefficient and never opened the scatter?
     3. The file has 30 rows. Does a correlation computed from those rows describe every future x that someone might choose?
@@ -356,6 +342,11 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     Replace `None` with the **column name** from `pearson_table` that has the most negative Pearson correlation. The names are strings, for example `"y_spc"`.
+
+    Then answer these questions about the tests.
+    4. Write \(H_0\) and \(H_a\) for the test reported on `y_wpc`.
+    5. `y_wpc` rejects \(H_0\) at the 5% level. Why is that not the same as calling the association strong?
+    6. The p-value for `y_nc2` is large. Which mistake would you make if you told someone the variables are unrelated?
     """)
     return
 
@@ -370,34 +361,15 @@ def _():
 @app.cell(hide_code=True)
 def _(mo, pearson_table):
     _row = pearson_table.loc[pearson_table["Pearson r"].idxmin()]
-    _answers = f"""
-1. **Column:** `{_row["Column"]}`.
-2. **Coefficient:** {_row["Pearson r"]:.3f}.
-3. **Code:** `strongest_negative_column = "{_row["Column"]}"`
-"""
-    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Check your understanding
-    1. Write \(H_0\) and \(H_a\) for the test reported on `y_wpc`.
-    2. `y_wpc` rejects \(H_0\) at the 5% level. Why is that not the same as calling the association strong?
-    3. The p-value for `y_nc2` is large. Which mistake would you make if you told someone the variables are unrelated?
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo, pearson_table):
     _weak = pearson_table.loc[pearson_table["Column"] == "y_wpc"].iloc[0]
     _curve = pearson_table.loc[pearson_table["Column"] == "y_nc2"].iloc[0]
     _answers = rf"""
-1. **Hypotheses:** \(H_0\): the population linear correlation between `x` and `y_wpc` is 0. \(H_a\): that correlation is not 0.
-2. **Evidence is not strength:** The p-value is {_weak["p-value"]:.3f}, so at the 5% level the sample is surprising if the linear correlation were zero. The coefficient itself is only {_weak["Pearson r"]:.3f}. A detectable line can still be a loose one.
-3. **The curve is still there:** The Pearson p-value for `y_nc2` is {_curve["p-value"]:.3f}, so this test does not reject a zero **linear** correlation. The scatter in Section 3 shows a curved relationship. "No straight-line signal" is not "no relationship."
+1. **Column:** `{_row["Column"]}`.
+2. **Coefficient:** {_row["Pearson r"]:.3f}.
+3. **Code:** `strongest_negative_column = "{_row["Column"]}"`
+4. **Hypotheses:** \(H_0\): the population linear correlation between `x` and `y_wpc` is 0. \(H_a\): that correlation is not 0.
+5. **Evidence is not strength:** The p-value is {_weak["p-value"]:.3f}, so at the 5% level the sample is surprising if the linear correlation were zero. The coefficient itself is only {_weak["Pearson r"]:.3f}. A detectable line can still be a loose one.
+6. **The curve is still there:** The Pearson p-value for `y_nc2` is {_curve["p-value"]:.3f}, so this test does not reject a zero **linear** correlation. The scatter in Section 3 shows a curved relationship. "No straight-line signal" is not "no relationship."
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -455,7 +427,7 @@ def _(mo):
 
 
 @app.cell
-def _(np, pd):
+def _(mo, np, pd):
     history_grades = np.array([35, 23, 47, 17, 10, 43, 9, 6, 28])
     algebra_grades = np.array([30, 33, 45, 23, 8, 49, 12, 4, 31])
     phys_ed_grades = np.array([15, 23, 27, 17, 30, 14, 19, 36, 28])
@@ -466,13 +438,13 @@ def _(np, pd):
             "Physical education": phys_ed_grades,
         }
     )
-    grades
+    mo.Html(grades.to_html(index=False, border=0))
     return algebra_grades, grades, history_grades, phys_ed_grades
 
 
 @app.cell
 def _(algebra_grades, history_grades, phys_ed_grades, plt):
-    _fig, _axes = plt.subplots(1, 2, figsize=(8, 3.6))
+    _fig, _axes = plt.subplots(1, 2, figsize=(7.4, 2.8))
     _axes[0].scatter(history_grades, algebra_grades, s=40, color="#E45756", edgecolor="white")
     _axes[0].set(title="History and algebra", xlabel="History", ylabel="Algebra")
     _axes[1].scatter(history_grades, phys_ed_grades, s=40, color="#4C78A8", edgecolor="white")
@@ -490,6 +462,11 @@ def _(mo):
     Replace `None` with Spearman's rank correlation between `history_grades` and `algebra_grades`.
 
     `st.spearmanr(history_grades, algebra_grades).statistic` is the coefficient.
+
+    Then answer these questions about ranks.
+    4. Why does Spearman's coefficient for `y_nc2` stay near zero even though the scatter is a clear curve?
+    5. For `y_wpc`, Pearson rejects a zero linear correlation at 5% and Spearman does not. What should you report so a reader can see that disagreement?
+    6. The grade book has nine students. What limitation does that sample size put on the history-and-algebra test?
     """)
     return
 
@@ -504,36 +481,17 @@ def _(algebra_grades, history_grades):
 
 
 @app.cell(hide_code=True)
-def _(algebra_grades, history_grades, mo, st):
+def _(algebra_grades, history_grades, mo, rank_table, st):
     _result = st.spearmanr(history_grades, algebra_grades)
+    _curve = rank_table.loc[rank_table["Column"] == "y_nc2"].iloc[0]
+    _weak = rank_table.loc[rank_table["Column"] == "y_wpc"].iloc[0]
     _answers = f"""
 1. **Spearman r:** {_result.statistic:.3f}.
 2. **p-value:** {_result.pvalue:.4f}. With only nine students, treat this as a description of this grade book plus a small-sample test, not as a finding about every class.
 3. **Code:** `history_algebra_spearman = st.spearmanr(history_grades, algebra_grades).statistic`
-"""
-    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Check your understanding
-    1. Why does Spearman's coefficient for `y_nc2` stay near zero even though the scatter is a clear curve?
-    2. For `y_wpc`, Pearson rejects a zero linear correlation at 5% and Spearman does not. What should you report so a reader can see that disagreement?
-    3. The grade book has nine students. What limitation does that sample size put on the history-and-algebra test?
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo, rank_table):
-    _curve = rank_table.loc[rank_table["Column"] == "y_nc2"].iloc[0]
-    _weak = rank_table.loc[rank_table["Column"] == "y_wpc"].iloc[0]
-    _answers = f"""
-1. **Not monotone:** Along a symmetric U-shape, y falls as x increases and then rises. Ranks reward a relationship that keeps heading one way. Spearman's coefficient for `y_nc2` is {_curve["Spearman"]:.3f}.
-2. **Show the conflict:** Report both coefficients, both p-values, and the scatter. For `y_wpc`, Spearman is {_weak["Spearman"]:.3f} with p-value {_weak["Spearman p"]:.3f}. A single "significant" label would hide the fact that the other coefficient does not reject at 5%.
-3. **Nine pairs:** A large rank correlation in a class of nine is a description of those nine students. It is thin evidence about students who were not in the table.
+4. **Not monotone:** Along a symmetric U-shape, y falls as x increases and then rises. Ranks reward a relationship that keeps heading one way. Spearman's coefficient for `y_nc2` is {_curve["Spearman"]:.3f}.
+5. **Show the conflict:** Report both coefficients, both p-values, and the scatter. For `y_wpc`, Spearman is {_weak["Spearman"]:.3f} with p-value {_weak["Spearman p"]:.3f}. A single "significant" label would hide the fact that the other coefficient does not reject at 5%.
+6. **Nine pairs:** A large rank correlation in a class of nine is a description of those nine students. It is thin evidence about students who were not in the table.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -552,7 +510,12 @@ def _(mo):
 
 @app.cell
 def _(grades, plt, sns):
-    _grid = sns.pairplot(grades, diag_kind="hist", plot_kws={"s": 40, "color": "#4C78A8", "edgecolor": "white"})
+    _grid = sns.pairplot(
+        grades,
+        diag_kind="hist",
+        height=1.8,
+        plot_kws={"s": 28, "color": "#4C78A8", "edgecolor": "white"},
+    )
     _fig = _grid.figure
     _fig.tight_layout()
     plt.close(_fig)
@@ -583,7 +546,7 @@ def _(algebra_grades, history_grades, mo, pd, phys_ed_grades, st):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Check your understanding
+    ### Try it yourself
     1. From the matrix, which subject moves with history, and which scatter looks unstructured?
     2. The physical-education correlation is negative but its p-value is large. What decision does the 5% rule give, and what does that decision not prove?
     3. Why is the scatterplot matrix still useful after the table has already reported the coefficients?

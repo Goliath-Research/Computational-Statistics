@@ -77,7 +77,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Check your understanding
+    ### Try it yourself
     1. What does a shuffle of y change, and what does it leave untouched?
     2. Why is \(H_0\) a statement about pairings rather than a statement that every y equals every x?
     3. At the 5% level, what will we compare the p-value with, once we have computed it?
@@ -132,7 +132,7 @@ def _(math, mo, pd):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Check your understanding
+    ### Try it yourself
     1. Why is a list of all shuffles of 30 rows not a practical test?
     2. What does the add-one correction stop the procedure from printing?
     3. If the p-value equals \(1/4001\), how many of the 4,000 shuffles were at least as extreme as the observed correlation?
@@ -179,7 +179,7 @@ def _(lesson_dir, pd, rs):
 
 @app.cell
 def _(observed_strong, plt, sns, strong_null, strong_p):
-    _fig, _ax = plt.subplots(figsize=(6.8, 3.6))
+    _fig, _ax = plt.subplots(figsize=(6.2, 2.8))
     sns.kdeplot(strong_null, fill=True, color="#4C78A8", ax=_ax)
     _ax.axvline(observed_strong, color="#E45756", linewidth=2, label=f"Observed r = {observed_strong:.3f}")
     _ax.axvline(0, color="#333333", linestyle=":", label="0")
@@ -200,6 +200,11 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     Replace `None` with `True` if the 5% rule rejects \(H_0\) for `y_spc`, and `False` if it does not. Use the p-value already printed above.
+
+    Then answer these questions about the null cloud.
+    4. Why is this blue curve centered near 0, while the paired bootstrap curve was centered near the observed correlation?
+    5. The p-value sits on the floor of what 4,000 shuffles can report. What does that say about the shuffles, in plain language?
+    6. Rejecting \(H_0\) here was expected. Why does that not make the test a discovery about a real-world cause?
     """)
     return
 
@@ -212,34 +217,15 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(mo, strong_p):
+def _(mo, observed_strong, strong_null, strong_p):
     _reject = strong_p < 0.05
     _answers = f"""
 1. **Decision:** `{_reject}`. The p-value is {strong_p:.4f}, which is below 0.05.
 2. **What the picture shows:** The observed correlation is far from the null cloud centered at 0.
 3. **Code:** `reject_strong_positive = {str(_reject)}`
-"""
-    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Check your understanding
-    1. Why is this blue curve centered near 0, while the paired bootstrap curve was centered near the observed correlation?
-    2. The p-value sits on the floor of what 4,000 shuffles can report. What does that say about the shuffles, in plain language?
-    3. Rejecting \(H_0\) here was expected. Why does that not make the test a discovery about a real-world cause?
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo, observed_strong, strong_null, strong_p):
-    _answers = f"""
-1. **Different questions:** The shuffle breaks the pairs, so the null correlations describe no association. Their center is near 0 (this run's null mean is {strong_null.mean():.3f}). The paired bootstrap keeps the pairs and re-estimates the observed correlation, {observed_strong:.3f}.
-2. **None of the shuffles matched it:** The p-value is {strong_p:.4f}, the smallest value 4,000 shuffles can return. Every shuffled correlation was smaller in absolute value than the observed one.
-3. **The line was built:** `y_spc` is a synthetic strong line. Rejecting H0 confirms that the pairing we created is visible. It does not identify a mechanism in a new setting.
+4. **Different questions:** The shuffle breaks the pairs, so the null correlations describe no association. Their center is near 0 (this run's null mean is {strong_null.mean():.3f}). The paired bootstrap keeps the pairs and re-estimates the observed correlation, {observed_strong:.3f}.
+5. **None of the shuffles matched it:** The p-value is {strong_p:.4f}, the smallest value 4,000 shuffles can return. Every shuffled correlation was smaller in absolute value than the observed one.
+6. **The line was built:** `y_spc` is a synthetic strong line. Rejecting H0 confirms that the pairing we created is visible. It does not identify a mechanism in a new setting.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -288,7 +274,7 @@ def _(examples, mo, pd, rs):
 def _(examples, np, plt):
     _x = examples["x"].to_numpy()
     _y = examples["y_nc2"].to_numpy()
-    _fig, _ax = plt.subplots(figsize=(6.2, 3.6))
+    _fig, _ax = plt.subplots(figsize=(5.8, 2.8))
     _ax.scatter(_x, _y, s=32, color="#E45756", edgecolor="white", linewidth=0.4)
     _slope, _intercept = np.polyfit(_x, _y, 1)
     _order = np.argsort(_x)
@@ -305,6 +291,11 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     Replace `None` with `"linear"` if this permutation test is built to detect straight-line association, or `"any shape"` if it is built to detect every pattern a scatter can show.
+
+    Then answer these questions about the table and the curve.
+    4. Find the weak positive row. What are the coefficient and the 5% decision, and why are those two facts different?
+    5. The curved row does not reject \(H_0\). What would be false about the sentence "x and y_nc2 are unrelated"?
+    6. The unstructured row also does not reject \(H_0\). How do you tell that case from the curve?
     """)
     return
 
@@ -317,40 +308,17 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.accordion(
-        {
-            "Show answers": mo.md(r"""
-1. **Answer:** `"linear"`.
-2. **Why:** The statistic is Pearson's r. Shuffling asks whether that straight-line coefficient is extreme. A symmetric curve can produce a small Pearson r, so the test has little to react to.
-3. **Code:** `what_the_test_detects = "linear"`
-""")
-        },
-        lazy=True,
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Check your understanding
-    1. Find the weak positive row. What are the coefficient and the 5% decision, and why are those two facts different?
-    2. The curved row does not reject \(H_0\). What would be false about the sentence "x and y_nc2 are unrelated"?
-    3. The unstructured row also does not reject \(H_0\). How do you tell that case from the curve?
-    """)
-    return
-
-
-@app.cell(hide_code=True)
 def _(mo, permutation_table):
     _weak = permutation_table.loc[permutation_table["Column"] == "y_wpc"].iloc[0]
     _curve = permutation_table.loc[permutation_table["Column"] == "y_nc2"].iloc[0]
     _cloud = permutation_table.loc[permutation_table["Column"] == "y_nc"].iloc[0]
     _answers = f"""
-1. **Modest, and still extreme:** `y_wpc` has r = {_weak["Pearson r"]:.3f} and p = {_weak["Permutation p"]:.4f}. The 5% rule rejects H0. The coefficient says the line is loose. The p-value says a coefficient this far from 0 is uncommon among shuffles of these 30 points.
-2. **The curve is related:** `y_nc2` has p = {_curve["Permutation p"]:.3f}, so this linear test does not reject. The scatter is a U-shape built from the square of x. "No straight-line signal" is the accurate sentence.
-3. **Use the scatter:** `y_nc` has r = {_cloud["Pearson r"]:.3f} and a large p-value, and its scatter is a cloud. The p-values alone do not separate a cloud from a curve.
+1. **Answer:** `"linear"`.
+2. **Why:** The statistic is Pearson's r. Shuffling asks whether that straight-line coefficient is extreme. A symmetric curve can produce a small Pearson r, so the test has little to react to.
+3. **Code:** `what_the_test_detects = "linear"`
+4. **Modest, and still extreme:** `y_wpc` has r = {_weak["Pearson r"]:.3f} and p = {_weak["Permutation p"]:.4f}. The 5% rule rejects H0. The coefficient says the line is loose. The p-value says a coefficient this far from 0 is uncommon among shuffles of these 30 points.
+5. **The curve is related:** `y_nc2` has p = {_curve["Permutation p"]:.3f}, so this linear test does not reject. The scatter is a U-shape built from the square of x. "No straight-line signal" is the accurate sentence.
+6. **Use the scatter:** `y_nc` has r = {_cloud["Pearson r"]:.3f} and a large p-value, and its scatter is a cloud. The p-values alone do not separate a cloud from a curve.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -394,7 +362,7 @@ def _(lesson_dir, mo, pd, rs):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Check your understanding
+    ### Try it yourself
     1. All three tests reject \(H_0\), and the coefficients are large. Which part of that sentence is the strength?
     2. Why does shuffling G3, while leaving G2 in its original student order, match the null hypothesis?
     3. These are 395 students in one course file. What should the conclusion refuse to claim?
@@ -458,7 +426,7 @@ def _(lesson_dir, mo, pd, rs):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Check your understanding
+    ### Try it yourself
     1. Which null is rejected, and which is not?
     2. Why is a rejected null for income not a forecast of one employee's next raise?
     3. The distance test does not reject \(H_0\). Why is "we proved the correlation is zero" the wrong summary?
