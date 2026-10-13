@@ -90,7 +90,7 @@ def _(lesson_dir, np, pd, rs, sm):
 @app.cell
 def _(experience, intercept, plt, salary, slope):
     _order = experience.argsort()
-    _fig, _ax = plt.subplots(figsize=(6.2, 3.6))
+    _fig, _ax = plt.subplots(figsize=(5.8, 2.8))
     _ax.scatter(experience, salary, s=36, color="#4C78A8", edgecolor="white", linewidth=0.4)
     _ax.plot(
         experience[_order],
@@ -108,7 +108,7 @@ def _(experience, intercept, plt, salary, slope):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Check your understanding
+    ### Try it yourself
     1. What is held together when this lesson resamples the file?
     2. State the decision rule that turns a slope interval into evidence about \(H_0\).
     3. Why should the helper's slope match the statsmodels slope before any resampling begins?
@@ -148,7 +148,7 @@ def _(experience, rs, salary):
 
 @app.cell
 def _(boot_intercepts, boot_slopes, intercept, plt, slope, sns):
-    _fig, _axes = plt.subplots(1, 2, figsize=(8.4, 3.6))
+    _fig, _axes = plt.subplots(1, 2, figsize=(7.6, 2.8))
     sns.kdeplot(boot_slopes, fill=True, color="#4C78A8", ax=_axes[0])
     _axes[0].axvline(slope, color="#E45756", linewidth=2, label=f"Estimate {slope:.0f}")
     _axes[0].set(title="Bootstrap slopes", xlabel="Slope", ylabel="Density")
@@ -168,6 +168,11 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     Replace `None` with the 95% percentile interval for the slope. `rs.percentile_interval(boot_slopes, confidence=95)` returns `(low, high)`.
+
+    Then answer these questions about the two clouds.
+    4. Why is the red line in the middle of each cloud?
+    5. What would you have to do to the pairs to build a null cloud centered near a slope of 0?
+    6. The intercept cloud is an uncertainty statement about the fitted value at 0 years of experience. Why is that a less interesting target than the slope in this file?
     """)
     return
 
@@ -180,34 +185,15 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(boot_slopes, mo, rs):
+def _(boot_slopes, mo, rs, slope):
     _low, _high = rs.percentile_interval(boot_slopes, confidence=95)
     _answers = f"""
 1. **Interval:** ({_low:.2f}, {_high:.2f}), in salary units per year.
 2. **Zero:** Both endpoints are positive, so 0 is outside this interval.
 3. **Code:** `slope_interval = rs.percentile_interval(boot_slopes, confidence=95)`
-"""
-    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Check your understanding
-    1. Why is the red line in the middle of each cloud?
-    2. What would you have to do to the pairs to build a null cloud centered near a slope of 0?
-    3. The intercept cloud is an uncertainty statement about the fitted value at 0 years of experience. Why is that a less interesting target than the slope in this file?
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(boot_slopes, mo, slope):
-    _answers = f"""
-1. **Re-estimates cluster:** Each bootstrap copy refits the same line. The copies gather around the original slope, {slope:.2f}. This run's bootstrap mean is {boot_slopes.mean():.2f}.
-2. **Break the pairs:** Shuffle salary against experience, or otherwise match them at random. That is a permutation null, not this bootstrap.
-3. **Zero years is off to the side:** The intercept is the line's height at 0 years of experience. The file's question is the change per year, which is the slope.
+4. **Re-estimates cluster:** Each bootstrap copy refits the same line. The copies gather around the original slope, {slope:.2f}. This run's bootstrap mean is {boot_slopes.mean():.2f}.
+5. **Break the pairs:** Shuffle salary against experience, or otherwise match them at random. That is a permutation null, not this bootstrap.
+6. **Zero years is off to the side:** The intercept is the line's height at 0 years of experience. The file's question is the change per year, which is the slope.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -245,7 +231,7 @@ def _(boot_slopes, mo, pd, rs, slope):
 
 @app.cell
 def _(boot_slopes, plt, rs, slope):
-    _fig, _ax = plt.subplots(figsize=(6.8, 3.6))
+    _fig, _ax = plt.subplots(figsize=(6.2, 2.8))
     _ax.hist(boot_slopes, bins=40, color="#4C78A8", edgecolor="white")
     _ax.axvline(slope, color="#E45756", linewidth=2, label="Estimated slope")
     for _level, _color in [(90, "#F58518"), (95, "#333333"), (99, "#54A24B")]:
@@ -263,7 +249,7 @@ def _(boot_slopes, plt, rs, slope):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### Check your understanding
+    ### Try it yourself
     1. Which of the three intervals exclude 0?
     2. Why is the 99% interval the widest even though it uses the same 4,000 slopes?
     3. Why is "none of the bootstrap slopes were negative" not the same sentence as "the permutation p-value is zero"?
@@ -297,7 +283,7 @@ def _(mo):
 @app.cell
 def _(boot_intercepts, boot_slopes, experience, intercept, np, plt, salary, slope):
     _grid = np.linspace(experience.min(), experience.max(), 80)
-    _fig, _ax = plt.subplots(figsize=(6.6, 3.8))
+    _fig, _ax = plt.subplots(figsize=(6.0, 2.8))
     _step = max(len(boot_slopes) // 40, 1)
     for _s, _b in zip(boot_slopes[::_step][:40], boot_intercepts[::_step][:40]):
         _ax.plot(_grid, _b + _s * _grid, color="#9ecae1", linewidth=1, alpha=0.45)
@@ -317,7 +303,7 @@ def _(boot_intercepts, boot_slopes, experience, intercept, np, plt, salary, slop
     _fitted = boot_intercepts[:, None] + boot_slopes[:, None] * _grid[None, :]
     _low = np.percentile(_fitted, 2.5, axis=0)
     _high = np.percentile(_fitted, 97.5, axis=0)
-    _fig, _ax = plt.subplots(figsize=(6.6, 3.8))
+    _fig, _ax = plt.subplots(figsize=(6.0, 2.8))
     _ax.fill_between(_grid, _low, _high, color="#4C78A8", alpha=0.25, label="95% band of fitted means")
     _ax.plot(_grid, intercept + slope * _grid, color="#E45756", linewidth=2, label="Original fit")
     _ax.scatter(experience, salary, s=28, color="#333333", zorder=3)
@@ -334,6 +320,11 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     Replace `None` with `True` if the bundle of lines spreads more at the ends of the experience range than near the middle, and `False` if it spreads evenly.
+
+    Then answer these questions about the figures.
+    4. Why draw 40 lines on the scatter instead of all 4,000?
+    5. The band is a percentile of fitted means. How is that different from a percentile interval for a single new person's salary?
+    6. The band is for experience values inside the file's range. What new problem appears if you extend the grid far beyond the largest year in the file?
     """)
     return
 
@@ -346,37 +337,14 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.accordion(
-        {
-            "Show answers": mo.md(r"""
+def _(experience, mo):
+    _answers = f"""
 1. **Answer:** `True`.
 2. **Why:** A small change in slope moves the line more at the far left and far right than near the center of the points. The resampled lines agree most where the data anchor them.
 3. **Code:** `wider_at_edges = True`
-""")
-        },
-        lazy=True,
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Check your understanding
-    1. Why draw 40 lines on the scatter instead of all 4,000?
-    2. The band is a percentile of fitted means. How is that different from a percentile interval for a single new person's salary?
-    3. The band is for experience values inside the file's range. What new problem appears if you extend the grid far beyond the largest year in the file?
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(experience, mo):
-    _answers = f"""
-1. **A readable picture:** Four thousand lines paint a solid region and cover the points. Forty lines show the disagreement. The band uses all 4,000 fits without drawing each one.
-2. **The mean, not one person:** The band describes uncertainty in the fitted line. A single new salary also includes the residual scatter around that line, which is wider than the uncertainty in the mean.
-3. **Extrapolation:** The file runs from {experience.min():.1f} to {experience.max():.1f} years. Outside that range the straight line is a guess, and the bootstrap only reshuffles years that were already observed. It does not create information about 30 years of experience.
+4. **A readable picture:** Four thousand lines paint a solid region and cover the points. Forty lines show the disagreement. The band uses all 4,000 fits without drawing each one.
+5. **The mean, not one person:** The band describes uncertainty in the fitted line. A single new salary also includes the residual scatter around that line, which is wider than the uncertainty in the mean.
+6. **Extrapolation:** The file runs from {experience.min():.1f} to {experience.max():.1f} years. Outside that range the straight line is a guess, and the bootstrap only reshuffles years that were already observed. It does not create information about 30 years of experience.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
