@@ -49,7 +49,7 @@ def _(mo):
     - Read a two-sided permutation p-value, including the add-one correction.
     - Separate a small p-value from a large correlation.
     - See that a test of Pearson's \(r\) can miss a curved pattern.
-    - Apply the test to grades and to the employee file without turning a rejected null into a cause.
+    - Apply the test to grades and to the employee file, and report the coefficient beside the decision.
 
     The shuffles below use seed 2026 and 4,000 draws. The same data can produce a slightly different p-value with a different seed. The resolution of 4,000 shuffles is about \(1/4001\): that is the smallest p-value this procedure can report.
     """)
@@ -69,7 +69,7 @@ def _(mo):
 
     This is the resampling version of "no association," not a normal-theory claim about a population correlation parameter. Shuffling y leaves the x values, and the set of y values, exactly as they were. Only the matches change. If the original correlation is typical of those shuffled correlations, the data do not push us off \(H_0\).
 
-    We will use a 5% significance level. A decision to reject \(H_0\) is not a measurement of strength, and it is not a cause.
+    We will use a 5% significance level. A decision to reject \(H_0\) is not a measurement of strength.
     """)
     return
 
@@ -199,33 +199,41 @@ def _(observed_strong, plt, sns, strong_null, strong_p):
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    Replace `None` with `True` if the 5% rule rejects \(H_0\) for `y_spc`, and `False` if it does not. Use the p-value already printed above.
-
-    Then answer these questions about the null cloud.
-    4. Why is this blue curve centered near 0, while the paired bootstrap curve was centered near the observed correlation?
-    5. The p-value sits on the floor of what 4,000 shuffles can report. What does that say about the shuffles, in plain language?
-    6. Rejecting \(H_0\) here was expected. Why does that not make the test a discovery about a real-world cause?
+    Use the printed p-value and the figure.
+    1. Is the p-value for `y_spc` below 0.05?
+    2. Does the 5% rule reject \(H_0\)?
+    3. Is the observed correlation in the center of the blue curve, or far from it?
     """)
     return
 
 
-@app.cell
-def _():
-    reject_strong_positive = None
-    print("Reject H0 at 5%:", reject_strong_positive)
-    return (reject_strong_positive,)
+@app.cell(hide_code=True)
+def _(mo, strong_p):
+    _reject = strong_p < 0.05
+    _answers = f"""
+1. **Yes:** The p-value is {strong_p:.4f}.
+2. **{"Reject" if _reject else "Do not reject"}:** {strong_p:.4f} is {"below" if _reject else "not below"} 0.05.
+3. **Far from the center:** The blue curve is the null cloud around 0. The observed correlation sits out in the tail.
+"""
+    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    1. Why is this blue curve centered near 0, while a paired bootstrap curve is centered near the observed correlation?
+    2. The p-value sits on the floor of what 4,000 shuffles can report. How many of those shuffles were at least as large, in absolute value, as the observed correlation?
+    """)
+    return
 
 
 @app.cell(hide_code=True)
 def _(mo, observed_strong, strong_null, strong_p):
-    _reject = strong_p < 0.05
     _answers = f"""
-1. **Decision:** `{_reject}`. The p-value is {strong_p:.4f}, which is below 0.05.
-2. **What the picture shows:** The observed correlation is far from the null cloud centered at 0.
-3. **Code:** `reject_strong_positive = {str(_reject)}`
-4. **Different questions:** The shuffle breaks the pairs, so the null correlations describe no association. Their center is near 0 (this run's null mean is {strong_null.mean():.3f}). The paired bootstrap keeps the pairs and re-estimates the observed correlation, {observed_strong:.3f}.
-5. **None of the shuffles matched it:** The p-value is {strong_p:.4f}, the smallest value 4,000 shuffles can return. Every shuffled correlation was smaller in absolute value than the observed one.
-6. **The line was built:** `y_spc` is a synthetic strong line. Rejecting H0 confirms that the pairing we created is visible. It does not identify a mechanism in a new setting.
+1. **Different questions:** The shuffle breaks the pairs, so the null correlations describe no association. Their center is near 0 (this run's null mean is {strong_null.mean():.3f}). The paired bootstrap keeps the pairs and re-estimates the observed correlation, {observed_strong:.3f}.
+2. **None:** The p-value is {strong_p:.4f}, the smallest value 4,000 shuffles can return. Every shuffled correlation was smaller in absolute value than the observed one.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -290,35 +298,44 @@ def _(examples, np, plt):
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    Replace `None` with `"linear"` if this permutation test is built to detect straight-line association, or `"any shape"` if it is built to detect every pattern a scatter can show.
-
-    Then answer these questions about the table and the curve.
-    4. Find the weak positive row. What are the coefficient and the 5% decision, and why are those two facts different?
-    5. The curved row does not reject \(H_0\). What would be false about the sentence "x and y_nc2 are unrelated"?
-    6. The unstructured row also does not reject \(H_0\). How do you tell that case from the curve?
+    1. Is this permutation test built to detect straight-line association, or every pattern a scatter can show?
+    2. In the weak positive row, is the coefficient near 0.4 or near 1?
+    3. Does the 5% rule reject \(H_0\) for that row?
     """)
     return
-
-
-@app.cell
-def _():
-    what_the_test_detects = None
-    print("The Pearson permutation test detects:", what_the_test_detects)
-    return (what_the_test_detects,)
 
 
 @app.cell(hide_code=True)
 def _(mo, permutation_table):
     _weak = permutation_table.loc[permutation_table["Column"] == "y_wpc"].iloc[0]
+    _answers = f"""
+1. **Straight-line association:** The statistic is Pearson's r.
+2. **Near 0.4:** `y_wpc` has r = {_weak["Pearson r"]:.3f}.
+3. **{"Reject" if _weak["Permutation p"] < 0.05 else "Do not reject"}:** The permutation p-value is {_weak["Permutation p"]:.4f}.
+"""
+    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    1. Does the curved row reject \(H_0\) at 5%?
+    2. The scatter of `y_nc2` is a U-shape. Are "no straight-line signal" and "no pattern" the same sentence?
+    3. The unstructured row also has a large p-value. Which display separates that cloud from the curve?
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo, permutation_table):
     _curve = permutation_table.loc[permutation_table["Column"] == "y_nc2"].iloc[0]
     _cloud = permutation_table.loc[permutation_table["Column"] == "y_nc"].iloc[0]
     _answers = f"""
-1. **Answer:** `"linear"`.
-2. **Why:** The statistic is Pearson's r. Shuffling asks whether that straight-line coefficient is extreme. A symmetric curve can produce a small Pearson r, so the test has little to react to.
-3. **Code:** `what_the_test_detects = "linear"`
-4. **Modest, and still extreme:** `y_wpc` has r = {_weak["Pearson r"]:.3f} and p = {_weak["Permutation p"]:.4f}. The 5% rule rejects H0. The coefficient says the line is loose. The p-value says a coefficient this far from 0 is uncommon among shuffles of these 30 points.
-5. **The curve is related:** `y_nc2` has p = {_curve["Permutation p"]:.3f}, so this linear test does not reject. The scatter is a U-shape built from the square of x. "No straight-line signal" is the accurate sentence.
-6. **Use the scatter:** `y_nc` has r = {_cloud["Pearson r"]:.3f} and a large p-value, and its scatter is a cloud. The p-values alone do not separate a cloud from a curve.
+1. **No:** `y_nc2` has p = {_curve["Permutation p"]:.3f}.
+2. **No:** The test only discusses the straight line. The scatter is a U-shape built from the square of x.
+3. **The scatter:** `y_nc` has r = {_cloud["Pearson r"]:.3f} and a large p-value, and its scatter is a cloud. The p-values alone do not separate a cloud from a curve.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -363,9 +380,9 @@ def _(lesson_dir, mo, pd, rs):
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    1. All three tests reject \(H_0\), and the coefficients are large. Which part of that sentence is the strength?
+    1. All three tests reject \(H_0\), and the coefficients are large. Which part of that sentence is the strength: the coefficient, or the small p-value?
     2. Why does shuffling G3, while leaving G2 in its original student order, match the null hypothesis?
-    3. These are 395 students in one course file. What should the conclusion refuse to claim?
+    3. These are 395 students in one course file. Does the result describe every course?
     """)
     return
 
@@ -374,9 +391,9 @@ def _(mo):
 def _(grade_tests, mo):
     _row = grade_tests.loc[grade_tests["Pair"] == "G1 and G3"].iloc[0]
     _answers = f"""
-1. **The coefficient:** G1 and G3 have r = {_row["Pearson r"]:.3f}. The p-value {_row["Permutation p"]:.4f} is the evidence against an arbitrary pairing. On the floor of this procedure, that evidence is "stronger than 4,000 shuffles." The strength of the association is the coefficient, not the smallness of the p-value.
+1. **The coefficient:** G1 and G3 have r = {_row["Pearson r"]:.3f}. The p-value {_row["Permutation p"]:.4f} is the evidence against an arbitrary pairing.
 2. **The null breaks the student:** Under H0 the final grade is matched to an arbitrary classmate's second-period grade. The shuffle does that and nothing else.
-3. **Scope and cause:** The result describes this course file. It does not estimate the effect of an intervention on G1, and it does not automatically describe other courses.
+3. **No:** The result describes this course file.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -395,7 +412,7 @@ def _(mo):
 
     Years at the company and distance from home: the same pair of hypotheses, with distance in place of income.
 
-    Rejecting the income null would say tenure and pay move together in these records more than a shuffle allows. It would not price a raise. Failing to reject the distance null would say this file's straight-line coefficient is typical of shuffled pairings. It would not prove that distance and tenure are independent in every workplace.
+    Rejecting the income null would say tenure and pay move together in these records more than a shuffle allows. Failing to reject the distance null would say this file's straight-line coefficient is typical of shuffled pairings.
     """)
     return
 
@@ -428,8 +445,8 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     1. Which null is rejected, and which is not?
-    2. Why is a rejected null for income not a forecast of one employee's next raise?
-    3. The distance test does not reject \(H_0\). Why is "we proved the correlation is zero" the wrong summary?
+    2. For income, is the strength the coefficient or the smallness of the p-value?
+    3. The distance test does not reject \(H_0\). Does that prove the correlation is exactly zero?
     """)
     return
 
@@ -440,8 +457,8 @@ def _(employee_tests, mo):
     _distance = employee_tests.loc[employee_tests["Question"] == "Years and distance from home"].iloc[0]
     _answers = f"""
 1. **Decisions:** Years and monthly income have r = {_pay["Pearson r"]:.3f} and p = {_pay["Permutation p"]:.4f}, so the 5% rule rejects H0. Years and distance have r = {_distance["Pearson r"]:.3f} and p = {_distance["Permutation p"]:.3f}, so the rule does not reject H0.
-2. **A raise is a different question:** The test says the observed matching of pay and tenure is unusual among shuffles. Job, seniority rules, and hours are mixed together in the file. Nothing in the shuffle holds those fixed.
-3. **Not rejecting is not proving zero:** A p-value of {_distance["Permutation p"]:.3f} says the observed coefficient is ordinary under random pairings. The true correlation could be a small nonzero number that 1,470 rows still leave compatible with H0.
+2. **The coefficient:** Years and monthly income have r = {_pay["Pearson r"]:.3f}. The p-value {_pay["Permutation p"]:.4f} says the matching is unusual among shuffles. The strength is the coefficient.
+3. **No:** A p-value of {_distance["Permutation p"]:.3f} says the observed coefficient is ordinary under random pairings. The correlation could still be a small nonzero number.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return

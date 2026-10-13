@@ -43,7 +43,7 @@ def _(mo):
 
     ## Learning goals
     By the end of this lesson, you should be able to:
-    - Describe a fitted line as an estimate of the mean response at a given x, not as a cause.
+    - Describe a fitted line as an estimate of the mean response at a given x.
     - Read the 30-row salary teaching file and name the explanatory variable and the response.
     - Connect Pearson's correlation to the direction of the line, and state a test for that correlation before reading it.
     - Fit the same straight line with scikit-learn and with statsmodels.
@@ -67,7 +67,7 @@ def _(mo):
 
     For this file the response is salary and x is years of experience. The fitted line estimates the mean salary among people in this file who have a given amount of experience. It is a summary of these 30 rows.
 
-    The slope is not automatically the raise a particular person would receive for working one more year. That would require a change in experience with job, employer, and everything else held fixed. This file does not contain that comparison. It contains 30 paired records in a teaching table.
+    The slope is the change in that estimated mean when experience increases by one year, in the units recorded in the file. This file contains 30 paired records in a teaching table.
     """)
     return
 
@@ -76,9 +76,9 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    1. What does the line claim about people who have 6 years of experience in this file?
-    2. What comparison would you need before calling the slope a raise?
-    3. Why does a tight line in a 30-row teaching file still leave the labor market mostly unmeasured?
+    1. What does the line estimate for people who have 6 years of experience in this file: one person's salary, or a mean salary?
+    2. How many rows are in the teaching file?
+    3. Does a line fitted to these 30 rows describe every employer?
     """)
     return
 
@@ -89,8 +89,8 @@ def _(mo):
         {
             "Show answers": mo.md(r"""
 1. **A mean:** The line estimates the average salary, in the units recorded in the file, at 6 years of experience among records like these.
-2. **A held-fixed comparison:** You would need people, or the same people, who differ in experience while job, hours, and employer stay fixed. A column of recorded years is not that experiment.
-3. **Thirty rows:** The file is a small teaching table. A line that fits it well describes this table. It is not a census of wages.
+2. **Thirty rows:** The file is a small teaching table.
+3. **No:** A line that fits this table describes this table.
 """)
         },
         lazy=True,
@@ -163,7 +163,7 @@ def _(mo):
     - \(H_0\): the population linear correlation between experience and salary is 0.
     - \(H_a\): that correlation is not 0.
 
-    The 5% level is the rejection rule. A small p-value says a flat relationship is a poor description of a population like this sample. The coefficient says whether the line is tight. The test does not say that gaining a year of experience causes the salary difference.
+    The 5% level is the rejection rule. A small p-value says a flat relationship is a poor description of a population like this sample. The coefficient says whether the line is tight.
     """)
     return
 
@@ -180,32 +180,40 @@ def _(experience, salary, st):
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    Replace `None` with the Pearson correlation. `salary_correlation.statistic` is that number.
-
-    Then answer these questions about the test.
-    4. Write \(H_0\) in a sentence that names both columns.
-    5. The correlation is about 0.98. What does that say about a straight line, beyond the p-value?
-    6. Why is the correlation test not yet an answer in salary units per year?
+    Use the printed correlation and p-value.
+    1. Is the Pearson correlation positive?
+    2. Is the p-value below 0.05?
+    3. A correlation near 0.98 says the points stay close to a line. Does that number have salary units?
     """)
     return
-
-
-@app.cell
-def _():
-    salary_r = None
-    print("Pearson r:", salary_r)
-    return (salary_r,)
 
 
 @app.cell(hide_code=True)
 def _(mo, salary_correlation):
     _answers = f"""
-1. **Coefficient:** {salary_correlation.statistic:.4f}.
-2. **p-value:** {salary_correlation.pvalue:.4g}. At the 5% level, reject a zero linear correlation.
-3. **Code:** `salary_r = salary_correlation.statistic`
-4. **Null:** In the population this file represents, the linear correlation between years of experience and salary is 0.
-5. **The line is tight:** r = {salary_correlation.statistic:.3f} means the points stay close to a rising line. The p-value only says "not flat."
-6. **Units:** A correlation has no salary units. The slope, in salary units per year, is the regression question in the next section.
+1. **Yes:** r = {salary_correlation.statistic:.4f}.
+2. **Yes:** The p-value is {salary_correlation.pvalue:.4g}, so at the 5% level reject a zero linear correlation.
+3. **No:** A correlation has no salary units. The slope, in salary units per year, comes in the next section.
+"""
+    mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    1. Write \(H_0\) in a sentence that names both columns.
+    2. The correlation is about 0.98. Are the points close to a rising line, or spread in a loose cloud?
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo, salary_correlation):
+    _answers = f"""
+1. **Null:** In the population this file represents, the linear correlation between years of experience and salary is 0.
+2. **Close to a rising line:** r = {salary_correlation.statistic:.3f}. The p-value only says the line is not flat. The coefficient says the points stay close to it.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -251,23 +259,12 @@ def _(experience, experience_column, plt, salary, salary_model):
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    Replace `None` with the model's predicted **mean** salary at 6 years of experience.
-
-    `float(salary_model.predict(np.array([[6.0]]))[0])` is that prediction. The double brackets give scikit-learn the column shape it expects.
-
-    Then answer these questions about the fit.
-    4. Why does scikit-learn want `experience` reshaped to one column?
-    5. If \(R^2\) is about 0.96, what fraction of the salary variance in this file is still residual?
-    6. The prediction at 6 years uses the line. What would make that prediction a poor guide for an x far outside the years in the file?
+    The cell above prints the slope and the intercept.
+    1. Is the predicted value at 6 years one person's salary, or the fitted mean?
+    2. If \(R^2\) is about 0.96, is most of the salary variance in this file on the line, or off it?
+    3. The line is anchored by the years that appear in the file. Is a prediction far outside that range using rows the file contains?
     """)
     return
-
-
-@app.cell
-def _():
-    fitted_at_6_years = None
-    print("Predicted mean salary at 6 years:", fitted_at_6_years)
-    return (fitted_at_6_years,)
 
 
 @app.cell(hide_code=True)
@@ -275,12 +272,9 @@ def _(experience, experience_column, mo, np, salary, salary_model):
     _prediction = float(salary_model.predict(np.array([[6.0]]))[0])
     _r2 = float(salary_model.score(experience_column, salary))
     _answers = f"""
-1. **Prediction:** {_prediction:.2f}, in the salary units of the file.
-2. **What it is:** The fitted mean at 6 years, not a guarantee for one person and not a causal raise.
-3. **Code:** `fitted_at_6_years = float(salary_model.predict(np.array([[6.0]]))[0])`
-4. **Shape:** The estimator is written for any number of predictors. One predictor is still a column of shape ({len(experience)}, 1).
-5. **What is left:** R-squared is {_r2:.3f}, so about {1 - _r2:.3f} of the variance of salary in this file is not on the line.
-6. **Outside the data:** The line is anchored by the years that appear in the file, roughly {experience.min():.1f} to {experience.max():.1f}. Far outside that range, the mean may bend, and this table has no rows there.
+1. **The fitted mean:** At 6 years the line gives {_prediction:.2f}, in the salary units of the file.
+2. **On the line:** R-squared is {_r2:.3f}, so about {1 - _r2:.3f} of the variance of salary in this file is not on the line. Most of it is on the line.
+3. **No:** The years in the file run from about {experience.min():.1f} to {experience.max():.1f}. Far outside that range, the table has no rows.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -415,34 +409,21 @@ def _(mo, np, ols_result, pd, squared_result):
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    Replace `None` with `True` if the squared term is supported by a meaningful rise in \(R^2\) and a p-value below 0.05, and `False` otherwise.
-
-    Then answer these questions about the squared term.
-    4. What pattern in the scatter would have made you expect a squared term to matter?
-    5. The straight-line \(R^2\) was already about 0.96. Why is "the p-value of the square is large" still necessary, rather than stopping at \(R^2\)?
-    6. A future file with a bend in it would need a different conclusion. What, in this file, blocks that conclusion?
+    The cell above prints both R-squared values and the table of p-values.
+    1. Did \(R^2\) rise by more than a little when the squared term was added?
+    2. Is the squared term's p-value below 0.05?
+    3. What pattern in the scatter would have made you expect a squared term to matter?
     """)
     return
-
-
-@app.cell
-def _():
-    squared_term_supported = None
-    print("Squared term supported:", squared_term_supported)
-    return (squared_term_supported,)
 
 
 @app.cell(hide_code=True)
 def _(mo, np, ols_result, squared_result):
     _p = float(np.asarray(squared_result.pvalues, dtype=float)[2])
-    _supported = bool((_p < 0.05) and (squared_result.rsquared - ols_result.rsquared > 0.01))
     _answers = f"""
-1. **Decision:** `{_supported}`.
-2. **The two numbers:** Straight-line R-squared is {ols_result.rsquared:.4f}. With the square it is {squared_result.rsquared:.4f}. The squared term's p-value is {_p:.3f}.
-3. **Code:** `squared_term_supported = False`
-4. **A bend:** The vertical gap for one more year would change as experience increases: a curve, a flattening, or a steepening that a single slope cannot follow.
-5. **R-squared almost has to rise:** Adding a predictor cannot lower the in-sample R-squared. Here it moves from {ols_result.rsquared:.4f} to {squared_result.rsquared:.4f}. The p-value, {_p:.3f}, asks whether that extra coefficient is distinguishable from zero. It is not, at any conventional level.
-6. **This table does not bend enough:** The square does not improve the description of these 30 rows. A different range of experience could still curve. This fit does not show that curve.
+1. **No:** Straight-line R-squared is {ols_result.rsquared:.4f}. With the square it is {squared_result.rsquared:.4f}.
+2. **No:** The squared term's p-value is {_p:.3f}.
+3. **A bend:** The vertical gap for one more year would change as experience increases: a curve, a flattening, or a steepening that a single slope cannot follow.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
