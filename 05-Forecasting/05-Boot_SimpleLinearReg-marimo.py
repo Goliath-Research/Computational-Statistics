@@ -48,7 +48,7 @@ def _(mo):
     - Read a percentile interval for the slope at more than one confidence level.
     - Decide whether a zero slope is compatible with that interval, without treating the bootstrap cloud as a null distribution.
     - See that a bundle of refitted lines, and the band around the mean, is wider at the edges of the data than in the middle.
-    - State what the interval does not establish about an individual's raise.
+    - Decide whether a zero slope is compatible with the percentile interval.
 
     The resamples use 4,000 paired draws and seed 2026. The file is read as `Salary_Data.csv`.
     """)
@@ -167,33 +167,19 @@ def _(boot_intercepts, boot_slopes, intercept, plt, slope, sns):
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    Replace `None` with the 95% percentile interval for the slope. `rs.percentile_interval(boot_slopes, confidence=95)` returns `(low, high)`.
-
-    Then answer these questions about the two clouds.
-    4. Why is the red line in the middle of each cloud?
-    5. What would you have to do to the pairs to build a null cloud centered near a slope of 0?
-    6. The intercept cloud is an uncertainty statement about the fitted value at 0 years of experience. Why is that a less interesting target than the slope in this file?
+    1. Why is the red line in the middle of each cloud?
+    2. Do the bootstrap slopes gather around the estimated slope, or around 0?
+    3. What would you have to do to the pairs to build a null cloud centered near a slope of 0?
     """)
     return
 
 
-@app.cell
-def _():
-    slope_interval = None
-    print("95% interval for the slope:", slope_interval)
-    return (slope_interval,)
-
-
 @app.cell(hide_code=True)
-def _(boot_slopes, mo, rs, slope):
-    _low, _high = rs.percentile_interval(boot_slopes, confidence=95)
+def _(boot_slopes, mo, slope):
     _answers = f"""
-1. **Interval:** ({_low:.2f}, {_high:.2f}), in salary units per year.
-2. **Zero:** Both endpoints are positive, so 0 is outside this interval.
-3. **Code:** `slope_interval = rs.percentile_interval(boot_slopes, confidence=95)`
-4. **Re-estimates cluster:** Each bootstrap copy refits the same line. The copies gather around the original slope, {slope:.2f}. This run's bootstrap mean is {boot_slopes.mean():.2f}.
-5. **Break the pairs:** Shuffle salary against experience, or otherwise match them at random. That is a permutation null, not this bootstrap.
-6. **Zero years is off to the side:** The intercept is the line's height at 0 years of experience. The file's question is the change per year, which is the slope.
+1. **Re-estimates cluster:** Each bootstrap copy refits the same line. The copies gather around the original slope, {slope:.2f}. This run's bootstrap mean is {boot_slopes.mean():.2f}.
+2. **Around the estimated slope:** The red line marks that estimate. The cloud is not a null distribution centered at 0.
+3. **Break the pairs:** Shuffle salary against experience, or otherwise match them at random. That is a permutation null, not this bootstrap.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -319,32 +305,19 @@ def _(boot_intercepts, boot_slopes, experience, intercept, np, plt, salary, slop
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    Replace `None` with `True` if the bundle of lines spreads more at the ends of the experience range than near the middle, and `False` if it spreads evenly.
-
-    Then answer these questions about the figures.
-    4. Why draw 40 lines on the scatter instead of all 4,000?
-    5. The band is a percentile of fitted means. How is that different from a percentile interval for a single new person's salary?
-    6. The band is for experience values inside the file's range. What new problem appears if you extend the grid far beyond the largest year in the file?
+    1. Does the bundle of lines spread more at the ends of the experience range than near the middle?
+    2. Why draw 40 lines on the scatter instead of all 4,000?
+    3. The band uses experience values inside the file's range. Does the bootstrap create information about years far beyond the largest year in the file?
     """)
     return
-
-
-@app.cell
-def _():
-    wider_at_edges = None
-    print("Wider at the edges:", wider_at_edges)
-    return (wider_at_edges,)
 
 
 @app.cell(hide_code=True)
 def _(experience, mo):
     _answers = f"""
-1. **Answer:** `True`.
-2. **Why:** A small change in slope moves the line more at the far left and far right than near the center of the points. The resampled lines agree most where the data anchor them.
-3. **Code:** `wider_at_edges = True`
-4. **A readable picture:** Four thousand lines paint a solid region and cover the points. Forty lines show the disagreement. The band uses all 4,000 fits without drawing each one.
-5. **The mean, not one person:** The band describes uncertainty in the fitted line. A single new salary also includes the residual scatter around that line, which is wider than the uncertainty in the mean.
-6. **Extrapolation:** The file runs from {experience.min():.1f} to {experience.max():.1f} years. Outside that range the straight line is a guess, and the bootstrap only reshuffles years that were already observed. It does not create information about 30 years of experience.
+1. **Yes:** A small change in slope moves the line more at the far left and far right than near the center of the points.
+2. **A readable picture:** Four thousand lines paint a solid region and cover the points. Forty lines show the disagreement. The band uses all 4,000 fits without drawing each one.
+3. **No:** The file runs from {experience.min():.1f} to {experience.max():.1f} years. The bootstrap only reshuffles years that were already observed.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return

@@ -47,7 +47,7 @@ def _(mo):
     - Build a percentile confidence interval from those resampled correlations.
     - Use the interval as evidence about a population correlation of zero, without treating the bootstrap cloud as a null distribution.
     - Apply the interval to the course file, to student grades, and to the employee file.
-    - State what the interval does not establish, including cause.
+    - Read whether the interval excludes 0, and read the estimate beside that decision.
 
     Every interval below uses 4,000 paired resamples and seed 2026. The seed makes the table repeatable. More resamples shrink the Monte Carlo wobble in the interval endpoints. They do not add observations to the original sample.
     """)
@@ -79,9 +79,10 @@ def _(lesson_dir, mo, pd, rs):
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    1. What is being estimated when we treat 0.983 as more than a description of these 30 rows?
-    2. Why would a second sample of 30 pairs from the same process not give exactly the same coefficient?
-    3. Does a coefficient this large, by itself, tell you how the y values were generated?
+    The printed coefficient for `x` and `y_spc` is about 0.983.
+    1. If we treat 0.983 as more than a description of these 30 rows, what population quantity is being estimated?
+    2. Why would a second sample of 30 pairs from the same process not give exactly 0.983?
+    3. Does 0.983 tell you the noise scale that was used to build `y_spc`?
     """)
     return
 
@@ -91,7 +92,7 @@ def _(mo, observed_strong):
     _answers = f"""
 1. **The target:** A population linear correlation: the correlation we would see if we could average over the whole process that produced pairs like these, not only these 30 rows.
 2. **Sampling:** Each sample draws different noise and a different set of x values. The formula for r then returns a different number.
-3. **The recipe stays hidden:** {observed_strong:.3f} says the points hug a rising line. It does not recover the noise scale, and it does not say whether x was assigned by an experiment or simply recorded.
+3. **No:** {observed_strong:.3f} says the points hug a rising line. It does not recover the noise scale.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -138,37 +139,46 @@ def _(observed_strong, plt, rs, sns, strong_bootstrap):
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    `strong_bootstrap` holds the 4,000 paired correlations. Replace `None` with the 95% percentile interval, as a pair of endpoints.
-
-    `rs.percentile_interval(strong_bootstrap, confidence=95)` returns `(low, high)`.
-
-    Then answer these questions about the resample.
-    4. Why must a bootstrap copy take x and y from the same row?
-    5. Why is the observed correlation near the middle of the blue curve, rather than out in a tail?
-    6. What would a near-zero cloud of correlations be describing if someone had resampled the two columns independently?
+    1. Why must a bootstrap copy take x and y from the same row?
+    2. Why is the observed correlation near the middle of the blue curve, rather than out in a tail?
+    3. The dashed lines on the figure are the 95% percentile interval. Do they include 0?
     """)
     return
-
-
-@app.cell
-def _():
-    strong_positive_interval = None
-    print("95% interval:", strong_positive_interval)
-    return (strong_positive_interval,)
 
 
 @app.cell(hide_code=True)
 def _(mo, observed_strong, rs, strong_bootstrap):
     _low, _high = rs.percentile_interval(strong_bootstrap, confidence=95)
     _answers = f"""
-1. **Interval:** ({_low:.3f}, {_high:.3f}).
-2. **Where zero sits:** Both endpoints are positive, so 0 is outside the interval.
-3. **Code:** `strong_positive_interval = rs.percentile_interval(strong_bootstrap, confidence=95)`
-4. **The pair is the observation:** The correlation is a fact about matched pairs. A row is one pair. Splitting the columns invents matches that never occurred.
-5. **It is a sampling distribution of the estimate:** The bootstrap copies re-estimate the same coefficient. They cluster around the original estimate, {observed_strong:.3f}. The bootstrap mean in this run is {strong_bootstrap.mean():.3f}.
-6. **A broken pairing:** Independent draws from the two columns destroy the association. The resulting correlations describe a world in which the matching is arbitrary, not the uncertainty of the coefficient we actually observed.
+1. **The pair is the observation:** The correlation is a fact about matched pairs. A row is one pair.
+2. **Re-estimates cluster:** The bootstrap copies re-estimate the same coefficient. They cluster around the original estimate, {observed_strong:.3f}. The bootstrap mean in this run is {strong_bootstrap.mean():.3f}.
+3. **No:** The interval is ({_low:.3f}, {_high:.3f}). Both endpoints are positive.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    1. If someone resampled the x column and the y column separately, would the pairs stay intact?
+    2. Where would those correlations sit: near the observed correlation, or near 0?
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion(
+        {
+            "Show answers": mo.md(r"""
+1. **No:** Separate draws invent matches that never occurred.
+2. **Near 0:** Breaking the pairs destroys the association. That cloud is not the sampling uncertainty of the coefficient we observed.
+""")
+        },
+        lazy=True,
+    )
     return
 
 
@@ -222,9 +232,9 @@ def _(example_intervals, mo):
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    1. For the strong negative column, the interval lies entirely below zero. What decision does the rule in this section give?
-    2. The curved column's interval covers zero. What question does that answer, and which question does it leave open?
-    3. The weak positive coefficient is near 0.4, but its interval can still cover 0. What does that say about a sample of 30?
+    1. For the strong negative column, the interval lies entirely below zero. Does the rule in this section treat a zero linear correlation as hard to reconcile with these resamples?
+    2. The curved column's interval covers zero. Does that rule out a zero straight-line correlation, or a curve?
+    3. The weak positive coefficient is near 0.4. Does its 95% interval still cover 0?
     """)
     return
 
@@ -236,8 +246,8 @@ def _(example_intervals, mo):
     _curve = example_intervals.loc[example_intervals["Column"] == "y_nc2"].iloc[0]
     _answers = f"""
 1. **Decision:** The interval ({_strong["95% low"]:.3f}, {_strong["95% high"]:.3f}) excludes 0, so these resamples are hard to reconcile with a population linear correlation of 0. The estimate itself is {_strong["Pearson r"]:.3f}, a strong negative line.
-2. **The curve:** The interval ({_curve["95% low"]:.3f}, {_curve["95% high"]:.3f}) covers 0, so the bootstrap does not rule out a zero **linear** correlation. Section 3 of the correlation lesson showed that `y_nc2` is a curve. A straight-line interval cannot declare that curve absent.
-3. **Thirty rows are a wide net:** `y_wpc` has r = {_weak["Pearson r"]:.3f} and interval ({_weak["95% low"]:.3f}, {_weak["95% high"]:.3f}). The estimate is not zero, and the interval still reaches the other side of 0. A modest line in a sample this small is compatible with a population correlation of 0.
+2. **The straight line only:** The interval ({_curve["95% low"]:.3f}, {_curve["95% high"]:.3f}) covers 0, so the bootstrap does not rule out a zero linear correlation. It does not decide whether a curve is present.
+3. **Yes:** `y_wpc` has r = {_weak["Pearson r"]:.3f} and interval ({_weak["95% low"]:.3f}, {_weak["95% high"]:.3f}). With 30 rows, a modest line can still have an interval that covers 0.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -251,7 +261,7 @@ def _(mo):
 
     Question, before the intervals: are earlier grades linearly associated with later grades in the population these students represent?
 
-    The bootstrap interval does not say that the first-period grade causes the final grade. The same student brings study habits, prior preparation, and the same course into every period. The pairing is the student. A high correlation means the ordering of students is stable across periods.
+    Each row is one student. A high correlation means the ordering of students is stable across periods.
     """)
     return
 
@@ -299,21 +309,12 @@ def _(plt, sns, students):
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    Replace `None` with the pair name from `grade_intervals` that has the largest Pearson correlation. Use the label in the Pair column, such as `"G1 and G2"`.
-
-    Then answer these questions about the grade intervals.
-    4. Why is the row, rather than a randomly matched pair of grades, the right unit to resample?
-    5. All three intervals exclude zero and the coefficients are large. What does that say about the ordering of students, and what does it not say about cause?
-    6. These students are one mathematics course in the file, not every mathematics student. How should that limit the sentence you write?
+    Use `grade_intervals`.
+    1. Which pair has the largest Pearson correlation?
+    2. Why is the row, rather than a randomly matched pair of grades, the right unit to resample?
+    3. These students are one mathematics course in the file. Does the interval describe every mathematics student?
     """)
     return
-
-
-@app.cell
-def _():
-    strongest_grade_pair = None
-    print("Strongest pair:", strongest_grade_pair)
-    return (strongest_grade_pair,)
 
 
 @app.cell(hide_code=True)
@@ -321,12 +322,9 @@ def _(grade_intervals, mo):
     _row = grade_intervals.loc[grade_intervals["Pearson r"].idxmax()]
     _g2g3 = grade_intervals.loc[grade_intervals["Pair"] == "G2 and G3"].iloc[0]
     _answers = f"""
-1. **Pair:** {_row["Pair"]}.
-2. **Coefficient:** {_row["Pearson r"]:.3f}, with 95% interval ({_row["95% low"]:.3f}, {_row["95% high"]:.3f}).
-3. **Code:** `strongest_grade_pair = "{_row["Pair"]}"`
-4. **The student is the pair:** G2 and G3 on the same row are two measurements of one person. Resampling rows keeps that person intact.
-5. **Stable ordering, not a mechanism:** G2 and G3 have r = {_g2g3["Pearson r"]:.3f}. Students who rank high in the second period tend to rank high at the end. The interval does not isolate the effect of changing the second-period grade while holding everything else fixed.
-6. **Scope:** The interval estimates the linear association in the population this course file can represent. It is not a result about every school.
+1. **Pair:** {_row["Pair"]}, with r = {_row["Pearson r"]:.3f} and 95% interval ({_row["95% low"]:.3f}, {_row["95% high"]:.3f}).
+2. **The student is the pair:** G2 and G3 on the same row are two measurements of one person. Resampling rows keeps that person intact. G2 and G3 have r = {_g2g3["Pearson r"]:.3f}.
+3. **No:** The interval describes the linear association in the population this course file can represent.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
@@ -341,7 +339,7 @@ def _(mo):
     - Is monthly income linearly associated with years at the company?
     - Is distance from home linearly associated with years at the company?
 
-    The decision rule is the same as in Section 3: an interval that excludes 0 is hard to reconcile with a zero linear correlation. Pay and tenure are assigned together by an employer. An interval that excludes 0 would say the two columns move together in this file. It would not say that staying one more year causes a raise of a specific amount. An interval that covers 0 for distance would say this file does not show a linear association. It would not prove that commuting never matters for anyone.
+    The decision rule is the same as in Section 3: an interval that excludes 0 is hard to reconcile with a zero linear correlation. An interval that covers 0 says a zero linear correlation is still compatible with these resamples.
     """)
     return
 
@@ -397,8 +395,8 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     1. Which interval excludes 0, and which covers 0?
-    2. A positive association between years and income is visible in the scatter. Why is that not an estimate of the raise a particular employee would get from one more year?
-    3. The distance interval covers 0. Why is the careful sentence "no linear association shows up in this file" rather than "distance and tenure are unrelated"?
+    2. Years and monthly income have a positive coefficient and an interval that excludes 0. Do the two columns move together in this file?
+    3. The distance interval covers 0. Does that prove distance and tenure have correlation exactly 0?
     """)
     return
 
@@ -409,8 +407,8 @@ def _(employee_intervals, mo):
     _distance = employee_intervals.loc[employee_intervals["Question"] == "Years and distance from home"].iloc[0]
     _answers = f"""
 1. **The two intervals:** Years and monthly income have r = {_pay["Pearson r"]:.3f} and interval ({_pay["95% low"]:.3f}, {_pay["95% high"]:.3f}), which excludes 0. Years and distance have r = {_distance["Pearson r"]:.3f} and interval ({_distance["95% low"]:.3f}, {_distance["95% high"]:.3f}), which covers 0.
-2. **The line is not a raise:** Income and tenure are set together. People in different jobs, hired in different years, are mixed in the file. The interval describes co-movement in these records. It does not hold job, performance, and hours fixed and then add one year.
-3. **A covered zero is not a proof of independence:** The interval says a zero linear correlation is still compatible with these resamples. A curved pattern, or an association in some other workforce, could still exist. This teaching file does not show a straight-line signal.
+2. **Yes:** The interval describes co-movement of years and monthly income in these records.
+3. **No:** The interval says a zero linear correlation is still compatible with these resamples. This teaching file does not show a straight-line signal for distance.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
     return
