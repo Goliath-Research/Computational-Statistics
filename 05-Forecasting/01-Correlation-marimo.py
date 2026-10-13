@@ -120,7 +120,7 @@ def _(mo, np, pd):
             "weak_negative": -0.9 * _x + 1.9 * _noise_weak_neg,
         }
     )
-    mo.Html(patterns.head().to_html(index=False, border=0))
+    mo.Html(patterns.head().round(4).to_html(index=False, border=0))
     return (patterns,)
 
 
@@ -141,7 +141,7 @@ def _(np, patterns, plt):
         _order = np.argsort(_x)
         _ax.plot(_x[_order], _slope * _x[_order] + _intercept, color="#333333", linewidth=1.4)
         _r = float(np.corrcoef(_x, _y)[0, 1])
-        _ax.set(title=f"{_title} (r = {_r:.2f})", xlabel="x", ylabel="y")
+        _ax.set(title=f"{_title} (r = {_r:.3f})", xlabel="x", ylabel="y")
     _fig.tight_layout()
     plt.close(_fig)
     _fig
@@ -208,7 +208,7 @@ def _(mo):
 def _(lesson_dir, mo, pd):
     examples = pd.read_csv(lesson_dir / "corrExamples.csv")
     print("Rows:", len(examples), "  Columns:", ", ".join(examples.columns))
-    mo.Html(examples.head().round(3).to_html(index=False, border=0))
+    mo.Html(examples.head().round(4).to_html(index=False, border=0))
     return (examples,)
 
 
@@ -226,7 +226,7 @@ def _(examples, np, plt):
         _order = np.argsort(_x)
         _ax.plot(_x[_order], _slope * _x[_order] + _intercept, color="#333333", linewidth=1.4)
         _r = float(np.corrcoef(_x, _y)[0, 1])
-        _ax.set(title=f"{_title} (r = {_r:.2f})", xlabel="x", ylabel=_column)
+        _ax.set(title=f"{_title} (r = {_r:.3f})", xlabel="x", ylabel=_column)
     _fig.tight_layout()
     plt.close(_fig)
     _fig

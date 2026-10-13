@@ -71,7 +71,7 @@ def _(lesson_dir, mo, pd, rs):
     observed_strong = rs.pearson_r(examples["x"], examples["y_spc"])
     print(f"Observed Pearson r for x and y_spc: {observed_strong:.3f}")
     print("Rows:", len(examples))
-    mo.Html(examples[["x", "y_spc"]].head().round(3).to_html(index=False, border=0))
+    mo.Html(examples[["x", "y_spc"]].head().round(4).to_html(index=False, border=0))
     return examples, observed_strong
 
 
@@ -224,7 +224,7 @@ def _(examples, pd, rs):
 
 @app.cell
 def _(example_intervals, mo):
-    mo.Html(example_intervals.round(3).to_html(index=False, border=0))
+    mo.Html(example_intervals.round(4).to_html(index=False, border=0))
     return
 
 
