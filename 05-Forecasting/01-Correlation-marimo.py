@@ -188,6 +188,38 @@ def _(mo, pattern_correlations):
     return
 
 
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Using `patterns`, calculate Pearson’s correlation for `x` with `strong_positive` and with `weak_positive`. Replace each `None` in the next cell with your code. Which association is stronger?
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_strong_result = None
+    print("student_strong_result:", student_strong_result)
+    student_weak_result = None
+    print("student_weak_result:", student_weak_result)
+    return (student_strong_result, student_weak_result)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+student_strong_result = st.pearsonr(patterns["x"], patterns["strong_positive"])
+student_weak_result = st.pearsonr(patterns["x"], patterns["weak_positive"])
+```
+The coefficients are approximately 0.9837 and 0.4386. The strong-positive series has the larger absolute coefficient. Each result also contains a p-value.
+''')}, lazy=True)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -298,6 +330,35 @@ def _(examples, mo, np):
     return
 
 
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Calculate Pearson’s correlation for `examples["x"]` and `examples["y_nc2"]`. Replace `None` with your code. Explain why a coefficient near zero does not rule out the relationship shown in the scatter.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_curve_result = None
+    print("student_curve_result:", student_curve_result)
+    return (student_curve_result,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+student_curve_result = st.pearsonr(examples["x"], examples["y_nc2"])
+```
+The coefficient is approximately 0.1414. Pearson summarizes linear association; the scatter shows a U-shaped relationship.
+''')}, lazy=True)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -389,6 +450,35 @@ def _(mo, pearson_table):
 2. **No:** The test is about a straight line. The scatter is still a curve.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+    return
+
+
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Test whether the population linear correlation between `x` and `y_wpc` is zero. Use the arrays in `examples`. Replace `None` with the SciPy call, state both hypotheses, and interpret the coefficient and p-value separately at the 5% significance level.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_pearson_result = None
+    print("student_pearson_result:", student_pearson_result)
+    return (student_pearson_result,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+student_pearson_result = st.pearsonr(examples["x"], examples["y_wpc"])
+```
+\(H_0: \rho=0\); \(H_a: \rho\ne0\). The coefficient is approximately 0.3758 and the p-value is 0.0407. Reject the null hypothesis at 5%, subject to the test assumptions. The sample association remains modest.
+''')}, lazy=True)
     return
 
 
@@ -497,6 +587,38 @@ def _(mo, rank_table):
     return
 
 
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Calculate Spearman’s and Kendall’s correlations between history and algebra grades. Replace the two `None` values with your code. Compare their signs and explain what each coefficient measures.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_spearman_result = None
+    print("student_spearman_result:", student_spearman_result)
+    student_kendall_result = None
+    print("student_kendall_result:", student_kendall_result)
+    return (student_spearman_result, student_kendall_result)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+student_spearman_result = st.spearmanr(history_grades, algebra_grades)
+student_kendall_result = st.kendalltau(history_grades, algebra_grades)
+```
+Spearman’s coefficient is 0.9000 (approximate p-value 0.0009); Kendall’s coefficient is 0.7222 (p-value 0.0059). Both describe positive ordinal association. Spearman correlates ranks; Kendall compares concordant and discordant pairs. Their magnitudes need not match. With nine observations, prefer permutation inference for Spearman.
+''')}, lazy=True)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -571,116 +693,31 @@ def _(grade_correlations, mo):
 
 
 
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 7. Programming practice
-    Edit and run the next cells. Names beginning with an underscore stay local to a marimo cell, so you can reuse them in other practice cells.
-
-    ### Try it yourself: calculate and compare
-    1. Calculate Pearson's coefficient and p-value for `examples["x"]` and `examples["y_wpc"]`.
-    2. Calculate Spearman's and Kendall's coefficients and p-values for history and algebra.
-    3. Display the results in a DataFrame using `.round(4)`.
+    ### Try it yourself
+    Using `grades`, create a scatterplot matrix with histograms on the diagonal. Replace `None` with the Seaborn call. Compare the history–algebra panel with the history–physical-education panel.
     """)
     return
 
 
 @app.cell
-def _(examples, history_grades, algebra_grades, pd, st):
-    # Write your calculations here. This cell has access to the data and libraries above.
-    return
+def _():
+    student_pairplot = None
+    print("student_pairplot:", student_pairplot)
+    return (student_pairplot,)
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.accordion({"Show answers": mo.md(r'''
 ```python
-_pearson = st.pearsonr(examples["x"], examples["y_wpc"])
-_spearman = st.spearmanr(history_grades, algebra_grades)
-_kendall = st.kendalltau(history_grades, algebra_grades)
-pd.DataFrame({
-    "Method": ["Pearson: x and y_wpc", "Spearman: history and algebra", "Kendall: history and algebra"],
-    "Coefficient": [_pearson.statistic, _spearman.statistic, _kendall.statistic],
-    "p-value": [_pearson.pvalue, _spearman.pvalue, _kendall.pvalue],
-}).round(4)
+student_pairplot = sns.pairplot(grades, diag_kind="hist")
 ```
-The methods summarize different features of the pairs. Their coefficients need not have the same magnitude.
-''')}, lazy=True)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Try it yourself: change the noise
-    Run the example below, then change `_noise_scale` from `0.5` to `2.0` and `5.0`.
-    Predict how the scatter and Pearson's coefficient will change. The seed keeps x and the underlying noise fixed, so you compare noise scales using the same draws. Does more noise generally weaken the association? Is the slope itself a measure of correlation strength?
-    """)
-    return
-
-
-@app.cell
-def _(np, plt, st):
-    _noise_scale = 0.5
-    _rng = np.random.default_rng(2026)
-    _x = _rng.uniform(-3, 3, 80)
-    _noise = _rng.normal(size=80)
-    _y = 1.5 * _x + _noise_scale * _noise
-    _r = st.pearsonr(_x, _y).statistic
-    _fig, _ax = plt.subplots(figsize=(6, 3.5))
-    _ax.scatter(_x, _y, s=25)
-    _ax.set(xlabel="x", ylabel="y", title=f"Noise scale = {_noise_scale}; Pearson r = {_r:.4f}")
-    _fig.tight_layout()
-    plt.close(_fig)
-    _fig
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.accordion({"Show answers": mo.md(r"""
-Increasing the noise scale makes the points more dispersed around the generating line and generally reduces the absolute correlation. The generating slope remains 1.5 throughout: steepness and correlation strength are different quantities. Individual finite samples need not follow a universal monotonic rule as noise changes.
-""")}, lazy=True)
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Try it yourself: a monotone curve
-    Build `_x = np.linspace(0, 3, 80)` and `_y = _x ** 3`. Plot the pairs and calculate Pearson's and Spearman's coefficients.
-
-    Which coefficient is exactly 1 (apart from floating-point rounding), and why? These are constructed points, so focus on the coefficients rather than inferential p-values. Compare this increasing curve with the U-shape in Section 3.
-    """)
-    return
-
-
-@app.cell
-def _(mo, np, pd, plt, st):
-    # Write your monotone-curve example here.
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.accordion({"Show answers": mo.md(r'''
-```python
-_x = np.linspace(0, 3, 80)
-_y = _x ** 3
-_fig, _ax = plt.subplots(figsize=(6, 3.5))
-_ax.scatter(_x, _y, s=25)
-_ax.set(xlabel="x", ylabel="x cubed", title="Increasing nonlinear relationship")
-_fig.tight_layout()
-plt.close(_fig)
-mo.vstack([
-    _fig,
-    pd.DataFrame({
-        "Method": ["Pearson", "Spearman"],
-        "Coefficient": [st.pearsonr(_x, _y).statistic, st.spearmanr(_x, _y).statistic],
-    }).round(4),
-])
-```
-Spearman's coefficient is 1 because the ordering is identical in both variables. Pearson's coefficient is positive but less than 1 because the points do not lie on a straight line. Unlike the U-shape, this curve increases throughout its domain.
+History and algebra show a strong positive sample association. History and physical education show a weaker negative sample association; their correlation tests do not reject zero at 5%.
 ''')}, lazy=True)
     return
 
