@@ -84,7 +84,7 @@ def _(mo):
             "Show answers": mo.md(r"""
 1. **Direction:** Higher. A positive coefficient means larger temperatures tend to arrive with larger cold-drink sales in these records.
 2. **Strength:** The size is \(0.9\), close to the maximum of \(1\). The minus sign is the direction, not a penalty on the strength.
-3. **A flat line is not an empty plot:** A U-shape, or two separate clumps, can produce a coefficient near zero. The scatter is part of the answer.
+3. **A coefficient near zero does not mean no pattern:** A U-shape, or two separate clumps, can produce a coefficient near zero. The scatter is part of the answer.
 """)
         },
         lazy=True,
@@ -96,7 +96,7 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## 2. Four linear patterns
-    A straight-line pattern can be built on purpose. Draw an \(x\), then build \(y\) as a multiple of \(x\) plus noise. The multiple sets the direction and the steepness. The noise loosens the line.
+    A straight-line pattern can be built on purpose. Draw an \(x\), then build \(y\) as a multiple of \(x\) plus noise. The multiple sets the direction and the steepness. The noise loosens the line. Strength labels are descriptive and depend on context; here, “weaker” means weaker than the two strong examples.
 
     The next cell uses a seeded generator, `default_rng(2026)`, so the same 40 points appear every time the cell runs. These series are created for this section. They are not read from a file.
     """)
@@ -129,8 +129,8 @@ def _(np, patterns, plt):
     _specs = [
         ("strong_positive", "Strong positive", "#E45756"),
         ("strong_negative", "Strong negative", "#4C78A8"),
-        ("weak_positive", "Weak positive", "#F58518"),
-        ("weak_negative", "Weak negative", "#54A24B"),
+        ("weak_positive", "Weaker positive", "#F58518"),
+        ("weak_negative", "Weaker negative", "#54A24B"),
     ]
     _x = patterns["x"].to_numpy()
     _fig, _axes = plt.subplots(2, 2, figsize=(7.2, 4.6), sharex=True, sharey=False)
@@ -155,7 +155,7 @@ def _(mo, np, patterns, pd):
     for _key in ["strong_positive", "strong_negative", "weak_positive", "weak_negative"]:
         _rows.append({"Series": _key, "Pearson r": float(np.corrcoef(_x, patterns[_key])[0, 1])})
     pattern_correlations = pd.DataFrame(_rows)
-    mo.Html(pattern_correlations.round(3).to_html(index=False, border=0))
+    mo.Html(pattern_correlations.round(4).to_html(index=False, border=0))
     return (pattern_correlations,)
 
 
@@ -194,12 +194,12 @@ def _(mo):
     ## 3. A curve is not "no relationship"
     Pearson's \(r\) answers a narrow question: how well does a **straight line** describe the pairs?
 
-    The course file `corrExamples.csv` holds 30 synthetic pairs used again in the bootstrap and permutation lessons. The next cell generates these data using the original Jupyter recipe and seed, then saves them in this lesson's folder as `corrExamples.csv` every time it runs, overwriting any existing file. Two of its columns are easy to misread if you look only at the coefficient:
+    The course file `corrExamples.csv` holds 30 synthetic pairs used again in the bootstrap and permutation lessons. The next cell generates these data using the original Jupyter recipe and seed, then automatically saves them in this lesson's folder as `corrExamples.csv` if that file is missing. An existing file is preserved without prompting. Two of its columns are easy to misread if you look only at the coefficient:
 
-    - `y_nc` is unstructured noise, loosely attached to `x`.
+    - `y_nc` is generated independently of `x`; its sample correlation need not be exactly zero.
     - `y_nc2` is a **curve**: the square of `x`, plus a little vertical noise.
 
-    The short names were chosen when the file was saved. "nc" is not a verdict you should trust until you have seen the scatter. The saved CSV is replaced each time the data cell runs.
+    The short names were chosen when the file was saved. "nc" is not a verdict you should trust until you have seen the scatter. The analysis below always uses the original generated data in memory. If an existing CSV has different contents, a message explains that it was preserved; later notebooks will use the saved file.
     """)
     return
 
@@ -223,8 +223,22 @@ def _(lesson_dir, mo, np, pd):
             "y_nc2": _x * _x + _noise,
         }
     )
-    _saved_examples.to_csv(_csv_path, index=False)
-    print("Created:", _csv_path.name)
+    if not _csv_path.exists():
+        _saved_examples.to_csv(_csv_path, index=False)
+        print("Created:", _csv_path.name)
+    else:
+        print("Preserved existing file:", _csv_path.name)
+        try:
+            _existing = pd.read_csv(_csv_path)
+            _same = (
+                list(_existing.columns) == list(_saved_examples.columns)
+                and _existing.shape == _saved_examples.shape
+                and np.allclose(_existing.to_numpy(dtype=float), _saved_examples.to_numpy(), rtol=1e-12, atol=1e-12)
+            )
+        except (OSError, ValueError, TypeError, pd.errors.ParserError):
+            _same = False
+        if not _same:
+            print("The existing CSV differs from this lesson's generated data or could not be read. It was not overwritten; later notebooks will use that existing file.")
     examples = _saved_examples
     print("Rows:", len(examples), "  Columns:", ", ".join(examples.columns))
     mo.Html(examples.head().round(4).to_html(index=False, border=0))
@@ -323,6 +337,8 @@ def _(examples, mo, pd, st):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
+    All numeric tables use `.round(4)` for consistent display. A p-value shown as `0.0000` is smaller than the displayed precision; it does **not** mean the p-value is exactly zero. Calculations and the 5% decisions use the original, unrounded values.
+
     Read the strong columns and the weak columns as different lessons. `y_spc` and `y_snc` have coefficients near \(1\) and \(-1\), and tiny p-values: the line is both strong and easy to distinguish from zero in this sample. `y_wpc` and `y_wnc` have coefficients near \(0.4\) in size. Their p-values fall just under 0.05, so the test rejects \(H_0\) at 5%, while the association remains modest. Significance is a statement about evidence against zero, not a synonym for "large."
 
     `y_nc` and `y_nc2` do not reject \(H_0\) at 5%. For the curve, that decision is about the straight line. Section 3 already showed the pattern the line misses.
@@ -422,7 +438,7 @@ def _(mo):
     mo.md(r"""
     Compare this table with the Pearson table. The strong linear patterns stay strong because their observations largely preserve the same or opposite order. Steepness alone does not determine correlation strength. The curve stays near zero on both rank correlations, because a U-shape is not monotone. The weak lines are the subtle row: Spearman does not reject \(H_0\) at 5% for `y_wpc` or `y_wnc`, even though Pearson did. With 30 points and a loose cloud, the choice of coefficient can change the 5% decision. That is a reason to report the coefficient and the picture, not only a reject-or-not label.
 
-    Ranks are easier to see in a tiny grade book. The next cell uses nine fixed students, not a random draw. History and algebra move together. History and physical education do not.
+    Ranks are easier to see in a tiny grade book. The next cell uses nine fixed students, not a random draw. History and algebra show a strong positive sample association. History and physical education show a weaker negative sample association; their correlation tests do not reject zero at the 5% level. Failure to reject does not establish that there is no association.
     """)
     return
 
@@ -513,6 +529,7 @@ def _(algebra_grades, history_grades, mo, pd, phys_ed_grades, st):
     for _name, _values in [("Algebra", algebra_grades), ("Physical education", phys_ed_grades)]:
         _pearson = st.pearsonr(history_grades, _values)
         _spearman = st.spearmanr(history_grades, _values)
+        _kendall = st.kendalltau(history_grades, _values)
         _rows.append(
             {
                 "Pair with history": _name,
@@ -520,10 +537,12 @@ def _(algebra_grades, history_grades, mo, pd, phys_ed_grades, st):
                 "Pearson p": float(_pearson.pvalue),
                 "Spearman": float(_spearman.statistic),
                 "Spearman p": float(_spearman.pvalue),
+                "Kendall": float(_kendall.statistic),
+                "Kendall p": float(_kendall.pvalue),
             }
         )
     grade_correlations = pd.DataFrame(_rows)
-    mo.Html(grade_correlations.round(3).to_html(index=False, border=0))
+    mo.Html(grade_correlations.round(4).to_html(index=False, border=0))
     return (grade_correlations,)
 
 
@@ -532,7 +551,7 @@ def _(mo):
     mo.md(r"""
     ### Try it yourself
     1. From the matrix, which subject moves with history?
-    2. Which scatter looks unstructured?
+    2. Which pair shows a weaker negative association?
     3. The physical-education Pearson p-value is above 0.05. Does the 5% rule reject a zero linear correlation?
     """)
     return
@@ -544,10 +563,125 @@ def _(grade_correlations, mo):
     _pe = grade_correlations.loc[grade_correlations["Pair with history"] == "Physical education"].iloc[0]
     _answers = f"""
 1. **Algebra:** Pearson r = {_algebra["Pearson r"]:.3f}. The history-and-algebra panel rises.
-2. **Physical education:** That scatter does not show a tight line.
+2. **Physical education:** The sample association is negative, with Pearson r = {_pe["Pearson r"]:.3f}; the points are more dispersed than for history and algebra.
 3. **Do not reject:** The Pearson p-value is {_pe["Pearson p"]:.3f}, which is above 0.05.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+    return
+
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## 7. Programming practice
+    Edit and run the next cells. Names beginning with an underscore stay local to a marimo cell, so you can reuse them in other practice cells.
+
+    ### Try it yourself: calculate and compare
+    1. Calculate Pearson's coefficient and p-value for `examples["x"]` and `examples["y_wpc"]`.
+    2. Calculate Spearman's and Kendall's coefficients and p-values for history and algebra.
+    3. Display the results in a DataFrame using `.round(4)`.
+    """)
+    return
+
+
+@app.cell
+def _(examples, history_grades, algebra_grades, pd, st):
+    # Write your calculations here. This cell has access to the data and libraries above.
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+_pearson = st.pearsonr(examples["x"], examples["y_wpc"])
+_spearman = st.spearmanr(history_grades, algebra_grades)
+_kendall = st.kendalltau(history_grades, algebra_grades)
+pd.DataFrame({
+    "Method": ["Pearson: x and y_wpc", "Spearman: history and algebra", "Kendall: history and algebra"],
+    "Coefficient": [_pearson.statistic, _spearman.statistic, _kendall.statistic],
+    "p-value": [_pearson.pvalue, _spearman.pvalue, _kendall.pvalue],
+}).round(4)
+```
+The methods summarize different features of the pairs. Their coefficients need not have the same magnitude.
+''')}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself: change the noise
+    Run the example below, then change `_noise_scale` from `0.5` to `2.0` and `5.0`.
+    Predict how the scatter and Pearson's coefficient will change. The seed keeps x and the underlying noise fixed, so you compare noise scales using the same draws. Does more noise generally weaken the association? Is the slope itself a measure of correlation strength?
+    """)
+    return
+
+
+@app.cell
+def _(np, plt, st):
+    _noise_scale = 0.5
+    _rng = np.random.default_rng(2026)
+    _x = _rng.uniform(-3, 3, 80)
+    _noise = _rng.normal(size=80)
+    _y = 1.5 * _x + _noise_scale * _noise
+    _r = st.pearsonr(_x, _y).statistic
+    _fig, _ax = plt.subplots(figsize=(6, 3.5))
+    _ax.scatter(_x, _y, s=25)
+    _ax.set(xlabel="x", ylabel="y", title=f"Noise scale = {_noise_scale}; Pearson r = {_r:.4f}")
+    _fig.tight_layout()
+    plt.close(_fig)
+    _fig
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r"""
+Increasing the noise scale makes the points more dispersed around the generating line and generally reduces the absolute correlation. The generating slope remains 1.5 throughout: steepness and correlation strength are different quantities. Individual finite samples need not follow a universal monotonic rule as noise changes.
+""")}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself: a monotone curve
+    Build `_x = np.linspace(0, 3, 80)` and `_y = _x ** 3`. Plot the pairs and calculate Pearson's and Spearman's coefficients.
+
+    Which coefficient is exactly 1 (apart from floating-point rounding), and why? These are constructed points, so focus on the coefficients rather than inferential p-values. Compare this increasing curve with the U-shape in Section 3.
+    """)
+    return
+
+
+@app.cell
+def _(mo, np, pd, plt, st):
+    # Write your monotone-curve example here.
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+_x = np.linspace(0, 3, 80)
+_y = _x ** 3
+_fig, _ax = plt.subplots(figsize=(6, 3.5))
+_ax.scatter(_x, _y, s=25)
+_ax.set(xlabel="x", ylabel="x cubed", title="Increasing nonlinear relationship")
+_fig.tight_layout()
+plt.close(_fig)
+mo.vstack([
+    _fig,
+    pd.DataFrame({
+        "Method": ["Pearson", "Spearman"],
+        "Coefficient": [st.pearsonr(_x, _y).statistic, st.spearmanr(_x, _y).statistic],
+    }).round(4),
+])
+```
+Spearman's coefficient is 1 because the ordering is identical in both variables. Pearson's coefficient is positive but less than 1 because the points do not lie on a straight line. Unlike the U-shape, this curve increases throughout its domain.
+''')}, lazy=True)
     return
 
 
@@ -559,7 +693,7 @@ def _(mo):
 
     Three distinctions keep the number honest.
 
-    - **Shape.** Pearson's \(r\) sees a straight line. Spearman's coefficient and Kendall's \(\tau\) see a monotone pattern. A symmetric curve can hide from all three. The scatter is not optional.
+    - **Shape.** Pearson's \(r\) sees a straight line. Spearman's coefficient and Kendall's \(\tau\) see a monotone pattern. A symmetric U-shaped relationship can have all three population coefficients equal to zero. The scatter is not optional.
     - **Evidence versus strength.** In the course file, the weak positive column rejects a zero Pearson correlation at 5% with a coefficient near \(0.4\). The strong columns have coefficients near \(1\) and \(-1\). Both facts belong in the sentence.
     - **Cause.** Grades can move together because factors such as study habits affect both subjects. Temperature and drink sales can move together because of the season. The coefficient records the co-movement. It does not name the mechanism, and it does not predict what would happen if someone changed only one variable.
 
