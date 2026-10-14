@@ -15,15 +15,78 @@ from itertools import combinations
 
 
 
+
+def _positive_count(value):
+    """Validate and return a positive integer resample count.
+    
+    Accept Python and NumPy integers; reject booleans. Raise ValueError for
+    noninteger or nonpositive values."""
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)) or value < 1:
+        raise ValueError("num_samples must be a positive integer")
+    return int(value)
+
+
+def _numeric_vector(values):
+    """Return a nonempty one-dimensional array of finite real numbers.
+    
+    Preserve numeric dtype so resampled integer indices remain valid.
+    Raise ValueError for empty, multidimensional, nonnumeric, complex,
+    or nonfinite input."""
+    array = np.asarray(values)
+    if not np.issubdtype(array.dtype, np.number) or np.iscomplexobj(array):
+        raise ValueError("samples must contain real numeric values")
+    if array.ndim != 1 or array.size == 0 or not np.all(np.isfinite(array)):
+        raise ValueError("each sample must be a nonempty one-dimensional finite numeric array")
+    return array
+
+
+def _validate_groups(arrays, related=False):
+    """Validate two or more groups and return their numeric NumPy arrays.
+    
+    Parameters
+    ----------
+    arrays : sequence of array-like
+        Nonempty one-dimensional samples containing finite real numbers.
+    related : bool, default False
+        Require equal lengths for paired or repeated measurements.
+    
+    Returns
+    -------
+    list of numpy.ndarray
+        Validated samples in their original order.
+    
+    Raises
+    ------
+    ValueError
+        Fewer than two groups, invalid sample data, or unequal related lengths."""
+    if len(arrays) < 2:
+        raise ValueError("at least two samples are required")
+    groups = [_numeric_vector(a) for a in arrays]
+    if related and len({len(a) for a in groups}) != 1:
+        raise ValueError("related samples must have equal lengths")
+    return groups
+
+
 class Samples(ABC):
     '''
     Abstract class for generating samples using a resampling method 
     '''
 
     def __init__(self, sample_data, num_samples=4_000, seed=2026):
-        """Generate samples with observations in rows and resamples in columns."""
-        self._sample_data = np.asarray(sample_data)
-        self._num_samples = num_samples
+        """Initialize a sample generator and generate resamples immediately.
+        
+        Parameters
+        ----------
+        sample_data : array-like
+            Nonempty one-dimensional finite real observations.
+        num_samples : int, default 4000
+            Positive number of resamples.
+        seed : int, default 2026
+            Seed passed to NumPy default_rng.
+        
+        The cached column means are retained for backward compatibility."""
+        self._sample_data = _numeric_vector(sample_data)
+        self._num_samples = _positive_count(num_samples)
         self._sample_size = len(self._sample_data)
         self._rng = np.random.default_rng(seed)
         self.generate_samples()
@@ -34,35 +97,39 @@ class Samples(ABC):
 
     @abstractmethod
     def generate_samples(self):
+        """Generate resamples in self._samples.
+        
+        Subclasses must create an array shaped (sample_size, num_samples)."""
         pass
     
     @property
     def sample_data(self) -> np.ndarray:
-        '''Sample of the original population (np.ndarray)'''
+        """Return the original one-dimensional sample array."""
         return self._sample_data
 
     @property
     def sample_size(self) -> int:
-        '''Sample size (positive integer)'''
+        """Return the number of observations in the original sample."""
         return self._sample_size
 
     @property
     def num_samples(self) -> int:
-        '''Number of samples (positive integer)'''
+        """Return the number of generated resamples."""
         return self._num_samples
     
     @num_samples.setter
     def num_samples(self, value: int) -> None:
-        '''Set the number of samples (expects a positive integer)'''
-        if not isinstance(value, int) or value <= 0:
-            raise ValueError("num_samples must be a positive integer")
-        self._num_samples = value
+        """Set a positive integer resample count and regenerate samples and means.
+        
+        The existing random generator advances; it is not reseeded.
+        Raise ValueError for a boolean, noninteger, or nonpositive count."""
+        self._num_samples = _positive_count(value)
         self.generate_samples()
         self._sample_distribution = self._samples.mean(axis=0)
 
     @property
     def samples(self) -> np.ndarray:
-        '''Access the NumPy array: observations in rows, resamples in columns'''
+        """Return the resampled array with observations in rows and resamples in columns."""
         return self._samples  
     
     
@@ -75,7 +142,7 @@ class BSamples(Samples):
     '''    
 
     def generate_samples(self):
-        """Draw all bootstrap observations with replacement using NumPy."""
+        """Draw observations with replacement into independent resample columns."""
         self._samples = self._rng.choice(self._sample_data, replace=True, size=(self._sample_size, self._num_samples))
         
                          
@@ -87,7 +154,9 @@ class PSamples(Samples):
     '''
     
     def generate_samples(self):
-        """Independently shuffle each column without replacement."""
+        """Independently permute the original observations within each column.
+        
+        Each column preserves the original values and their multiplicities."""
         repeated = np.broadcast_to(self._sample_data[:, None], (self._sample_size, self._num_samples))
         self._samples = self._rng.permuted(repeated, axis=0)
 
@@ -99,11 +168,10 @@ class ResamplingHT(ABC):
     '''
     
     def __init__(self):
-        '''
-        It initializes the class. 
-        HypothesisTest class computes the p-value given a sample distribution and an observed 
-        statistic.        
-        '''
+        """Cache the subclass null distribution and observed statistic.
+        
+        Subclasses must initialize their group data and resampling settings first.
+        The initial confidence level is 0.95."""
         self._sample_distribution: np.ndarray = self.get_sample_distribution()
         self._obs_stat:     float = self.get_observed_stat()
         self._p_value:      float = 1.0
@@ -112,32 +180,65 @@ class ResamplingHT(ABC):
 
     @abstractmethod
     def get_sample_distribution(self) -> np.ndarray:
+        """Calculate and return the null distribution for two or more groups.
+        
+        Dispatch to the two-group or multiple-group statistic. The constructor
+        caches this result; null_distribution accesses the cache without recalculation."""
         pass
 
 
     @abstractmethod
     def get_observed_stat(self) -> float:
+        """Calculate and return the observed statistic for two or more groups."""
         pass
 
 
     @property
+    def observed_statistic(self):
+        """Return the observed group-comparison statistic cached at construction."""
+        return float(self._obs_stat)
+
+    @property
+    def null_distribution(self):
+        """Return a copy of the cached resampling null distribution."""
+        return self._sample_distribution.copy()
+
+    @property
     def confidence(self) -> float:
-        '''Getter method for accessing the confidence level'''
+        """Return the confidence level as a fraction, such as 0.95."""
         return self._confidence
     
 
     @confidence.setter
     def confidence(self, value: float) -> None:
-        '''Setter method for updating the confidence level'''
+        """Set the confidence level as a fraction strictly between zero and one.
+        
+        For example, 0.95 requests a 95% interval. Raise ValueError for an
+        invalid confidence level. Changing it does not regenerate resamples."""
         if not isinstance(value, (float, int)) or not (0.0 <= value <= 1.0):
             raise ValueError("Confidence must be a float or int between 0.0 and 1.0 inclusive")
+        if isinstance(value, (bool, np.bool_)) or not np.isfinite(value) or not 0 < value < 1:
+            raise ValueError("confidence must be strictly between 0 and 1")
         self._confidence = float(value)
     
 
     def get_confidence_interval(self, sample: np.ndarray) -> tuple:
-        '''
-        It returns a confidence% confident interval for sample
-        '''
+        """Return a percentile interval for the supplied resampled statistics.
+        
+        Parameters
+        ----------
+        sample : array-like
+            Finite resampled values of the statistic being estimated.
+        
+        Returns
+        -------
+        tuple
+            Lower and upper percentiles determined by self.confidence.
+        
+        Notes
+        -----
+        Interpret as a confidence interval only for an appropriate bootstrap
+        estimation distribution, not merely for a permutation null distribution."""
         alpha = 100 - self._confidence * 100               
         lower_alpha = alpha / 2.0    
         upper_alpha = lower_alpha + self._confidence * 100        
@@ -147,9 +248,30 @@ class ResamplingHT(ABC):
 
 
     def get_p_value(self, alternative=None):
-        """Use two-sided differences for two samples, and upper-tail distances for k > 2."""
+        """Return a Monte Carlo p-value from the cached null distribution.
+        
+        Parameters
+        ----------
+        alternative : {"two-sided", "smaller", "larger"} or None
+            None selects two-sided for two groups and larger for more groups.
+            Multiple-group nonnegative statistics require larger.
+        
+        Returns
+        -------
+        float
+            Tail probability with inclusive comparisons and an add-one correction.
+            Two-sided values are twice the smaller tail, capped at one.
+        
+        Raises
+        ------
+        ValueError
+            An unsupported alternative or tail for a multiple-group statistic."""
         if alternative is None:
             alternative = "two-sided" if self._k == 2 else "larger"
+        if alternative not in ("two-sided", "smaller", "larger"):
+            raise ValueError("alternative must be 'two-sided', 'smaller', or 'larger'")
+        if self._k > 2 and alternative != "larger":
+            raise ValueError("the nonnegative multiple-group statistic requires alternative='larger'")
         values = np.asarray(self._sample_distribution)
         tolerance = 100 * np.finfo(float).eps * max(1, abs(self._obs_stat))
         left = (np.count_nonzero(values <= self._obs_stat + tolerance) + 1) / (len(values) + 1)
@@ -162,7 +284,29 @@ class ResamplingHT(ABC):
     
 
     def get_homogeneous_subsets(self, alpha=0.05):
-        """Return maximal subsets whose every pair is not rejected after Bonferroni."""
+        """Return maximal subsets with no rejected Bonferroni pairwise comparisons.
+        
+        Parameters
+        ----------
+        alpha : float, default 0.05
+            Family significance level strictly between zero and one.
+        
+        Returns
+        -------
+        list of list of int
+            Zero-based group indices; subsets can overlap.
+        
+        Notes
+        -----
+        Non-rejection does not establish equality. Enumeration can be expensive
+        when there are many groups.
+        
+        Raises
+        ------
+        ValueError
+            alpha is outside the permitted range."""
+        if not np.isfinite(alpha) or not 0 < alpha < 1:
+            raise ValueError("alpha must be strictly between 0 and 1")
         adjusted = self.bonferroni_correction()
         compatible = []
         for size in range(1, self._k + 1):
@@ -182,9 +326,29 @@ class BootstrapIndependentHT(ResamplingHT):
     '''
 
     def __init__(self, *arrays, num_samples=4_000, seed=2026):
+        """Initialize a independent bootstrap comparison of two or more groups.
+        
+        Parameters
+        ----------
+        *arrays : array-like
+            Nonempty one-dimensional finite real samples.
+            Groups may have different lengths.
+        num_samples : int, default 4000
+            Positive number of Monte Carlo resamples.
+        seed : int, default 2026
+            Reproducible seed for resampling.
+        
+        Raises
+        ------
+        ValueError
+            Invalid samples, group count, or resample count.
+        
+        Notes
+        -----
+        Bootstrap samples are centered to impose equal population means."""
         self._k = len(arrays)
-        self._arrays = [np.asarray(a) for a in arrays]
-        self._num_samples = num_samples
+        self._arrays = _validate_groups(arrays)
+        self._num_samples = _positive_count(num_samples)
         self._seed = seed
         self._sample_size = len(self._arrays[0])
         self._overall_mean = np.concatenate(self._arrays).mean()
@@ -195,10 +359,7 @@ class BootstrapIndependentHT(ResamplingHT):
 
 
     def get_sample_distribution_2(self) -> np.ndarray:
-        '''
-        (class BootstrapIndependentHT)
-        Difference in means statistic
-        '''               
+        """Return the first minus second group means for each null resample."""
         # Getting the two sample objects
         s0 = self._sample_objects[0]
         s1 = self._sample_objects[1]        
@@ -210,7 +371,10 @@ class BootstrapIndependentHT(ResamplingHT):
 
         
     def get_sample_distribution_k(self):
-        """Apply the observed weighted-dispersion definition to each null resample."""
+        """Return the null statistic for every resample for more than two groups.
+        
+        Use the sample-size-weighted root mean square deviation of group means
+        from the weighted grand mean."""
         means = np.stack([obj.samples.mean(axis=0) - obj.sample_data.mean() + self._overall_mean for obj in self._sample_objects])
         sizes = np.array([obj.sample_size for obj in self._sample_objects])
         grand = np.average(means, axis=0, weights=sizes)
@@ -218,28 +382,25 @@ class BootstrapIndependentHT(ResamplingHT):
 
 
     def get_sample_distribution(self) -> np.ndarray:
-        '''
-        (class BootstrapIndependentHT)
-        It returns a np.array with the sample distribution based on means.
-        '''          
+        """Calculate and return the null distribution for two or more groups.
+        
+        Dispatch to the two-group or multiple-group statistic. The constructor
+        caches this result; null_distribution accesses the cache without recalculation."""
         return self.get_sample_distribution_2() if self._k == 2 else self.get_sample_distribution_k()        
     
 
     def get_observed_stat_2(self) -> float:
-        '''
-        (class BootstrapIndependentHT)
-        Difference in means statistic
-        '''                
+        """Return the first group mean minus the second group mean."""
         s0 = self._sample_objects[0]
         s1 = self._sample_objects[1]        
         return s0.sample_data.mean() - s1.sample_data.mean()        
            
 
     def get_observed_stat_k(self) -> float:
-        '''
-        (class BootstrapIndependentHT)
-        The observed statistic will be will be the square of... k samples (k>2)
-        '''                  
+        """Return the observed statistic for more than two groups.
+        
+        Use the sample-size-weighted root mean square deviation of group means
+        from the weighted grand mean."""
         stat = sum([(self._sample_objects[k].sample_data.mean() - self._overall_mean)**2 *
                             (self._sample_objects[k].sample_size / self._overall_size) 
                             for k in range(self._k)])        
@@ -247,29 +408,40 @@ class BootstrapIndependentHT(ResamplingHT):
 
 
     def get_observed_stat(self) -> float:
-        '''
-        (class BootstrapIndependentHT)
-        It returns the observed statistic.        
-        '''
+        """Calculate and return the observed statistic for two or more groups."""
         return self.get_observed_stat_2() if self._k == 2 else self.get_observed_stat_k()                
 
 
     def bonferroni_correction(self):
-        """Test each pair using its own resampling null, then adjust across all pairs."""
+        """Return the cached Bonferroni-adjusted matrix of pairwise p-values.
+        
+        Each pair uses its own two-group resampling null and a reproducible seed.
+        Multiply each p-value by k*(k-1)/2 and cap at one. The returned matrix
+        is symmetric with diagonal entries equal to one; callers receive a copy."""
+        if hasattr(self, "_bonferroni_cache"):
+            return self._bonferroni_cache.copy()
         adjusted = np.ones((self._k, self._k))
         pairs = list(combinations(range(self._k), 2))
         for offset, (i, j) in enumerate(pairs):
             pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=self._seed + 100 + offset)
             adjusted[i, j] = adjusted[j, i] = min(1, pair_model.get_p_value("two-sided") * len(pairs))
         self._corrected_p_values = adjusted
-        return adjusted
+        self._bonferroni_cache = adjusted.copy()
+        return adjusted.copy()
     
 
     def confidence_intervals(self) -> np.ndarray:
-        '''    
-        (class BootstrapIndependentHT)    
-        It returns a np.array with the confidence intervals for each sample data.
-        '''
+        """Return percentile-bootstrap confidence intervals for group population means.
+        
+        Returns
+        -------
+        numpy.ndarray
+            Shape (k, 2): lower and upper limits in original group order.
+        
+        Notes
+        -----
+        Use unshifted bootstrap observations and self.confidence. These intervals
+        are for individual group means, not differences between means."""
         ci = [self.get_confidence_interval(self._sample_objects[k].samples.mean(axis=0))             
               for k in range(self._k)]
         return np.array(ci)
@@ -284,9 +456,29 @@ class BootstrapRelatedHT(ResamplingHT):
     '''
 
     def __init__(self, *arrays, num_samples=4_000, seed=2026):
+        """Initialize a paired bootstrap comparison of two or more groups.
+        
+        Parameters
+        ----------
+        *arrays : array-like
+            Nonempty one-dimensional finite real samples. Equal lengths are required;
+            corresponding positions must identify the same subject.
+        num_samples : int, default 4000
+            Positive number of Monte Carlo resamples.
+        seed : int, default 2026
+            Reproducible seed for resampling.
+        
+        Raises
+        ------
+        ValueError
+            Invalid samples, group count, or resample count.
+        
+        Notes
+        -----
+        Bootstrap samples are centered to impose equal population means."""
         self._k = len(arrays)
-        self._arrays = [np.asarray(a) for a in arrays]
-        self._num_samples = num_samples
+        self._arrays = _validate_groups(arrays, related=True)
+        self._num_samples = _positive_count(num_samples)
         self._seed = seed
         self._sample_size = len(self._arrays[0])
         self._overall_mean = np.concatenate(self._arrays).mean()
@@ -298,10 +490,7 @@ class BootstrapRelatedHT(ResamplingHT):
     
 
     def get_sample_distribution_2(self) -> np.ndarray:
-        '''                
-        (class BootstrapRelatedHT)
-        Difference in means statistic
-        '''            
+        """Return the first minus second group means for each null resample."""
         # Getting the two sets of samples
         s0 = self._arrays[0][self._boot_indexes.samples] - self._arrays[0].mean() + self._overall_mean           
         s1 = self._arrays[1][self._boot_indexes.samples] - self._arrays[1].mean() + self._overall_mean               
@@ -311,10 +500,9 @@ class BootstrapRelatedHT(ResamplingHT):
         
 
     def get_sample_distribution_k(self) -> np.ndarray:
-        '''        
-        (class BootstrapRelatedHT)
-        It gets the sample distribution based on mean_difference method.  
-        '''            
+        """Return the null statistic for every resample for more than two groups.
+        
+        Use the mean absolute difference across all pairs of condition means."""
         # Getting the k samples
         s = [self._arrays[i][self._boot_indexes.samples] - self._arrays[i].mean() 
              + self._overall_mean for i in range(self._k)]   
@@ -329,19 +517,16 @@ class BootstrapRelatedHT(ResamplingHT):
 
 
     def get_sample_distribution(self) -> np.ndarray:
-        '''
-        (class BootstrapRelatedHT)
-        It returns a np.array with the sample distribution based on means.
-        '''            
+        """Calculate and return the null distribution for two or more groups.
+        
+        Dispatch to the two-group or multiple-group statistic. The constructor
+        caches this result; null_distribution accesses the cache without recalculation."""
         return self.get_sample_distribution_2() if self._k == 2 else self.get_sample_distribution_k()
             
         
         
     def get_observed_stat_2(self) -> float:
-        '''
-        (class BootstrapRelatedHT)
-        It returns the difference in means of the two samples.
-        '''        
+        """Return the first group mean minus the second group mean."""
         # Getting the two sets of samples
         s0 = self._arrays[0]
         s1 = self._arrays[1]
@@ -351,10 +536,9 @@ class BootstrapRelatedHT(ResamplingHT):
     
 
     def get_observed_stat_k(self) -> float:
-        '''
-        (class BootstrapRelatedHT)
-        It returns the mean of the absolute value of the differences of all pairs of samples.
-        '''        
+        """Return the observed statistic for more than two groups.
+        
+        Use the mean absolute difference across all pairs of condition means."""
         # Getting the k samples and shifting them for sharing the mean
         s = [self._arrays[i] for i in range(self._k)]
         # Getting the means of the k samples
@@ -367,30 +551,41 @@ class BootstrapRelatedHT(ResamplingHT):
 
 
     def get_observed_stat(self) -> float:
-        '''
-        (class BootstrapRelatedHT)
-        The observed statistic is mean_difference method computed on the actual observed data. 
-        '''  
+        """Calculate and return the observed statistic for two or more groups."""
         return self.get_observed_stat_2() if self._k == 2 else self.get_observed_stat_k()        
                 
 
 
     def bonferroni_correction(self):
-        """Test each pair using its own resampling null, then adjust across all pairs."""
+        """Return the cached Bonferroni-adjusted matrix of pairwise p-values.
+        
+        Each pair uses its own two-group resampling null and a reproducible seed.
+        Multiply each p-value by k*(k-1)/2 and cap at one. The returned matrix
+        is symmetric with diagonal entries equal to one; callers receive a copy."""
+        if hasattr(self, "_bonferroni_cache"):
+            return self._bonferroni_cache.copy()
         adjusted = np.ones((self._k, self._k))
         pairs = list(combinations(range(self._k), 2))
         for offset, (i, j) in enumerate(pairs):
             pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=self._seed + 100 + offset)
             adjusted[i, j] = adjusted[j, i] = min(1, pair_model.get_p_value("two-sided") * len(pairs))
         self._corrected_p_values = adjusted
-        return adjusted
+        self._bonferroni_cache = adjusted.copy()
+        return adjusted.copy()
 
 
     def confidence_intervals(self) -> np.ndarray:
-        '''   
-        (class BootstrapRelatedHT)            
-        It returns a np.array with the confidence intervals for each sample data.
-        '''
+        """Return percentile-bootstrap confidence intervals for group population means.
+        
+        Returns
+        -------
+        numpy.ndarray
+            Shape (k, 2): lower and upper limits in original group order.
+        
+        Notes
+        -----
+        Use unshifted bootstrap observations and self.confidence. These intervals
+        are for individual group means, not differences between means."""
         ci = [self.get_confidence_interval(self._arrays[k][self._boot_indexes.samples].mean(axis=0))           
               for k in range(self._k)]
         return np.array(ci)
@@ -407,9 +602,29 @@ class PermutationIndependentHT(ResamplingHT):
     '''
 
     def __init__(self, *arrays, num_samples=4_000, seed=2026):
+        """Initialize a pooled-label permutation comparison of two or more groups.
+        
+        Parameters
+        ----------
+        *arrays : array-like
+            Nonempty one-dimensional finite real samples.
+            Groups may have different lengths.
+        num_samples : int, default 4000
+            Positive number of Monte Carlo resamples.
+        seed : int, default 2026
+            Reproducible seed for resampling.
+        
+        Raises
+        ------
+        ValueError
+            Invalid samples, group count, or resample count.
+        
+        Notes
+        -----
+        Permutation inference requires exchangeable labels under the null."""
         self._k = len(arrays)
-        self._arrays = [np.asarray(a) for a in arrays]
-        self._num_samples = num_samples
+        self._arrays = _validate_groups(arrays)
+        self._num_samples = _positive_count(num_samples)
         self._seed = seed
         self._sample_size = len(self._arrays[0])
         self._overall_mean = np.concatenate(self._arrays).mean()
@@ -423,10 +638,7 @@ class PermutationIndependentHT(ResamplingHT):
 
 
     def get_sample_distribution_2(self) -> np.ndarray:
-        '''
-        (class PermutationIndependentHT)
-        Difference in means statistic
-        '''   
+        """Return the first minus second group means for each null resample."""
         # Getting the two sample objects
         #arr0 = self._arrays_list[0]
         #arr1 = self._arrays_list[1]
@@ -437,10 +649,10 @@ class PermutationIndependentHT(ResamplingHT):
             
         
     def get_sample_distribution_k(self) -> np.ndarray:    
-        '''
-        (class PermutationIndependentHT)
-        The sampling distribution will be the square of... k samples (k>2)
-        '''        
+        """Return the null statistic for every resample for more than two groups.
+        
+        Use the sample-size-weighted root mean square deviation of group means
+        from the weighted grand mean."""
         #sample_dist = sum([((self._arrays_list[k].mean(axis=0) - self._overall_mean)**2) *  
         #                    (self._sample_sizes[k] / self._overall_size) 
         #                    for k in range(self._k)])        
@@ -451,27 +663,24 @@ class PermutationIndependentHT(ResamplingHT):
 
 
     def get_sample_distribution(self) -> np.ndarray:
-        '''
-        (class PermutationIndependentHT)
-        It returns a np.array with the sample distribution based on means.
-        '''      
+        """Calculate and return the null distribution for two or more groups.
+        
+        Dispatch to the two-group or multiple-group statistic. The constructor
+        caches this result; null_distribution accesses the cache without recalculation."""
         return self.get_sample_distribution_2() if self._k == 2 else self.get_sample_distribution_k()
                 
 
         
     def get_observed_stat_2(self) -> float:
-        '''
-        (class PermutationIndependentHT)
-        Difference in means statistic
-        '''     
+        """Return the first group mean minus the second group mean."""
         return self._arrays[0].mean() - self._arrays[1].mean()                         
         
     
     def get_observed_stat_k(self) -> float:
-        '''
-        (class PermutationIndependentHT)
-        The observed statistic will be will be the square of... k samples (k>2)
-        '''                  
+        """Return the observed statistic for more than two groups.
+        
+        Use the sample-size-weighted root mean square deviation of group means
+        from the weighted grand mean."""
         stat = sum([(self._arrays[k].mean() - self._overall_mean)**2 * 
                             (self._sample_sizes[k] / self._overall_size) 
                             for k in range(self._k)])                
@@ -479,28 +688,43 @@ class PermutationIndependentHT(ResamplingHT):
     
 
     def get_observed_stat(self) -> float:
-        '''
-        (class PermutationIndependentHT)
-        It returns the observed statistic.        
-        '''
+        """Calculate and return the observed statistic for two or more groups."""
         return self.get_observed_stat_2() if self._k == 2 else self.get_observed_stat_k()        
             
 
   
     def bonferroni_correction(self):
-        """Test each pair using its own resampling null, then adjust across all pairs."""
+        """Return the cached Bonferroni-adjusted matrix of pairwise p-values.
+        
+        Each pair uses its own two-group resampling null and a reproducible seed.
+        Multiply each p-value by k*(k-1)/2 and cap at one. The returned matrix
+        is symmetric with diagonal entries equal to one; callers receive a copy."""
+        if hasattr(self, "_bonferroni_cache"):
+            return self._bonferroni_cache.copy()
         adjusted = np.ones((self._k, self._k))
         pairs = list(combinations(range(self._k), 2))
         for offset, (i, j) in enumerate(pairs):
             pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=self._seed + 100 + offset)
             adjusted[i, j] = adjusted[j, i] = min(1, pair_model.get_p_value("two-sided") * len(pairs))
         self._corrected_p_values = adjusted
-        return adjusted
+        self._bonferroni_cache = adjusted.copy()
+        return adjusted.copy()
         
     
 
     def confidence_intervals(self):
-        """Estimate group means with unshifted bootstrap draws, not permutations."""
+        """Return percentile-bootstrap confidence intervals for group population means.
+        
+        Returns
+        -------
+        numpy.ndarray
+            Shape (k, 2): lower and upper limits in original group order.
+        
+        Notes
+        -----
+        Use unshifted bootstrap observations and self.confidence. These intervals
+        are for individual group means, not differences between means.
+        For this permutation class, generate a separate bootstrap with seed + 200."""
         bootstrap = BootstrapIndependentHT(*self._arrays, num_samples=self._num_samples, seed=self._seed + 200)
         bootstrap.confidence = self.confidence
         return bootstrap.confidence_intervals()
@@ -516,9 +740,29 @@ class PermutationRelatedHT(ResamplingHT):
     '''
 
     def __init__(self, *arrays, num_samples=4_000, seed=2026):
+        """Initialize a within-subject permutation comparison of two or more groups.
+        
+        Parameters
+        ----------
+        *arrays : array-like
+            Nonempty one-dimensional finite real samples. Equal lengths are required;
+            corresponding positions must identify the same subject.
+        num_samples : int, default 4000
+            Positive number of Monte Carlo resamples.
+        seed : int, default 2026
+            Reproducible seed for resampling.
+        
+        Raises
+        ------
+        ValueError
+            Invalid samples, group count, or resample count.
+        
+        Notes
+        -----
+        Permutation inference requires exchangeable labels under the null."""
         self._k = len(arrays)
-        self._arrays = [np.asarray(a) for a in arrays]
-        self._num_samples = num_samples
+        self._arrays = _validate_groups(arrays, related=True)
+        self._num_samples = _positive_count(num_samples)
         self._seed = seed
         self._sample_size = len(self._arrays[0])
         self._overall_mean = np.concatenate(self._arrays).mean()
@@ -533,10 +777,7 @@ class PermutationRelatedHT(ResamplingHT):
 
     
     def get_sample_distribution_2(self) -> np.ndarray:
-        '''
-        (class PermutationRelatedHT)
-        Difference in means statistic
-        '''           
+        """Return the first minus second group means for each null resample."""
         # Getting the two sample objects
         arr0 = self._sample_list[0]
         arr1 = self._sample_list[1]        
@@ -545,10 +786,9 @@ class PermutationRelatedHT(ResamplingHT):
         
 
     def get_sample_distribution_k(self) -> np.ndarray:
-        '''
-        (class PermutationRelatedHT)
-        It gets the sample distribution for k samples (k>2) based on mean_difference method.  
-        '''    
+        """Return the null statistic for every resample for more than two groups.
+        
+        Use the mean absolute difference across all pairs of condition means."""
         # Getting the means of the k samples
         sample_list_mean = [self._sample_list[i].mean(axis=0) for i in range(self._k)]
         # Getting all possible pairs of samples
@@ -559,28 +799,24 @@ class PermutationRelatedHT(ResamplingHT):
 
 
     def get_sample_distribution(self) -> np.ndarray:
-        '''
-        (class PermutationRelatedHT)
-        It returns a np.array with the sample distribution based on means.
-        '''      
+        """Calculate and return the null distribution for two or more groups.
+        
+        Dispatch to the two-group or multiple-group statistic. The constructor
+        caches this result; null_distribution accesses the cache without recalculation."""
         return self.get_sample_distribution_2() if self._k == 2 else self.get_sample_distribution_k()
               
         
 
     def get_observed_stat_2(self) -> float:
-        '''
-        (class PermutationRelatedHT)
-        Difference in means statistic
-        '''     
+        """Return the first group mean minus the second group mean."""
         return self._arrays[0].mean() - self._arrays[1].mean()                         
         
         
     
     def get_observed_stat_k(self) -> float: 
-        '''
-        (class PermutationRelatedHT)
-        The observed statistic will be will be the square of... k samples (k>2)
-        '''             
+        """Return the observed statistic for more than two groups.
+        
+        Use the mean absolute difference across all pairs of condition means."""
         # Get the means of the k samples
         sample_mean = [self._arrays[i].mean() for i in range(self._k)]           
         # Getting all possible pairs of samples
@@ -591,27 +827,42 @@ class PermutationRelatedHT(ResamplingHT):
     
 
     def get_observed_stat(self) -> float:
-        '''
-        (class PermutationRelatedHT)
-        It returns the observed statistic.        
-        '''
+        """Calculate and return the observed statistic for two or more groups."""
         return self.get_observed_stat_2() if self._k == 2 else self.get_observed_stat_k()           
 
 
     def bonferroni_correction(self):
-        """Test each pair using its own resampling null, then adjust across all pairs."""
+        """Return the cached Bonferroni-adjusted matrix of pairwise p-values.
+        
+        Each pair uses its own two-group resampling null and a reproducible seed.
+        Multiply each p-value by k*(k-1)/2 and cap at one. The returned matrix
+        is symmetric with diagonal entries equal to one; callers receive a copy."""
+        if hasattr(self, "_bonferroni_cache"):
+            return self._bonferroni_cache.copy()
         adjusted = np.ones((self._k, self._k))
         pairs = list(combinations(range(self._k), 2))
         for offset, (i, j) in enumerate(pairs):
             pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=self._seed + 100 + offset)
             adjusted[i, j] = adjusted[j, i] = min(1, pair_model.get_p_value("two-sided") * len(pairs))
         self._corrected_p_values = adjusted
-        return adjusted
+        self._bonferroni_cache = adjusted.copy()
+        return adjusted.copy()
         
     
 
     def confidence_intervals(self):
-        """Estimate group means with unshifted bootstrap draws, not permutations."""
+        """Return percentile-bootstrap confidence intervals for group population means.
+        
+        Returns
+        -------
+        numpy.ndarray
+            Shape (k, 2): lower and upper limits in original group order.
+        
+        Notes
+        -----
+        Use unshifted bootstrap observations and self.confidence. These intervals
+        are for individual group means, not differences between means.
+        For this permutation class, generate a separate bootstrap with seed + 200."""
         bootstrap = BootstrapRelatedHT(*self._arrays, num_samples=self._num_samples, seed=self._seed + 200)
         bootstrap.confidence = self.confidence
         return bootstrap.confidence_intervals()
