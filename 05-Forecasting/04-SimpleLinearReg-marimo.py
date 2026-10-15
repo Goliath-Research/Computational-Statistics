@@ -50,7 +50,7 @@ def _(mo):
     - State a hypothesis for the slope before reading its t test.
     - Decide whether a squared term earns a place in the model.
 
-    `Salary_Data.csv` is the file in this lesson's folder. The Jupyter notebook refers to `salary_data.csv`. On a case-sensitive system those are different names. This lesson reads `Salary_Data.csv` and does not rename the file.
+    Read `salary_data.csv` from this lesson’s folder. Numeric tables use `.round(4)` for consistent display; calculations use unrounded values. A p-value displayed as `0.0000` is not exactly zero: it is smaller than the displayed precision.
     """)
     return
 
@@ -109,7 +109,7 @@ def _(mo):
 
 @app.cell
 def _(lesson_dir, mo, pd):
-    salaries = pd.read_csv(lesson_dir / "Salary_Data.csv")
+    salaries = pd.read_csv(lesson_dir / "salary_data.csv")
     experience = salaries["YearsExperience"].to_numpy(dtype=float)
     salary = salaries["Salary"].to_numpy(dtype=float)
     print("Rows:", len(salaries))
@@ -163,7 +163,7 @@ def _(mo):
     - \(H_0\): the population linear correlation between experience and salary is 0.
     - \(H_a\): that correlation is not 0.
 
-    The 5% level is the rejection rule. A small p-value says a flat relationship is a poor description of a population like this sample. The coefficient says whether the line is tight.
+    The 5% level is the rejection rule. A small p-value provides evidence against zero population linear correlation under the test assumptions. It does not establish a strong relationship or rule out nonlinear patterns. The coefficient describes estimated direction and strength. The conventional exact Pearson test assumes independent pairs from a bivariate normal population; computing the coefficient itself does not require normality.
     """)
     return
 
@@ -213,9 +213,38 @@ def _(mo):
 def _(mo, salary_correlation):
     _answers = f"""
 1. **Null:** In the population this file represents, the linear correlation between years of experience and salary is 0.
-2. **Close to a rising line:** r = {salary_correlation.statistic:.3f}. The p-value only says the line is not flat. The coefficient says the points stay close to it.
+2. **Close to a rising line:** r = {salary_correlation.statistic:.3f}. The p-value provides evidence against zero population linear correlation under the test assumptions. The coefficient says the points stay close to it.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+    return
+
+
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Calculate Pearson’s correlation and its p-value using `experience` and `salary`. Replace `None` with your code. Interpret strength and statistical evidence separately.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_correlation = None
+    print("student_correlation:", student_correlation)
+    return (student_correlation,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+student_correlation = st.pearsonr(experience, salary)
+```
+The coefficient describes direction and strength. Compare the p-value with α = 0.05 under the stated assumptions; significance alone does not describe strength.
+''')}, lazy=True)
     return
 
 
@@ -224,6 +253,14 @@ def _(mo):
     mo.md(r"""
     ## 4. Fitting the line with scikit-learn
     `LinearRegression` expects x as a column, shape `(n, 1)`, even when there is only one predictor. The fitted attributes are `coef_[0]`, the slope, and `intercept_`. `score(x, y)` is \(R^2\): the fraction of the variance of salary that the line accounts for in this file.
+
+    For this training-data least-squares fit with an intercept:
+
+    $$
+    R^2 = 1 - \frac{\sum_i (y_i-\hat y_i)^2}{\sum_i (y_i-\bar y)^2}.
+    $$
+
+    The denominator is the squared error from predicting the sample mean for everyone. R-squared compares the fitted model with that baseline, rather than counting observations on a line.
 
     \(R^2\) near 1 means the residuals are small compared with the spread of salary **in this table**. It is not a promise about the next person hired somewhere else.
     """)
@@ -261,7 +298,7 @@ def _(mo):
     ### Try it yourself
     The cell above prints the slope and the intercept.
     1. Is the predicted value at 6 years one person's salary, or the fitted mean?
-    2. If \(R^2\) is about 0.96, is most of the salary variance in this file on the line, or off it?
+    2. If \(R^2\) is about 0.96, does the fitted model account for most or little of the observed variation in salary?
     3. The line is anchored by the years that appear in the file. Is a prediction far outside that range using rows the file contains?
     """)
     return
@@ -273,10 +310,42 @@ def _(experience, experience_column, mo, np, salary, salary_model):
     _r2 = float(salary_model.score(experience_column, salary))
     _answers = f"""
 1. **The fitted mean:** At 6 years the line gives {_prediction:.2f}, in the salary units of the file.
-2. **On the line:** R-squared is {_r2:.3f}, so about {1 - _r2:.3f} of the variance of salary in this file is not on the line. Most of it is on the line.
+2. **Most:** R-squared is {_r2:.4f}, so the model accounts for about {100 * _r2:.2f}% of the observed variation in salary. The residual sum of squares is about {100 * (1 - _r2):.2f}% of the total sum of squares. This is not the percentage of observations lying on the line.
 3. **No:** The years in the file run from about {experience.min():.1f} to {experience.max():.1f}. Far outside that range, the table has no rows.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+    return
+
+
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Fit a scikit-learn linear regression using `experience` and `salary`, then predict salary at 6 years. Replace both `None` values with your code. Why must the predictor input have two dimensions?
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_model = None
+    print("student_model:", student_model)
+    student_prediction = None
+    print("student_prediction:", student_prediction)
+    return (student_model, student_prediction)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+student_model = LinearRegression().fit(experience.reshape(-1, 1), salary)
+student_prediction = student_model.predict(np.array([[6.0]]))[0]
+```
+The input shape is (number of observations, number of predictors). The fitted value estimates mean salary at 6 years under the model; it is also a point prediction for an individual, whose salary can differ from that mean.
+''')}, lazy=True)
     return
 
 
@@ -291,7 +360,13 @@ def _(mo):
     - \(H_0\): the population slope is 0. Mean salary does not change linearly with years of experience.
     - \(H_a\): the population slope is not 0.
 
-    The t statistic is the estimate divided by its standard error. The p-value is the evidence against \(H_0\) under the usual linear-model assumptions: independent rows, a linear mean, and residuals whose spread does not depend on x in a serious way. Thirty teaching rows will not prove those assumptions. We use the test as a disciplined summary and we still look at the scatter.
+    The t statistic is the estimate divided by its standard error. The p-value is the evidence against \(H_0\) under the conventional linear-model assumptions: a correctly specified linear conditional mean, independent errors with constant variance, and normally distributed errors for exact finite-sample t inference. Normality concerns the errors conditional on x, not x or y themselves. Fitting the least-squares line does not require normality. Thirty teaching rows will not prove those assumptions. We use the test as a disciplined summary and we still look at the scatter.
+
+    For simple ordinary least-squares regression with an intercept and the same observations, the conventional two-sided slope test and Pearson zero-correlation test have the same t statistic and p-value. They are two descriptions of the same evidence, not independent confirmations. The slope adds salary units per year:
+
+    $$
+    t = r \sqrt{\frac{n-2}{1-r^2}}.
+    $$
 
     The intercept has its own test, against a mean salary of 0 at zero years of experience. Zero salary is not an interesting benchmark here. The slope test is the one that matches the question in this section.
     """)
@@ -348,10 +423,66 @@ def _(coefficient_table, mo, ols_result):
     _intercept = coefficient_table.loc[coefficient_table["Term"] == "Intercept"].iloc[0]
     _answers = f"""
 1. **Null:** The population slope is 0. Mean salary does not change linearly with years of experience.
-2. **Units and a standard error:** The slope is {_slope["Estimate"]:.2f} salary units per year, and its t test gives p = {_slope["p-value"]:.4g}. The correlation already said the line was tight and not flat. The slope puts that line in salary units and compares the estimate with its standard error. R-squared is {ols_result.rsquared:.3f}.
+2. **Units, not independent confirmation:** The slope is {_slope["Estimate"]:.2f} salary units per year. Its conventional two-sided t test gives p = {_slope["p-value"]:.4g}, the same as the Pearson test on these observations. The slope expresses the relationship in salary units per year. R-squared is {ols_result.rsquared:.4f}.
 3. **The intercept's benchmark is 0 salary:** Its estimate is {_intercept["Estimate"]:.2f} and its p-value is tiny because 0 salary at 0 years is far from this line. That is not the scientific question.
 """
     mo.accordion({"Show answers": mo.md(_answers)}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Inspecting residuals
+    A residual is the recorded salary minus the fitted salary. Plot residuals against fitted values: a curved pattern can indicate a missing nonlinear term, changing vertical spread can indicate nonconstant error variance, and isolated points can merit inspection. A patternless plot does not prove all assumptions; independence also depends on the sampling design.
+    """)
+    return
+
+
+@app.cell
+def _(ols_result, plt):
+    _fig, _ax = plt.subplots(figsize=(5.8, 2.8))
+    _ax.scatter(ols_result.fittedvalues, ols_result.resid, s=36, color="#4C78A8", edgecolor="white", linewidth=0.4)
+    _ax.axhline(0, color="#333333", linestyle="--", linewidth=1)
+    _ax.set(title="Residuals against fitted salary", xlabel="Fitted salary", ylabel="Residual")
+    _fig.tight_layout()
+    plt.close(_fig)
+    _fig
+    return
+
+
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Fit the same line with statsmodels, including an intercept, then calculate its residuals. Replace each `None` with your code. Compare its coefficients with scikit-learn and inspect the residual plot above.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_design = None
+    print("student_design:", student_design)
+    student_ols = None
+    print("student_ols:", student_ols)
+    student_residuals = None
+    print("student_residuals:", student_residuals)
+    return (student_design, student_ols, student_residuals)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+student_design = sm.add_constant(experience)
+student_ols = sm.OLS(salary, student_design).fit()
+student_residuals = salary - student_ols.predict(student_design)
+```
+The fitted coefficients agree with scikit-learn up to floating-point rounding. Residuals are observed minus fitted values. In a least-squares fit with an intercept, their sum is approximately zero.
+''')}, lazy=True)
     return
 
 
@@ -362,15 +493,18 @@ def _(mo):
     A curve would say the salary gap for one more year is different at 2 years of experience than at 10. One way to allow that is to add the square of experience as a second predictor:
 
     \[
-    \text{mean salary} = b_0 + b_1 \times \text{years} + b_2 \times \text{years}^2.
+    \text{mean salary} = \beta_0 + \beta_1 \times \text{years} + \beta_2 \times \text{years}^2.
     \]
 
     Hypotheses for the new term, before the fit:
 
-    - \(H_0\): \(b_2 = 0\). The square does not change the mean once the straight line is included.
-    - \(H_a\): \(b_2 \neq 0\).
+    - \(H_0\): \(\beta_2 = 0\). The square does not change the mean once the straight line is included.
+    - \(H_a\): \(\beta_2 \neq 0\).
 
-    Two summaries matter together. \(R^2\) says whether the residuals shrink. The p-value for \(b_2\) says whether that coefficient is distinguishable from zero in this sample. A squared term that leaves \(R^2\) essentially unchanged, with a large p-value, has not earned a place. Extra flexibility that does not improve the fit is not a better description.
+    This model is linear in its coefficients, although its relationship with experience can be curved. There is one underlying explanatory variable represented by two terms.
+
+    Adding a term to this nested least-squares model cannot decrease training R-squared. A small increase alone does not justify the extra term. A large p-value for the squared term means insufficient evidence of curvature under this model; it does not prove that curvature is absent. Consider residual patterns and, when prediction is the goal, performance on new data as well.
+
     """)
     return
 
@@ -429,13 +563,45 @@ def _(mo, np, ols_result, squared_result):
     return
 
 
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Extract the squared-term p-value and calculate the increase in training R-squared. Replace both `None` values with your code. Does a small increase in training R-squared by itself establish that the squared term is useful?
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_squared_p = None
+    print("student_squared_p:", student_squared_p)
+    student_r2_increase = None
+    print("student_r2_increase:", student_r2_increase)
+    return (student_squared_p, student_r2_increase)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+student_squared_p = squared_result.pvalues.iloc[2]
+student_r2_increase = squared_result.rsquared - ols_result.rsquared
+```
+No. Training R-squared cannot decrease when this term is added. Interpret the p-value under the model assumptions, inspect residual patterns, and consider prediction on new data when relevant.
+''')}, lazy=True)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## Conclusions
-    The salary file shows a tight, rising line. Pearson's correlation is about 0.98, and the 5% test rejects a zero linear correlation. The least-squares slope is about 9,450 salary units per year of experience, with an intercept near 25,800. scikit-learn and statsmodels report that same line. statsmodels adds a t test: the slope is far from zero relative to its standard error. \(R^2\) is about 0.957, so most of the variance of salary **in this table** lies on the line.
+    The salary file shows a tight, rising line. Pearson's correlation is about 0.98, and the 5% test rejects a zero linear correlation. The least-squares slope is about 9,450 salary units per year of experience, with an intercept near 25,800. scikit-learn and statsmodels report that same line. statsmodels adds a t test: the slope is far from zero relative to its standard error. \(R^2\) is about 0.957, so the fitted model accounts for about 95.7% of the observed variation in salary in this table. This is training fit, not validated predictive performance.
 
-    A squared term does not change that summary. \(R^2\) barely moves, and the new coefficient's p-value is about 0.91. The straight line is the description these 30 rows support.
+    A squared term changes that summary very little. \(R^2\) barely moves, and the new coefficient's p-value is about 0.91. There is insufficient evidence that the squared term improves the conditional-mean model. This does not prove that every form of curvature is absent.
 
     The line estimates a mean in a teaching file. It does not measure the raise an individual would get from one more year of work, and it does not describe employers who are not in the table. The next lesson keeps the pairs together and asks how far the slope moves when the 30 rows are resampled.
     """)
