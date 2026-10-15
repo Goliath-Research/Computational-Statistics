@@ -45,7 +45,7 @@ def _(mo):
 
     ## Learning goals
     By the end of this lesson, you should be able to:
-    - Refit a simple line on resampled pairs from `Satary_Data.csv`.
+    - Refit a simple line on resampled pairs from `Salary_Data.csv`.
     - Read a percentile interval for the slope at more than one confidence level.
     - Decide whether a zero slope is compatible with that interval, without treating the bootstrap cloud as a null distribution.
     - See that a bundle of refitted lines, and the band around the mean, is wider at the edges of the data than in the middle.
@@ -53,7 +53,7 @@ def _(mo):
 
     Ordinary paired bootstrapping assumes independent, identically distributed observation pairs and resamples their joint distribution. A fixed-design regression, clustering, or time dependence can require a different resampling scheme. Percentile intervals are approximate; small samples, influential observations, bias, or skewness can impair coverage. More resamples reduce simulation variability, not uncertainty from a limited original sample.
 
-    The resamples use 4,000 paired draws and seed 2026. The file is read as `Satary_Data.csv`. Numeric tables use `.round(4)`; calculations use unrounded values.
+    The resamples use 4,000 paired draws and seed 2026. The file is read as `Salary_Data.csv`. Numeric tables use `.round(4)`; calculations use unrounded values.
     """)
     return
 
@@ -76,7 +76,7 @@ def _(mo):
 
 @app.cell
 def _(lesson_dir, np, pd, rs, sm):
-    salaries = pd.read_csv(lesson_dir / "Satary_Data.csv")
+    salaries = pd.read_csv(lesson_dir / "Salary_Data.csv")
     experience = salaries["YearsExperience"].to_numpy(dtype=float)
     salary = salaries["Salary"].to_numpy(dtype=float)
     ols_result = sm.OLS(salary, sm.add_constant(experience)).fit()
