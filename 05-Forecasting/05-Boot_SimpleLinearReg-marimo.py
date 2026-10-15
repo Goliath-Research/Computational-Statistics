@@ -27,11 +27,12 @@ def _():
     import pandas as pd
     import seaborn as sns
     import statsmodels.api as sm
+    from goliath_research import paired_resampling as rs
 
     lesson_dir = Path(__file__).resolve().parent
     if str(lesson_dir) not in sys.path:
         sys.path.insert(0, str(lesson_dir))
-    from goliath_research import paired_resampling as rs
+    
 
     sns.set_style("whitegrid")
     return lesson_dir, mo, np, pd, plt, rs, sm, sns
