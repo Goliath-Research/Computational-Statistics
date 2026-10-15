@@ -185,11 +185,11 @@ def _(experience, np, rs, salary):
 def _(boot_intercepts, boot_slopes, intercept, plt, slope, sns):
     _fig, _axes = plt.subplots(1, 2, figsize=(7.6, 2.8))
     sns.kdeplot(boot_slopes, fill=True, color="#4C78A8", ax=_axes[0])
-    _axes[0].scatter([slope], [0], s=150, color="red", clip_on=False, zorder=5, label=f"Estimate {slope:.0f}")
+    _axes[0].scatter([slope], [0], s=100, color="red", clip_on=False, zorder=5, label=f"Estimate {slope:.0f}")
     _axes[0].set(title="Bootstrap slopes", xlabel="Slope", ylabel="Density")
     _axes[0].legend(frameon=False)
     sns.kdeplot(boot_intercepts, fill=True, color="#54A24B", ax=_axes[1])
-    _axes[1].scatter([intercept], [0], s=150, color="red", clip_on=False, zorder=5, label=f"Estimate {intercept:.0f}")
+    _axes[1].scatter([intercept], [0], s=100, color="red", clip_on=False, zorder=5, label=f"Estimate {intercept:.0f}")
     _axes[1].set(title="Bootstrap intercepts", xlabel="Intercept", ylabel="Density")
     _axes[1].legend(frameon=False)
     _fig.tight_layout()
@@ -297,7 +297,7 @@ def _(boot_intercepts, mo, pd, rs):
 def _(boot_slopes, plt, rs, slope):
     _fig, _ax = plt.subplots(figsize=(6.2, 2.8))
     _ax.hist(boot_slopes, bins=40, color="#4C78A8", edgecolor="white")
-    _ax.scatter([slope], [0], s=150, color="red", clip_on=False, zorder=5, label="Estimated slope")
+    _ax.scatter([slope], [0], s=100, color="red", clip_on=False, zorder=5, label="Estimated slope")
     for _level, _color in [(90, "#F58518"), (95, "#333333"), (99, "#54A24B")]:
         _low, _high = rs.percentile_interval(boot_slopes, confidence=_level)
         _ax.axvline(_low, color=_color, linestyle="--", label=f"{_level}%")
