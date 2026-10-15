@@ -1,6 +1,6 @@
 """Resampling helpers for the Forecasting lessons."""
 
-from goliath_research.resampling import (
+from .paired_resampling import (
     bootstrap_pearson,
     bootstrap_slope_intercept,
     ols_slope_intercept,
