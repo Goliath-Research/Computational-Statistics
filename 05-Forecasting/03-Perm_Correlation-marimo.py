@@ -193,7 +193,7 @@ def _(lesson_dir, pd, rs):
 def _(observed_strong, plt, sns, strong_null, strong_p):
     _fig, _ax = plt.subplots(figsize=(6.2, 2.8))
     sns.kdeplot(strong_null, fill=True, color="#4C78A8", ax=_ax)
-    _ax.scatter([observed_strong], [0], s=170, color="red", edgecolor="white", linewidth=0.8, zorder=5, clip_on=False, label=f"Observed r = {observed_strong:.3f}")
+    _ax.scatter([observed_strong], [0], s=100, color="red", edgecolor="white", linewidth=0.8, zorder=5, clip_on=False, label=f"Observed r = {observed_strong:.3f}")
     _ax.axvline(0, color="#333333", linestyle=":", label="0")
     _ax.set(
         title=f"Null correlations for y_spc (p = {strong_p:.4f})",
