@@ -116,7 +116,7 @@ def _(mo):
 
     - **step 3**: count the shuffled correlations whose absolute values are at least as large as \(\lvert r_{\mathrm{obs}}\rvert\). Call this count **k** and calculate the approximate two-sided p-value:
 
-      $$p = \frac{k+1}{b+1}.$$
+      $p = \frac{k+1}{b+1}.$
 
     - **step 4**: compare p with the significance level **α**. If **p < α**, reject H₀; otherwise, do not reject H₀.
 
