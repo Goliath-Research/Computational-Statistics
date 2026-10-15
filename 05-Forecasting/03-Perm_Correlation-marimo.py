@@ -30,7 +30,7 @@ def _():
     lesson_dir = Path(__file__).resolve().parent
     if str(lesson_dir) not in sys.path:
         sys.path.insert(0, str(lesson_dir))
-    from goliath_research import resampling as rs
+    from goliath_research import paired_resampling as rs
 
     sns.set_style("whitegrid")
     return lesson_dir, math, mo, np, pd, plt, rs, sns
@@ -51,7 +51,7 @@ def _(mo):
     - See that a test of Pearson's \(r\) can miss a curved pattern.
     - Apply the test to grades and to the employee file, and report the coefficient beside the decision.
 
-    The shuffles below use seed 2026 and 4,000 draws. The same data can produce a slightly different p-value with a different seed. The resolution of 4,000 shuffles is about \(1/4001\): that is the smallest p-value this procedure can report.
+    The shuffles below use seed 2026 and 4,000 draws. The same data can produce a slightly different p-value with a different seed. Near α = 0.05, Monte Carlo variability can change the decision. Choose the number of shuffles in advance; use more shuffles for greater precision rather than selecting a favorable seed. Result tables use `.round(4)`; decisions use unrounded p-values. Each decision uses an individual 5% level, without correction for multiple comparisons. The resolution of 4,000 shuffles is about \(1/4001\): that is the smallest p-value this procedure can report.
     """)
     return
 
@@ -64,10 +64,10 @@ def _(mo):
 
     For a chosen pair of columns:
 
-    - \(H_0\): any pairing of the y values with the x values is as likely as the pairing we observed. Under that hypothesis the population association the shuffle represents is absent.
-    - \(H_a\): the observed pairing is more aligned, positively or negatively, than chance pairings.
+    - \(H_0\): X and Y are independent; under the sampling assumptions, the pairings are exchangeable.
+    - \(H_a\): X and Y are dependent. Pearson's coefficient is the chosen statistic and may miss nonlinear dependence.
 
-    This is the resampling version of "no association," not a normal-theory claim about a population correlation parameter. Shuffling y leaves the x values, and the set of y values, exactly as they were. Only the matches change. If the original correlation is typical of those shuffled correlations, the data do not push us off \(H_0\).
+    Independence implies zero Pearson correlation when correlation exists, but zero correlation does not imply independence. This shuffle test is not a general test of zero correlation for arbitrary dependent populations. Unrestricted shuffling requires exchangeable pairings under the null; time dependence, clustering, or repeated observations across rows can require a different permutation scheme. Shuffling y leaves the x values, and the set of y values, exactly as they were. Only the matches change. If the original correlation is typical of those shuffled correlations, the data do not push us off \(H_0\).
 
     We will use a 5% significance level. A decision to reject \(H_0\) is not a measurement of strength.
     """)
@@ -91,7 +91,7 @@ def _(mo):
         {
             "Show answers": mo.md(r"""
 1. **Matches only:** The list of x values and the list of y values stay the same. The shuffle assigns the y values to different x values.
-2. **Association, not equality:** \(H_0\) says the matching carries no straight-line association. The two columns can still have different means and different spreads.
+2. **Association, not equality:** \(H_0\) states independence under exchangeable pairings; it does not merely state zero linear correlation. The two columns can still have different means and different spreads.
 3. **The rule:** Reject \(H_0\) when the p-value is below 0.05. Otherwise do not reject it. The coefficient is still reported beside that decision.
 """)
         },
@@ -106,11 +106,21 @@ def _(mo):
     ## 2. Why the test uses a sample of shuffles
     Three items can be ordered in \(3! = 6\) ways. Ten items can be ordered in \(10! = 3{,}628{,}800\) ways. The course file has 30 rows, and \(30!\) is far too large to list. The employee file has 1,470 rows. Listing every shuffle is not the method.
 
-    The test draws 4,000 random shuffles and treats their correlations as the null distribution. That is a Monte Carlo approximation to the full permutation test. The add-one p-value counts the observed correlation together with the null correlations:
+    The test draws 4,000 random shuffles. Their correlations approximate the full permutation null distribution. Each shuffle uses every observed y value exactly once; independently drawn shuffles may repeat a permutation. For n labeled observations there are n! index permutations; tied values can produce fewer distinct value arrangements.
 
-    \[
-    p = \frac{1 + \#\{\,|r_{\text{shuffle}}| \ge |r_{\text{observed}}|\,\}}{1 + \#\text{shuffles}}.
-    \]
+    **Procedure**:
+
+    - **step 1**: calculate the observed sample correlation, \(r_{\mathrm{obs}}\).
+
+    - **step 2**: repeat **b** times: keep x fixed, shuffle y, then calculate and save the shuffled correlation.
+
+    - **step 3**: count the shuffled correlations whose absolute values are at least as large as \(\lvert r_{\mathrm{obs}}\rvert\). Call this count **k** and calculate the approximate two-sided p-value:
+
+      $$p = \frac{k+1}{b+1}.$$
+
+    - **step 4**: compare p with the significance level **α**. If **p < α**, reject H₀; otherwise, do not reject H₀.
+
+    The helper includes a small floating-point tolerance so numerically equal statistics count as equally extreme.
 
     Adding one keeps the p-value from being reported as zero. With 4,000 shuffles the smallest value is \(1/4001 \approx 0.00025\). A result that lands on that floor means none of the shuffles matched the observed correlation in size. It does not mean the probability is exactly zero.
     """)
@@ -159,9 +169,9 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## 3. One test, read against the null cloud
-    The column `y_spc` in `corrExamples.csv` is a strong positive line. The hypotheses are the ones in Section 1, applied to `x` and `y_spc`. The picture to expect, before looking, is the opposite of the bootstrap picture from the previous lesson. Shuffled correlations should sit near 0. The observed correlation should sit in a tail if the line is real.
+    The column `y_spc` in `corrExamples.csv` is a strong positive line. The hypotheses are the ones in Section 1, applied to `x` and `y_spc`. The picture to expect, before looking, is the opposite of the bootstrap picture from the previous lesson. Shuffled correlations should sit near 0. An observed correlation far into a tail is unusual under the independence null.
 
-    The black-red line on the next figure is the observed coefficient. The blue curve is the null distribution.
+    The red line on the next figure is the observed coefficient. The blue curve is the null distribution.
     """)
     return
 
@@ -170,7 +180,7 @@ def _(mo):
 def _(lesson_dir, pd, rs):
     examples = pd.read_csv(lesson_dir / "corrExamples.csv")
     observed_strong = rs.pearson_r(examples["x"], examples["y_spc"])
-    strong_null = rs.permutation_pearson(examples["x"], examples["y_spc"])
+    strong_null = rs.permutation_pearson(examples["x"], examples["y_spc"], num_samples=4_000, seed=2026)
     strong_p = rs.permutation_p_value(observed_strong, strong_null)
     print(f"Observed r = {observed_strong:.3f}")
     print(f"Permutation p-value = {strong_p:.4f}")
@@ -239,13 +249,45 @@ def _(mo, observed_strong, strong_null, strong_p):
     return
 
 
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Calculate the observed Pearson correlation for `x` and `y_snc` in `examples`, then generate 4,000 shuffled correlations with seed 2026. Replace both `None` values with your code. What does the shuffle preserve?
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_observed_r = None
+    print("student_observed_r:", student_observed_r)
+    student_null = None
+    print("student_null:", student_null)
+    return (student_observed_r, student_null)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+student_observed_r = rs.pearson_r(examples["x"], examples["y_snc"])
+student_null = rs.permutation_pearson(examples["x"], examples["y_snc"], num_samples=4_000, seed=2026)
+```
+The observed correlation is approximately −0.9496. Shuffling preserves the values in each column and changes only their pairing.
+''')}, lazy=True)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## 4. Strength is not the same as the decision
     The same hypotheses and the same 5% rule apply to every column. Read the coefficient and the p-value as a pair.
 
-    A weak line can reject \(H_0\) with a coefficient near 0.4 even when the paired bootstrap interval from the previous lesson still covers 0. The two procedures answer different questions, and with 30 rows they can disagree at the boundary. An unstructured cloud should not reject \(H_0\). The curved column `y_nc2` is the trap: the scatter is a real pattern, and a test of **linear** association can still fail to reject. Look back at that scatter before you translate a large p-value into "nothing is going on."
+    A weak line can reject \(H_0\) with a coefficient near 0.4 even when the paired bootstrap interval from the previous lesson still covers 0. The two procedures answer different questions, and with 30 rows they can disagree at the boundary. Even independent data can reject \(H_0\) by chance at the chosen significance level; an unstructured-looking scatter does not guarantee non-rejection. The curved column `y_nc2` is the trap: the scatter is a real pattern, and a test of independence using Pearson's **linear-association statistic** can still fail to reject. Look back at that scatter before you translate a large p-value into "nothing is going on."
     """)
     return
 
@@ -262,7 +304,7 @@ def _(examples, mo, pd, rs):
         ("y_nc2", "Curved"),
     ]:
         _observed = rs.pearson_r(examples["x"], examples[_column])
-        _null = rs.permutation_pearson(examples["x"], examples[_column])
+        _null = rs.permutation_pearson(examples["x"], examples[_column], num_samples=4_000, seed=2026)
         _p = rs.permutation_p_value(_observed, _null)
         _rows.append(
             {
@@ -341,16 +383,55 @@ def _(mo, permutation_table):
     return
 
 
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    For `x` and `y_wpc`, calculate the observed coefficient, generate 4,000 shuffles with seed 2026, and count equally or more extreme absolute correlations. Use the add-one formula to calculate the p-value and interpret it at α = 0.05. Replace each `None` with your code. Use the tolerance shown in the answer to handle floating-point ties.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_weak_r = None
+    print("student_weak_r:", student_weak_r)
+    student_weak_null = None
+    print("student_weak_null:", student_weak_null)
+    student_extreme_count = None
+    print("student_extreme_count:", student_extreme_count)
+    student_weak_p = None
+    print("student_weak_p:", student_weak_p)
+    return (student_weak_r, student_weak_null, student_extreme_count, student_weak_p)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+student_weak_r = rs.pearson_r(examples["x"], examples["y_wpc"])
+student_weak_null = rs.permutation_pearson(examples["x"], examples["y_wpc"], num_samples=4_000, seed=2026)
+_tolerance = 100 * np.finfo(float).eps * abs(student_weak_r)
+student_extreme_count = np.count_nonzero(np.abs(student_weak_null) >= abs(student_weak_r) - _tolerance)
+student_weak_p = (student_extreme_count + 1) / (len(student_weak_null) + 1)
+```
+For the original course data, r ≈ 0.3758 and p ≈ 0.0460. Reject independence at 5% using Pearson’s statistic. The modest coefficient and the small p-value describe different aspects of the result.
+''')}, lazy=True)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## 5. Grades from the same students
     For each pair of grade columns in `student-mat.csv`, the hypotheses are:
 
-    - \(H_0\): the pairing of the two grades across students is arbitrary.
-    - \(H_a\): the observed pairing is more aligned than chance pairings.
+    - \(H_0\): the two grade variables are independent, with exchangeable pairings across students under the null.
+    - \(H_a\): the two grade variables are dependent.
 
-    A small p-value would say students who rank high on one grade tend to rank high on the other, more than a shuffle of the grade book would produce. It would not say that changing the first-period grade, and nothing else, would change the final grade by a stated amount. The same student sits in every column.
+    A positive Pearson coefficient together with a small p-value indicates a positive sample linear association that is unusual under the independence null. The two-sided p-value alone does not establish direction. It would not say that changing the first-period grade, and nothing else, would change the final grade by a stated amount. The same student sits in every column.
     """)
     return
 
@@ -361,7 +442,7 @@ def _(lesson_dir, mo, pd, rs):
     _rows = []
     for _left, _right in [("G1", "G2"), ("G2", "G3"), ("G1", "G3")]:
         _observed = rs.pearson_r(students[_left], students[_right])
-        _p = rs.permutation_p_value(_observed, rs.permutation_pearson(students[_left], students[_right]))
+        _p = rs.permutation_p_value(_observed, rs.permutation_pearson(students[_left], students[_right], num_samples=4_000, seed=2026))
         _rows.append(
             {
                 "Pair": f"{_left} and {_right}",
@@ -399,6 +480,41 @@ def _(grade_tests, mo):
     return
 
 
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Test independence between `students["G1"]` and `students["G3"]` using Pearson’s statistic, 4,000 shuffles, and seed 2026. Replace each `None` with your code. Report direction and strength from the coefficient, and evidence against independence from the p-value.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_grade_r = None
+    print("student_grade_r:", student_grade_r)
+    student_grade_null = None
+    print("student_grade_null:", student_grade_null)
+    student_grade_p = None
+    print("student_grade_p:", student_grade_p)
+    return (student_grade_r, student_grade_null, student_grade_p)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+student_grade_r = rs.pearson_r(students["G1"], students["G3"])
+student_grade_null = rs.permutation_pearson(students["G1"], students["G3"], num_samples=4_000, seed=2026)
+student_grade_p = rs.permutation_p_value(student_grade_r, student_grade_null)
+```
+Compare the p-value with α = 0.05. A small p-value is evidence against independence, not a measure of strength or a causal effect.
+''')}, lazy=True)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -407,12 +523,12 @@ def _(mo):
 
     Years at the company and monthly income:
 
-    - \(H_0\): the matching of incomes to tenures is arbitrary.
-    - \(H_a\): the observed matching is more aligned than chance matchings.
+    - \(H_0\): tenure and monthly income are independent, with exchangeable pairings under the null.
+    - \(H_a\): tenure and monthly income are dependent.
 
     Years at the company and distance from home: the same pair of hypotheses, with distance in place of income.
 
-    Rejecting the income null would say tenure and pay move together in these records more than a shuffle allows. Failing to reject the distance null would say this file's straight-line coefficient is typical of shuffled pairings.
+    A positive coefficient together with rejection of the income null indicates positive sample linear association unusual under the independence null. Failing to reject the distance null would say this file's straight-line coefficient is typical of shuffled pairings.
     """)
     return
 
@@ -424,7 +540,7 @@ def _(lesson_dir, mo, pd, rs):
     for _other, _label in [("MonthlyIncome", "Years and monthly income"), ("DistanceFromHome", "Years and distance from home")]:
         _observed = rs.pearson_r(employees["YearsAtCompany"], employees[_other])
         _p = rs.permutation_p_value(
-            _observed, rs.permutation_pearson(employees["YearsAtCompany"], employees[_other])
+            _observed, rs.permutation_pearson(employees["YearsAtCompany"], employees[_other], num_samples=4_000, seed=2026)
         )
         _rows.append(
             {
@@ -437,7 +553,7 @@ def _(lesson_dir, mo, pd, rs):
     employee_tests = pd.DataFrame(_rows)
     print("Employees:", len(employees))
     mo.Html(employee_tests.round(4).to_html(index=False, border=0))
-    return (employee_tests,)
+    return employee_tests, employees
 
 
 @app.cell(hide_code=True)
@@ -464,15 +580,50 @@ def _(employee_tests, mo):
     return
 
 
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Try it yourself
+    Test independence between tenure and distance from home using Pearson’s statistic, 4,000 shuffles, and seed 2026. Replace each `None` with your code. Explain what a failure to reject would mean.
+    """)
+    return
+
+
+@app.cell
+def _():
+    student_distance_r = None
+    print("student_distance_r:", student_distance_r)
+    student_distance_null = None
+    print("student_distance_null:", student_distance_null)
+    student_distance_p = None
+    print("student_distance_p:", student_distance_p)
+    return (student_distance_r, student_distance_null, student_distance_p)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.accordion({"Show answers": mo.md(r'''
+```python
+student_distance_r = rs.pearson_r(employees["YearsAtCompany"], employees["DistanceFromHome"])
+student_distance_null = rs.permutation_pearson(employees["YearsAtCompany"], employees["DistanceFromHome"], num_samples=4_000, seed=2026)
+student_distance_p = rs.permutation_p_value(student_distance_r, student_distance_null)
+```
+Failure to reject means this statistic provides insufficient evidence against independence under the test assumptions. It does not prove independence or zero correlation.
+''')}, lazy=True)
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## Conclusions
-    A permutation test builds the world the null describes. Shuffle one variable, recompute Pearson's \(r\), and see whether the original coefficient is extreme in that world. The null cloud is centered near 0. That is the opposite geometry from a paired bootstrap, which is centered near the estimate.
+    A permutation test builds the world the null describes. Shuffle one variable, recompute Pearson's \(r\), and see whether the original coefficient is extreme in that world. The null cloud is centered near 0. That is the opposite geometry from a paired bootstrap, which often clusters near the estimate, although bias or skewness can shift its center.
 
-    Report three things together: the coefficient, the p-value, and the scatter. The coefficient is the strength. The p-value is the evidence against an arbitrary pairing, on a scale whose smallest notch with 4,000 shuffles is \(1/4001\). The scatter is what both numbers can miss. In this lesson the strong lines and the grade pairs are extreme under shuffling. The weak lines are smaller coefficients that can still be extreme. The unstructured cloud is not extreme. The curve is a real pattern that this linear test does not catch.
+    Report three things together: the coefficient, the p-value, and the scatter. The sign and absolute value of the coefficient describe estimated direction and strength. The p-value is the evidence against an arbitrary pairing, on a scale whose smallest notch with 4,000 shuffles is \(1/4001\). The scatter is what both numbers can miss. In this lesson the strong lines and the grade pairs are extreme under shuffling. The weak lines are smaller coefficients that can still be extreme. The unstructured cloud is not extreme. The curve is a real pattern that this linear test does not catch.
 
-    A rejected null is not a cause. Income and tenure move together in the employee teaching file. Distance and tenure do not show a straight-line association there. Neither sentence says what would happen if one column were changed and everything else were held fixed.
+    A rejected null is not a cause. Income and tenure move together in the employee teaching file. The distance test does not provide sufficient evidence against independence using Pearson's statistic; it does not prove zero correlation or independence. Neither sentence says what would happen if one column were changed and everything else were held fixed.
     """)
     return
 
@@ -493,7 +644,7 @@ def _(mo):
     mo.accordion(
         {
             "Show answers": mo.md(r"""
-1. **The paired bootstrap.** It re-estimates the observed association. The permutation null breaks the pairs and centers near 0.
+1. **The paired bootstrap usually clusters near the estimate.** Bias or skewness can shift its center. It re-estimates the observed association. The permutation null breaks the pairs and centers near 0.
 2. **Evidence is not size:** In a sample of 30, a coefficient of about 0.4 can be unusual among shuffles and still describe a loose line. The coefficient carries the strength.
 3. **The scatter:** `y_nc2` bends. Pearson's r and its permutation p-value only discuss the straight line.
 """)
