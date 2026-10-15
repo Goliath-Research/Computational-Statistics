@@ -50,7 +50,7 @@ def _(mo):
     - State a hypothesis for the slope before reading its t test.
     - Decide whether a squared term earns a place in the model.
 
-    Read `salary_data.csv` from this lesson’s folder. Numeric tables use `.round(4)` for consistent display; calculations use unrounded values. A p-value displayed as `0.0000` is not exactly zero: it is smaller than the displayed precision.
+    Read `Salary_Data.csv` from this lesson’s folder. Numeric tables use `.round(4)` for consistent display; calculations use unrounded values. A p-value displayed as `0.0000` is not exactly zero: it is smaller than the displayed precision.
     """)
     return
 
@@ -109,7 +109,7 @@ def _(mo):
 
 @app.cell
 def _(lesson_dir, mo, pd):
-    salaries = pd.read_csv(lesson_dir / "salary_data.csv")
+    salaries = pd.read_csv(lesson_dir / "Salary_Data.csv")
     experience = salaries["YearsExperience"].to_numpy(dtype=float)
     salary = salaries["Salary"].to_numpy(dtype=float)
     print("Rows:", len(salaries))
