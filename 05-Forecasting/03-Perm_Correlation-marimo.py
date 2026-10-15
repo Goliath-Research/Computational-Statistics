@@ -116,7 +116,9 @@ def _(mo):
 
     - **step 3**: count the shuffled correlations whose absolute values are at least as large as \(\lvert r_{\mathrm{obs}}\rvert\). Call this count **k** and calculate the approximate two-sided p-value:
 
-      $p = \frac{k+1}{b+1}.$
+    $$
+    p = \frac{k+1}{b+1}
+    $$
 
     - **step 4**: compare p with the significance level **α**. If **p < α**, reject H₀; otherwise, do not reject H₀.
 
@@ -171,7 +173,7 @@ def _(mo):
     ## 3. One test, read against the null cloud
     The column `y_spc` in `corrExamples.csv` is a strong positive line. The hypotheses are the ones in Section 1, applied to `x` and `y_spc`. The picture to expect, before looking, is the opposite of the bootstrap picture from the previous lesson. Shuffled correlations should sit near 0. An observed correlation far into a tail is unusual under the independence null.
 
-    The red line on the next figure is the observed coefficient. The blue curve is the null distribution.
+    The large red dot on the x-axis marks the observed coefficient. The blue curve is the null distribution.
     """)
     return
 
@@ -191,7 +193,7 @@ def _(lesson_dir, pd, rs):
 def _(observed_strong, plt, sns, strong_null, strong_p):
     _fig, _ax = plt.subplots(figsize=(6.2, 2.8))
     sns.kdeplot(strong_null, fill=True, color="#4C78A8", ax=_ax)
-    _ax.axvline(observed_strong, color="#E45756", linewidth=2, label=f"Observed r = {observed_strong:.3f}")
+    _ax.scatter([observed_strong], [0], s=170, color="red", edgecolor="white", linewidth=0.8, zorder=5, clip_on=False, label=f"Observed r = {observed_strong:.3f}")
     _ax.axvline(0, color="#333333", linestyle=":", label="0")
     _ax.set(
         title=f"Null correlations for y_spc (p = {strong_p:.4f})",
