@@ -1,5 +1,17 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "marimo",
+#     "matplotlib",
+#     "numpy",
+#     "pandas",
+#     "scipy",
+# ]
+# ///
+
 import marimo
 
+__generated_with = "0.25.2"
 app = marimo.App(width="medium")
 
 
@@ -41,6 +53,7 @@ def _(mo):
     - **cdf(t)** gives P(X < t) as well as P(X ≤ t).
     - **sf(t)**, the **survival function**, gives P(X > t).
     - **cdf(b) - cdf(a)** gives the probability between a and b.
+
     Including or excluding an endpoint makes no difference because its probability is zero.
     Unlike integer-valued distributions, these continuous models need no integer threshold adjustment: P(X ≥ t) = P(X > t) = SF(t).
     Measured or rounded values can have positive recorded frequencies; that does not contradict an underlying continuous model.
@@ -114,8 +127,8 @@ def _(np, pd, plt):
         Plot a shaded interval on a density plot.
         - Return a Figure object.
         """
-        # Calculate the interval bounds to ensure the shaded region is visible
-        # The interval is extended by 0.1% on each side to ensure it's visible
+        # Widen the plot to the model's 0.1% and 99.9% quantiles
+        # so the curve around the shaded interval is visible
         lower = min(a, float(model.ppf(0.001)))
         upper = max(b, float(model.ppf(0.999)))
         x = np.linspace(lower, upper, 1000)
@@ -140,7 +153,7 @@ def _(mo):
     
     The uniform PDF is zero outside [a,b].
 
-    SciPy uses **loc=a** and **scale=b-a**. Scale is the width, not the upper endpoint.
+    SciPy uses **loc=a** and **scale=b-a**. Scale is the width, not the upper endpoint. Positionally, `uniform(0, 10)` means `uniform(loc=0, scale=10)`.
     A wider interval has a lower density because the total area must remain one.
     """)
     return
@@ -287,7 +300,7 @@ def _(mo):
     mo.md(r"""
     ## 3. Normal: location and spread
     We use the conventional notation **N(μ, σ²)**: the second argument is the variance.
-    SciPy's **norm(loc=mu, scale=sigma)** instead takes the **standard deviation** as scale.
+    SciPy's **norm(loc=mu, scale=sigma)** instead takes the **standard deviation** as scale. `norm(120, 20)` means `norm(loc=120, scale=20)`.
     For example, **norm(loc=5, scale=2)** corresponds to N(5,4).
     
     The PDF is symmetric and bell-shaped, with mean μ and variance σ². Its support is the entire real line.
@@ -642,7 +655,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Reference
+    ## References
     Unpingco, J. (2019). *Python for Probability, Statistics, and Machine Learning*. Springer, Chapter 2.
     """)
     return
