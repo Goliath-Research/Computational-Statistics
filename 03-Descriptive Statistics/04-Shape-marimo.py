@@ -1,12 +1,18 @@
 # /// script
+# requires-python = ">=3.10"
 # dependencies = [
 #     "marimo",
+#     "matplotlib",
+#     "numpy",
+#     "pandas",
+#     "scipy",
 #     "seaborn",
 # ]
 # ///
 
 import marimo
 
+__generated_with = "0.25.2"
 app = marimo.App(width="medium")
 
 
@@ -230,7 +236,7 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## 4. Grades in the student file
-    The code reads `../data/student-mat.csv`. Run the notebook with this lesson folder as the working directory.
+    The code reads `student-mat.csv` from the `data` folder one directory above this lesson's folder, as in the course repository.
     The printed skewness and excess kurtosis describe the recorded grades.
     `G3` includes zeros, and those low grades contribute to its left tail.
     """)
@@ -239,7 +245,7 @@ def _(mo):
 
 @app.cell
 def _(kurtosis, mo, pd, skew):
-    student_file = pd.read_csv("../data/student-mat.csv", sep=";")
+    student_file = pd.read_csv(mo.notebook_dir().parent / "data" / "student-mat.csv", sep=";")
     data = student_file[
         ["school", "sex", "age", "studytime", "schoolsup", "internet", "G1", "G2", "G3"]
     ].copy()
@@ -295,7 +301,7 @@ def _(mo):
     mo.md(r"""
     ## 5. Unordered categories
     Skewness and kurtosis use distances from a numeric mean. They are not summaries of an unordered category.
-    For `school`, `sex`, `schoolsup`, and `internet`, the relevant descriptive summaries are the counts, the mode, and `describe(include="object")`.
+    For `school`, `sex`, `schoolsup`, and `internet`, the relevant descriptive summaries are the counts, the mode, and `describe()` on the text columns.
     In that table, `top` is the mode and `freq` is its count.
     """)
     return
