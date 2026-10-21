@@ -1,5 +1,17 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "marimo",
+#     "matplotlib",
+#     "numpy",
+#     "pandas",
+#     "scipy",
+# ]
+# ///
+
 import marimo
 
+__generated_with = "0.25.2"
 app = marimo.App(width="medium")
 
 
@@ -40,7 +52,7 @@ def _(mo):
     $$\widehat{SF}_n(t)=\frac{\text{number of observations strictly above }t}{n}=1-F_n(t).$$
 
     For any distribution, SF(t) = P(X > t). For integer-valued observations, P(X ≥ k) = SF(k − 1).
-    For [1, 1, 3, 5], the empirical SF at 3 is 1/4 = 0.25.
+    For example, for [1, 1, 3, 5] the empirical SF at 1 is 2/4 = 0.50, because 3 and 5 are strictly above 1.
 
     For the sample [1, 1, 3, 5], the mass at 3 is 1/4, while the cumulative probability at 3 is 3/4.
     At 2, the mass is zero but the cumulative probability is 1/2.
@@ -224,7 +236,7 @@ def _(np, poisson, source_seed, empirical_table, rv_discrete, mo):
     empirical_model = rv_discrete(values=(observed_support, observed_counts / len(original_values)))
     print("Original observations:", len(original_values))
     print("Uniform-component weight:", mixture_weight)
-    print("Known mixture probability above display:", (1 - mixture_weight) * poisson.sf(mixture_max, mu=1).round(4))
+    print("Known mixture probability above display:", round((1 - mixture_weight) * poisson.sf(mixture_max, mu=1), 6))
     mo.Html(
         source_table.round(4).to_html(border=0, col_space=110)
         .replace("<table ", '<table style="width: auto;" ')
@@ -437,7 +449,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Reference
+    ## References
     Unpingco, J. (2019). *Python for Probability, Statistics, and Machine Learning*. Springer, Chapter 2.
     No external dataset is required.
     """)

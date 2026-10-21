@@ -1,5 +1,17 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "marimo",
+#     "matplotlib",
+#     "numpy",
+#     "pandas",
+#     "scipy",
+# ]
+# ///
+
 import marimo
 
+__generated_with = "0.25.2"
 app = marimo.App(width="medium")
 
 
@@ -10,7 +22,7 @@ def _():
     import pandas as pd
     import matplotlib.pyplot as plt
     from scipy.stats import norm, gaussian_kde
-    return mo, np, pd, plt, norm , gaussian_kde
+    return mo, np, pd, plt, norm, gaussian_kde
 
 
 @app.cell(hide_code=True)
@@ -73,7 +85,7 @@ def _(mo):
 def _(mo):
     # Seed: Controls the random sample; the same seed reproduces the same observations.
     original_seed = mo.ui.slider(start=1, stop=100, step=1, value=42, show_value=True, label="Original data seed")
-    # Bins: Controls the histogram's bin count; the larger the bins, the smoother the histogram.
+    # Bins: Controls the histogram's bin count; fewer bins give a smoother histogram, more bins show more detail.
     bin_control = mo.ui.slider(start=10, stop=60, step=5, value=30, show_value=True, label="Histogram bins")
     # Bandwidth: Controls the KDE's smoothing; the larger the bandwidth, the smoother the KDE. Smaller values show more details.
     bandwidth_control = mo.ui.slider(start=0.5, stop=2, step=0.25, value=1, show_value=True, label="KDE bandwidth multiplier")
@@ -318,7 +330,7 @@ def _(mo):
     
     For day-to-day code, **generator.choice(sample, replace=True)** is simple and efficient.
     We also demonstrate inverse-transform sampling using the sorted observations and their finite cumulative probabilities.
-    **np.searchsorted** finds indices without scanning the entire ECDF for each draw. Using only finite observations avoids selecting −∞ when u = 0.
+    **np.searchsorted** finds each index by binary search instead of scanning the whole ECDF for every draw.
     """)
     return
 
@@ -355,7 +367,7 @@ def _(inverse_empirical_sample, np, pd, sample, mo):
 def _(mo):
     mo.md(r"""
     The u = 0 boundary is assigned the sample minimum; u = 1 returns the maximum. These endpoint conventions have no effect on the ideal continuous-uniform sampling distribution.
-    Sorting plus binary searches avoids the original per-draw full-array scan. Direct **choice** avoids sorting altogether.
+    Sorting once and then using binary search is fast; direct **choice** avoids sorting altogether.
     The two methods produce the same sampling distribution, not necessarily identical realized arrays with the same seed.
     """)
     return
@@ -487,7 +499,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Reference
+    ## References
     Unpingco, J. (2019). *Python for Probability, Statistics, and Machine Learning*. Springer, Chapter 2.
     """)
     return
