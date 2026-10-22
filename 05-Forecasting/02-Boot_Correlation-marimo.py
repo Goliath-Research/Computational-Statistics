@@ -62,7 +62,7 @@ def _(mo):
     ## 1. One number from one sample
     `corrExamples.csv` has 30 synthetic pairs. The column `y_spc` was built as a strong positive line plus noise. Pearson's \(r\) for `x` and `y_spc` is one number computed from these 30 rows.
 
-    Ordinary paired bootstrapping assumes independent, identically distributed observational pairs. Clustering, repeated measurements across rows, and time dependence require a resampling design that respects that structure. Missing or infinite values must be handled explicitly as paired rows; the helper rejects them.
+    Ordinary paired bootstrapping assumes independent, identically distributed observational pairs. Clustering, repeated measurements across rows, and time dependence require a resampling design that respects that structure. Remove rows with missing values first; the helper does not check for them.
 
     A new draw of 30 pairs from the same process would produce a different coefficient. The bootstrap is a way to ask how far that coefficient tends to move, using only the pairs we already have.
     """)
@@ -248,7 +248,7 @@ The distribution should cluster near the observed coefficient, approximately −
 def _(mo):
     mo.md(r"""
     ## 3. A percentile interval
-    If any bootstrap replicate is undefined because a resampled variable is constant, the helper warns and interval calculation stops by default. Undefined replicates are not silently removed. Inspect the data before deciding how to proceed.
+    If a resampled column is constant, that copy has no correlation; the helper leaves it out of the interval. This does not happen with the data in this lesson.
 
     Sort the 4,000 bootstrap correlations. The 95% percentile interval runs from the 2.5th percentile to the 97.5th percentile. About 95% of the bootstrap coefficients fall between those two endpoints.
 
@@ -260,7 +260,7 @@ def _(mo):
 
     Percentile intervals are approximate, and small samples, influential observations, bias, or skewness can impair coverage. Increasing the number of bootstrap resamples reduces simulation variability; it does not fix an unrepresentative original sample or guarantee coverage. Excluding zero can be interpreted as an approximate interval-based test, but this lesson reports intervals rather than bootstrap p-values. It need not agree with a separate permutation test.
 
-    This is not a proof that 95% of future intervals from this process cover the truth. The percentile interval is an approximation that behaves well when the estimator is well behaved and the sample carries the shape of the population. Thirty rows is a small sample. Read the interval as a careful summary of that uncertainty, not as a guarantee.
+    Thirty rows is a small sample; read the interval as an approximate summary.
     """)
     return
 
@@ -589,7 +589,7 @@ def _(mo):
     ## Conclusions
     A paired bootstrap asks how a correlation moves when the sample of pairs is redrawn from itself. Keep each row together. Recompute the coefficient. The percentile interval is a band around that estimate.
 
-    Read the estimate for direction and strength, and the interval for uncertainty. Then check whether zero is included. In this lesson the strong synthetic lines and the grade pairs produce intervals far from 0. The weak columns have coefficients near 0.4, and their 95% intervals still cover 0: thirty rows leave a modest line compatible with a zero population correlation. The unstructured column and the curve also leave 0 inside the straight-line interval. Years at the company show a positive sample association with monthly income. The interval for tenure and distance includes zero, so this analysis does not provide sufficient evidence of a nonzero population linear correlation. The next lesson's permutation test uses Pearson's coefficient to test independence under exchangeable pairings. Independence implies zero correlation when the correlation exists, but zero correlation does not imply independence. Its decision need not match the percentile-interval decision.
+    Read the estimate for direction and strength, and the interval for uncertainty. Then check whether zero is included. In this lesson the strong synthetic lines and the grade pairs produce intervals far from 0. The weak columns have coefficients near 0.4, and their 95% intervals still cover 0: thirty rows leave a modest line compatible with a zero population correlation. The unstructured column and the curve also leave 0 inside the straight-line interval. Years at the company show a positive sample association with monthly income. The interval for tenure and distance includes zero, so this analysis does not provide sufficient evidence of a nonzero population linear correlation. The next lesson tests whether the pairing matters by shuffling one column. Its decision need not match this interval.
 
     None of those intervals names a cause. The next lesson shuffles one column under an independence null, breaks the pairs, and compares the observed correlation with that null distribution. A statistic based on Pearson correlation is not sensitive to every form of dependence.
     """)

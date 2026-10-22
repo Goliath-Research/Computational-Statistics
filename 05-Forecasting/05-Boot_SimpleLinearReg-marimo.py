@@ -27,12 +27,11 @@ def _():
     import pandas as pd
     import seaborn as sns
     import statsmodels.api as sm
-    from goliath_research import paired_resampling as rs
 
     lesson_dir = Path(__file__).resolve().parent
     if str(lesson_dir) not in sys.path:
         sys.path.insert(0, str(lesson_dir))
-    
+    from goliath_research import paired_resampling as rs
 
     sns.set_style("whitegrid")
     return lesson_dir, mo, np, pd, plt, rs, sm, sns
@@ -472,7 +471,7 @@ def _(mo):
     ## Conclusions
     Resampling the salary pairs and refitting the line gives a cloud of slopes around the original estimate of about 9,450 salary units per year. The tables show which calculated percentile intervals exclude zero; an interval containing zero does not establish zero slope. That is evidence against \(H_0\) from a sampling distribution of the slope. It is not a permutation test, and bootstrap estimates often cluster near the original estimate, but bias and skewness can shift their center.
 
-    The bundle of lines is tighter through the middle of the experience range and fans out at the edges. These pointwise intervals describe uncertainty in the mean response, not individual prediction error or simultaneous coverage of the full line. Their width does not establish predictive accuracy on new data. Extrapolation beyond the observed experience range remains unsupported by new observations.
+    Refitted lines often disagree more near the edges than through the middle, but the pattern depends on the data and the joint variability of slope and intercept. It need not be symmetric or narrowest at the midpoint. These pointwise intervals describe uncertainty in the mean response, not individual prediction error or simultaneous coverage of the full line. Their width does not establish predictive accuracy on new data. Extrapolation beyond the observed experience range remains unsupported by new observations.
 
     None of the intervals is a raise. The slope describes how mean recorded salary differs across the experience values in a 30-row teaching file. It does not say what would happen to one person who worked one more year with job, hours, and employer held fixed.
     """)
