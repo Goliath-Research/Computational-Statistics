@@ -414,7 +414,7 @@ def _(mo):
 @app.cell
 def _(confidence_interval, delivery_times, generate_samples_b):
     student_delivery_median_interval = None
-    print(f"Median interval (days): {student_delivery_median_interval[0]:.3f} to {student_delivery_median_interval[1]:.3f}")
+    print("Median interval (days):", student_delivery_median_interval)
     return
 
 
@@ -648,7 +648,7 @@ def _(mo):
     - **G2:** second-period grade.
     - **G3:** final grade.
 
-    The file uses semicolons to separate columns. Place it in the `../data` folder relative to the working directory. The next cell loads the data and displays the first five rows of grades as an HTML table.
+    The file uses semicolons to separate columns. It is read from `student-mat.csv` in the lesson folder beside this notebook. The next cell loads the data and displays the first five rows of grades as an HTML table.
 
     We treat students as independent observations. Our intervals estimate mean grades for the population represented by this sample, rather than automatically applying to all students.
     """)
@@ -657,7 +657,7 @@ def _(mo):
 
 @app.cell
 def _(mo, pd):
-    student_file = pd.read_csv("../data/student-mat.csv", sep=";")
+    student_file = pd.read_csv(mo.notebook_dir() / "student-mat.csv", sep=";")
     grades = student_file[["G1", "G2", "G3"]].copy()
     print("Number of students:", len(grades))
     mo.Html(grades.head().to_html(index=False, border=0))

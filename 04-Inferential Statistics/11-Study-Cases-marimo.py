@@ -10,14 +10,13 @@ app = marimo.App(width="medium")
 
 @app.cell
 def _():
-    from pathlib import Path
     import marimo as mo
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
     import seaborn as sns
     from goliath_research import resampling as rs
-    lesson_dir = Path(__file__).resolve().parent
+    lesson_dir = mo.notebook_dir()
     sns.set_style("whitegrid")
     return lesson_dir, mo, np, pd, plt, rs, sns
 
@@ -34,7 +33,7 @@ def _(mo):
 
     In this lesson, we apply the bootstrap and permutation procedures from the previous lessons to restaurant bills, glass composition, and student grades. The `resampling` module in `goliath_research` provides the procedures we will use.
 
-    Use your `goliath_research` package with the corrected `resampling.py` module inside it. Keep `tips.csv`, `glass.csv`, and `student-mat.csv` beside this notebook. Each test generates **4,000 resamples**. Fixed seeds reproduce the examples when they are rerun.
+    Use your `goliath_research` package with the corrected `resampling.py` module inside it. Keep `glass.csv` and `student-mat.csv` beside this notebook. The tips data is loaded from seaborn's online sample datasets (needs internet). Each test generates **4,000 resamples**. Fixed seeds reproduce the examples when they are rerun.
 
     ## 1. Applying resampling tests
     Begin with a question about the populations represented by the data. Identify the measurements being compared and whether they come from separate groups or from the same subjects. State the hypotheses before calculating the result.
@@ -995,7 +994,7 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## References
-    - [Seaborn example datasets: restaurant tips](https://github.com/mwaskom/seaborn-data). The local CSV contains the standard tips data.
+    - [Seaborn example datasets: restaurant tips](https://github.com/mwaskom/seaborn-data). The tips data is loaded from seaborn's online sample datasets (needs internet).
     - [UCI Machine Learning Repository: Glass Identification](https://archive.ics.uci.edu/dataset/42/glass+identification).
     - [UCI Machine Learning Repository: Student Performance](https://archive.ics.uci.edu/dataset/320/student+performance).
     - Efron, B., and Tibshirani, R. J. (1993). *An Introduction to the Bootstrap*. Chapman & Hall/CRC.
