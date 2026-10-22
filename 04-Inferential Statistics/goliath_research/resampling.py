@@ -26,6 +26,16 @@ def _positive_count(value):
     return int(value)
 
 
+def _offset_seed(seed, offset):
+    """Return seed shifted by offset, leaving None unchanged.
+    
+    An integer seed uses ordinary addition, so derived seeds stay the same.
+    None asks NumPy for fresh entropy instead of adding to the seed."""
+    if seed is None:
+        return None
+    return seed + offset
+
+
 def _numeric_vector(values):
     """Return a nonempty one-dimensional array of finite real numbers.
     
@@ -81,8 +91,8 @@ class Samples(ABC):
             Nonempty one-dimensional finite real observations.
         num_samples : int, default 4000
             Positive number of resamples.
-        seed : int, default 2026
-            Seed passed to NumPy default_rng.
+        seed : int or None, default 2026
+            Seed passed to NumPy default_rng. None draws fresh entropy.
         
         The cached column means are retained for backward compatibility."""
         self._sample_data = _numeric_vector(sample_data)
@@ -215,9 +225,7 @@ class ResamplingHT(ABC):
         
         For example, 0.95 requests a 95% interval. Raise ValueError for an
         invalid confidence level. Changing it does not regenerate resamples."""
-        if not isinstance(value, (float, int)) or not (0.0 <= value <= 1.0):
-            raise ValueError("Confidence must be a float or int between 0.0 and 1.0 inclusive")
-        if isinstance(value, (bool, np.bool_)) or not np.isfinite(value) or not 0 < value < 1:
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, (float, int)) or not np.isfinite(value) or not 0 < value < 1:
             raise ValueError("confidence must be strictly between 0 and 1")
         self._confidence = float(value)
     
@@ -252,9 +260,10 @@ class ResamplingHT(ABC):
         
         Parameters
         ----------
-        alternative : {"two-sided", "smaller", "larger"} or None
+        alternative : {"two-sided", "smaller", "larger", "less", "greater"} or None
             None selects two-sided for two groups and larger for more groups.
-            Multiple-group nonnegative statistics require larger.
+            "less" is accepted as "smaller", and "greater" as "larger".
+            Multiple-group nonnegative statistics require larger or greater.
         
         Returns
         -------
@@ -268,10 +277,14 @@ class ResamplingHT(ABC):
             An unsupported alternative or tail for a multiple-group statistic."""
         if alternative is None:
             alternative = "two-sided" if self._k == 2 else "larger"
+        elif alternative == "less":
+            alternative = "smaller"
+        elif alternative == "greater":
+            alternative = "larger"
         if alternative not in ("two-sided", "smaller", "larger"):
-            raise ValueError("alternative must be 'two-sided', 'smaller', or 'larger'")
+            raise ValueError("alternative must be 'two-sided', 'smaller', 'larger', 'less', or 'greater'")
         if self._k > 2 and alternative != "larger":
-            raise ValueError("the nonnegative multiple-group statistic requires alternative='larger'")
+            raise ValueError("the nonnegative multiple-group statistic requires alternative='larger' or 'greater'")
         values = np.asarray(self._sample_distribution)
         tolerance = 100 * np.finfo(float).eps * max(1, abs(self._obs_stat))
         left = (np.count_nonzero(values <= self._obs_stat + tolerance) + 1) / (len(values) + 1)
@@ -335,8 +348,8 @@ class BootstrapIndependentHT(ResamplingHT):
             Groups may have different lengths.
         num_samples : int, default 4000
             Positive number of Monte Carlo resamples.
-        seed : int, default 2026
-            Reproducible seed for resampling.
+        seed : int or None, default 2026
+            Reproducible seed for resampling. None draws fresh entropy.
         
         Raises
         ------
@@ -353,7 +366,7 @@ class BootstrapIndependentHT(ResamplingHT):
         self._sample_size = len(self._arrays[0])
         self._overall_mean = np.concatenate(self._arrays).mean()
         self._corrected_p_values = np.ones((self._k, self._k))
-        self._sample_objects = [BSamples(a, num_samples=num_samples, seed=seed + j) for j, a in enumerate(self._arrays)]
+        self._sample_objects = [BSamples(a, num_samples=num_samples, seed=_offset_seed(seed, j)) for j, a in enumerate(self._arrays)]
         self._overall_size = sum(len(a) for a in self._arrays)
         super().__init__()
 
@@ -423,7 +436,7 @@ class BootstrapIndependentHT(ResamplingHT):
         adjusted = np.ones((self._k, self._k))
         pairs = list(combinations(range(self._k), 2))
         for offset, (i, j) in enumerate(pairs):
-            pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=self._seed + 100 + offset)
+            pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=_offset_seed(self._seed, 100 + offset))
             adjusted[i, j] = adjusted[j, i] = min(1, pair_model.get_p_value("two-sided") * len(pairs))
         self._corrected_p_values = adjusted
         self._bonferroni_cache = adjusted.copy()
@@ -465,8 +478,8 @@ class BootstrapRelatedHT(ResamplingHT):
             corresponding positions must identify the same subject.
         num_samples : int, default 4000
             Positive number of Monte Carlo resamples.
-        seed : int, default 2026
-            Reproducible seed for resampling.
+        seed : int or None, default 2026
+            Reproducible seed for resampling. None draws fresh entropy.
         
         Raises
         ------
@@ -567,7 +580,7 @@ class BootstrapRelatedHT(ResamplingHT):
         adjusted = np.ones((self._k, self._k))
         pairs = list(combinations(range(self._k), 2))
         for offset, (i, j) in enumerate(pairs):
-            pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=self._seed + 100 + offset)
+            pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=_offset_seed(self._seed, 100 + offset))
             adjusted[i, j] = adjusted[j, i] = min(1, pair_model.get_p_value("two-sided") * len(pairs))
         self._corrected_p_values = adjusted
         self._bonferroni_cache = adjusted.copy()
@@ -611,8 +624,8 @@ class PermutationIndependentHT(ResamplingHT):
             Groups may have different lengths.
         num_samples : int, default 4000
             Positive number of Monte Carlo resamples.
-        seed : int, default 2026
-            Reproducible seed for resampling.
+        seed : int or None, default 2026
+            Reproducible seed for resampling. None draws fresh entropy.
         
         Raises
         ------
@@ -704,7 +717,7 @@ class PermutationIndependentHT(ResamplingHT):
         adjusted = np.ones((self._k, self._k))
         pairs = list(combinations(range(self._k), 2))
         for offset, (i, j) in enumerate(pairs):
-            pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=self._seed + 100 + offset)
+            pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=_offset_seed(self._seed, 100 + offset))
             adjusted[i, j] = adjusted[j, i] = min(1, pair_model.get_p_value("two-sided") * len(pairs))
         self._corrected_p_values = adjusted
         self._bonferroni_cache = adjusted.copy()
@@ -724,8 +737,9 @@ class PermutationIndependentHT(ResamplingHT):
         -----
         Use unshifted bootstrap observations and self.confidence. These intervals
         are for individual group means, not differences between means.
-        For this permutation class, generate a separate bootstrap with seed + 200."""
-        bootstrap = BootstrapIndependentHT(*self._arrays, num_samples=self._num_samples, seed=self._seed + 200)
+        For an integer seed, generate a separate bootstrap with seed + 200.
+        None draws fresh entropy for that bootstrap."""
+        bootstrap = BootstrapIndependentHT(*self._arrays, num_samples=self._num_samples, seed=_offset_seed(self._seed, 200))
         bootstrap.confidence = self.confidence
         return bootstrap.confidence_intervals()
     
@@ -749,8 +763,8 @@ class PermutationRelatedHT(ResamplingHT):
             corresponding positions must identify the same subject.
         num_samples : int, default 4000
             Positive number of Monte Carlo resamples.
-        seed : int, default 2026
-            Reproducible seed for resampling.
+        seed : int or None, default 2026
+            Reproducible seed for resampling. None draws fresh entropy.
         
         Raises
         ------
@@ -842,7 +856,7 @@ class PermutationRelatedHT(ResamplingHT):
         adjusted = np.ones((self._k, self._k))
         pairs = list(combinations(range(self._k), 2))
         for offset, (i, j) in enumerate(pairs):
-            pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=self._seed + 100 + offset)
+            pair_model = type(self)(self._arrays[i], self._arrays[j], num_samples=self._num_samples, seed=_offset_seed(self._seed, 100 + offset))
             adjusted[i, j] = adjusted[j, i] = min(1, pair_model.get_p_value("two-sided") * len(pairs))
         self._corrected_p_values = adjusted
         self._bonferroni_cache = adjusted.copy()
@@ -862,8 +876,9 @@ class PermutationRelatedHT(ResamplingHT):
         -----
         Use unshifted bootstrap observations and self.confidence. These intervals
         are for individual group means, not differences between means.
-        For this permutation class, generate a separate bootstrap with seed + 200."""
-        bootstrap = BootstrapRelatedHT(*self._arrays, num_samples=self._num_samples, seed=self._seed + 200)
+        For an integer seed, generate a separate bootstrap with seed + 200.
+        None draws fresh entropy for that bootstrap."""
+        bootstrap = BootstrapRelatedHT(*self._arrays, num_samples=self._num_samples, seed=_offset_seed(self._seed, 200))
         bootstrap.confidence = self.confidence
         return bootstrap.confidence_intervals()
        
