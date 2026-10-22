@@ -33,8 +33,42 @@ def _(mo):
 
     In this lesson, we apply the bootstrap and permutation procedures from the previous lessons to restaurant bills, glass composition, and student grades. The `resampling` module in `goliath_research` provides the procedures we will use.
 
-    Use your `goliath_research` package with the corrected `resampling.py` module inside it. Keep `glass.csv` and `student-mat.csv` beside this notebook. The tips data is loaded from seaborn's online sample datasets (needs internet). Each test generates **4,000 resamples**. Fixed seeds reproduce the examples when they are rerun.
+    Use your `goliath_research` package with the corrected `goliath_research/resampling.py` module inside it. Keep `glass.csv` and `student-mat.csv` beside this notebook. The tips data is loaded from seaborn's online sample datasets (needs internet). Each test generates **4,000 resamples**. Fixed seeds reproduce the examples when they are rerun.
+    """)
+    return
 
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Classes in the resampling module
+    `goliath_research/resampling.py` separates sample generation from the hypothesis test: `Samples` is the abstract generator (`BSamples` draws with replacement and `PSamples` permutes the original values), and `ResamplingHT` is the abstract test, with one class for each combination of bootstrap or permutation and independent or related measurements.
+
+    The two bootstrap tests resample with `BSamples`, the independent permutation test reshuffles the pooled sample with `PSamples`, and the related permutation test permutes condition labels within each subject directly.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.mermaid(r"""
+flowchart TD
+    Samples["Samples (ABC)"] --> BSamples
+    Samples --> PSamples
+    ResamplingHT["ResamplingHT (ABC)"] --> BootstrapIndependentHT
+    ResamplingHT --> BootstrapRelatedHT
+    ResamplingHT --> PermutationIndependentHT
+    ResamplingHT --> PermutationRelatedHT
+    BootstrapIndependentHT -.->|"each group"| BSamples
+    BootstrapRelatedHT -.->|"subject indexes"| BSamples
+    PermutationIndependentHT -.->|"pooled sample"| PSamples
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 1. Applying resampling tests
     Begin with a question about the populations represented by the data. Identify the measurements being compared and whether they come from separate groups or from the same subjects. State the hypotheses before calculating the result.
 
@@ -121,7 +155,7 @@ def _(mo):
     ### Mean bars and a complete test report
     `plot_bars` displays each group's observed mean and prints the test report. The bars show the measured quantity, such as dollars or grades. They describe the samples; confidence intervals shown later describe uncertainty about the population means.
 
-    With two groups, the statistic is the first sample mean minus the second. A two-sided question considers differences in either direction. With several groups, the statistic summarizes how far their means spread apart. Larger distances indicate more separation, so those tests compare the observed distance with the upper tail of the null distribution.
+    With two groups, the statistic is the first sample mean minus the second. A two-sided question considers differences in either direction. With several groups, the statistic summarizes how far their means spread apart. For three or more groups, the statistic is the sample-size-weighted root-mean-square spread of the group means around their grand mean for independent groups, and the average absolute gap between pairs of condition means for related designs. Larger distances indicate more separation, so those tests compare the observed distance with the upper tail of the null distribution.
 
     The report includes the hypotheses, sample summaries, statistic, p-value, significance level, and decision. At level 0.05, a p-value at or below 0.05 leads to rejection. A larger value means insufficient evidence to reject, not proof of equality. Interpret the decision in terms of the case's population question.
 
