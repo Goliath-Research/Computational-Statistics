@@ -260,7 +260,7 @@ def _(mo):
     R^2 = 1 - \frac{\sum_i (y_i-\hat y_i)^2}{\sum_i (y_i-\bar y)^2}.
     $$
 
-    The denominator is the squared error from predicting the sample mean for everyone. R-squared compares the fitted model with that baseline, rather than counting observations on a line.
+    The denominator is the squared error from predicting the sample mean for everyone. R-squared compares the fitted model with that baseline, rather than counting observations on a line. With one predictor and an intercept, \(R^2\) equals \(r^2\), the square of Pearson's \(r\) (here \(0.9782^2\) is about 0.957).
 
     \(R^2\) near 1 means the residuals are small compared with the spread of salary **in this table**. It is not a promise about the next person hired somewhere else.
     """)
@@ -362,11 +362,13 @@ def _(mo):
 
     The t statistic is the estimate divided by its standard error. The p-value is the evidence against \(H_0\) under the conventional linear-model assumptions: a correctly specified linear conditional mean, independent errors with constant variance, and normally distributed errors for exact finite-sample t inference. Normality concerns the errors conditional on x, not x or y themselves. Fitting the least-squares line does not require normality. Thirty teaching rows will not prove those assumptions. We use the test as a disciplined summary and we still look at the scatter.
 
-    For simple ordinary least-squares regression with an intercept and the same observations, the conventional two-sided slope test and Pearson zero-correlation test have the same t statistic and p-value. They are two descriptions of the same evidence, not independent confirmations. The slope adds salary units per year:
+    For simple ordinary least-squares regression with an intercept and the same observations, the conventional two-sided slope test and Pearson zero-correlation test have the same t statistic and p-value:
 
     $$
     t = r \sqrt{\frac{n-2}{1-r^2}}.
     $$
+
+    They are two descriptions of the same evidence, not independent confirmations. The slope adds the units: salary per year.
 
     The intercept has its own test, against a mean salary of 0 at zero years of experience. Zero salary is not an interesting benchmark here. The slope test is the one that matches the question in this section.
     """)
@@ -504,7 +506,6 @@ def _(mo):
     This model is linear in its coefficients, although its relationship with experience can be curved. There is one underlying explanatory variable represented by two terms.
 
     Adding a term to this nested least-squares model cannot decrease training R-squared. A small increase alone does not justify the extra term. A large p-value for the squared term means insufficient evidence of curvature under this model; it does not prove that curvature is absent. Consider residual patterns and, when prediction is the goal, performance on new data as well.
-
     """)
     return
 

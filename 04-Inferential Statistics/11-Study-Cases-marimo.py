@@ -10,14 +10,13 @@ app = marimo.App(width="medium")
 
 @app.cell
 def _():
-    from pathlib import Path
     import marimo as mo
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
     import seaborn as sns
     from goliath_research import resampling as rs
-    lesson_dir = Path(__file__).resolve().parent
+    lesson_dir = mo.notebook_dir()
     sns.set_style("whitegrid")
     return lesson_dir, mo, np, pd, plt, rs, sns
 
@@ -34,8 +33,68 @@ def _(mo):
 
     In this lesson, we apply the bootstrap and permutation procedures from the previous lessons to restaurant bills, glass composition, and student grades. The `resampling` module in `goliath_research` provides the procedures we will use.
 
-    Use your `goliath_research` package with the corrected `resampling.py` module inside it. Keep `tips.csv`, `glass.csv`, and `student-mat.csv` beside this notebook. Each test generates **4,000 resamples**. Fixed seeds reproduce the examples when they are rerun.
+    Use your `goliath_research` package with the corrected `goliath_research/resampling.py` module inside it. Keep `glass.csv` and `student-mat.csv` beside this notebook. The tips data is loaded from seaborn's online sample datasets (needs internet). Each test generates **4,000 resamples**. Fixed seeds reproduce the examples when they are rerun.
+    """)
+    return
 
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Classes in the resampling module
+    `goliath_research/resampling.py` separates sample generation from the hypothesis test: `Samples` is the abstract generator (`BSamples` draws with replacement and `PSamples` permutes the original values), and `ResamplingHT` is the abstract test, with one class for each combination of bootstrap or permutation and independent or related measurements.
+
+    The two bootstrap tests resample with `BSamples`, the independent permutation test reshuffles the pooled sample with `PSamples`, and the related permutation test permutes condition labels within each subject directly.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.mermaid(r"""
+flowchart TD
+    Samples["Samples (ABC)"] --> BSamples["BSamples<br>Lessons 02, 07, 10"]
+    Samples --> PSamples["PSamples<br>Lessons 07, 10"]
+    ResamplingHT["ResamplingHT (ABC)"] --> BootstrapIndependentHT["BootstrapIndependentHT<br>Lessons 07, 10"]
+    ResamplingHT --> BootstrapRelatedHT["BootstrapRelatedHT<br>Lessons 07, 10"]
+    ResamplingHT --> PermutationIndependentHT["PermutationIndependentHT<br>Lessons 07, 10"]
+    ResamplingHT --> PermutationRelatedHT["PermutationRelatedHT<br>Lessons 07, 10"]
+    BootstrapIndependentHT -.->|"each group"| BSamples
+    BootstrapRelatedHT -.->|"subject indexes"| BSamples
+    PermutationIndependentHT -.->|"pooled sample"| PSamples
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Where each piece comes from
+    The classes collect functions you have already written. The case studies call those classes, so you do not rebuild the steps.
+
+    | Piece in the module | Where you wrote it |
+    | --- | --- |
+    | `BSamples` | `generate_samples_b` in Lesson 02, and `generate_samples` in Lessons 07 and 10 |
+    | `PSamples` | `shuffle_2_samples` in Lesson 07 and `shuffle_k_samples` in Lesson 10 |
+    | Within-subject permutation | `shuffle_1_sample` in Lesson 07 and `shuffle_k_related_samples` in Lesson 10 |
+    | `get_p_value` | the same function in Lessons 07 and 10 |
+    | Spread of the group means | `dispersion` in Lesson 10 |
+    | Average gap for related groups | `mean_gap` in Lesson 10 |
+    | Difference of two means | the two-group difference of means in Lesson 07 |
+    | Centering the bootstrap at the null | shifting each group to a common mean in Lessons 07 and 10 |
+    | Confidence intervals | `confidence_interval` in Lesson 02 |
+    | `observed_statistic` | the observed test value you calculated |
+
+    Pooled shuffles are the `PSamples` class. Swapping measurements within each person is the sign flip from `shuffle_1_sample` in Lesson 07, and `shuffle_k_related_samples` in Lesson 10 when there are several related conditions.
+
+    The module compares groups, whether the measurements are independent or related. One-sample tests, and statistics such as the median, the variance, or the skewness, are still done with the functions you wrote in Lessons 02, 05, and 07.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
     ## 1. Applying resampling tests
     Begin with a question about the populations represented by the data. Identify the measurements being compared and whether they come from separate groups or from the same subjects. State the hypotheses before calculating the result.
 
@@ -122,7 +181,7 @@ def _(mo):
     ### Mean bars and a complete test report
     `plot_bars` displays each group's observed mean and prints the test report. The bars show the measured quantity, such as dollars or grades. They describe the samples; confidence intervals shown later describe uncertainty about the population means.
 
-    With two groups, the statistic is the first sample mean minus the second. A two-sided question considers differences in either direction. With several groups, the statistic summarizes how far their means spread apart. Larger distances indicate more separation, so those tests compare the observed distance with the upper tail of the null distribution.
+    With two groups, the statistic is the first sample mean minus the second. A two-sided question considers differences in either direction. With several groups, the statistic summarizes how far their means spread apart. For three or more groups, the statistic is the sample-size-weighted root-mean-square spread of the group means around their grand mean for independent groups, and the average absolute gap between pairs of condition means for related designs. Larger distances indicate more separation, so those tests compare the observed distance with the upper tail of the null distribution.
 
     The report includes the hypotheses, sample summaries, statistic, p-value, significance level, and decision. At level 0.05, a p-value at or below 0.05 leads to rejection. A larger value means insufficient evidence to reject, not proof of equality. Interpret the decision in terms of the case's population question.
 
@@ -228,6 +287,15 @@ def _(np, plt):
         plt.close(fig)
         return fig
     return (plot_confidence_intervals,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Shared letters for pairwise comparisons
+    Bonferroni is a simpler alternative to the Tukey pairwise comparisons from the ANOVA lesson (Lesson 09). A shared letter means that pair was not rejected after the correction; it does not prove the means are equal.
+    """)
+    return
 
 
 @app.cell
@@ -370,6 +438,25 @@ def _(data_sex, tips_sex_bootstrap, pd, mo):
 @app.cell
 def _(data_sex, tips_sex_ci, plot_confidence_intervals):
     plot_confidence_intervals(tips_sex_ci, [str(k) for k in data_sex], means=[a.mean() for a in data_sex.values()], title="95% bootstrap intervals for population means", xlabel="Population mean bill ($)")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### A 90% interval
+    In the module, confidence is written as a fraction. `0.95` is the 95% interval above, the same level Lesson 02 wrote as `95` in `confidence_interval`. The next cell sets `confidence` to `0.90` on a bootstrap with the same seed, so only the percentiles change. A 90% interval is narrower.
+    """)
+    return
+
+
+@app.cell
+def _(data_sex, make_model, mo, pd):
+    tips_sex_90 = make_model(data_sex, "Bootstrap", "Independent", seed=100)
+    tips_sex_90.confidence = 0.90
+    tips_sex_ci_90 = tips_sex_90.confidence_intervals()
+    tips_sex_ci_90_table = pd.DataFrame({"Group": [str(k) for k in data_sex], "Observed mean": [a.mean() for a in data_sex.values()], "90% lower": tips_sex_ci_90[:, 0], "90% upper": tips_sex_ci_90[:, 1]})
+    mo.Html(tips_sex_ci_90_table.round(3).to_html(index=False, border=0))
     return
 
 
@@ -919,6 +1006,8 @@ def _(mo):
     mo.md(r"""
     ### A focused first-to-final comparison
     For another question, compare only each student's first-period and final grades. The prepared paired bootstrap model keeps the student matching. The two-sided statistic is the mean of G1 minus the mean of G3.
+
+    In the module, a paired difference is the first group minus the second group, so the order you pass the groups sets the sign. Lesson 07 defined the change as after minus before.
     """)
     return
 
@@ -952,6 +1041,40 @@ def _(mo):
     ```
     H0: μG1 = μG3; Ha: μG1 ≠ μG3. Here p ≈ 0.0004999. Reject equal population mean first-period and final grades at 0.05. The matched measurements provide evidence about a population mean difference, without establishing the cause of any change.
     """)}, lazy=True)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### A one-sided question about the same grades
+    The comparison above asks whether the two population means differ in either direction. To ask only whether the first-period mean is higher than the final mean, pass `alternative="larger"`. The statistic is still the first group minus the second, so "larger" means a higher G1 mean. Lesson 07 used `larger` in the same way when the question pointed in one direction.
+    """)
+    return
+
+
+@app.cell
+def _(first_final_model, mo):
+    _p = first_final_model.get_p_value(alternative="larger")
+    mo.md(f"One-sided bootstrap, G1 mean larger than G3: p = {_p:.4g}. " + ("There is sufficient evidence at 0.05 that the population mean first-period grade is higher." if _p <= 0.05 else "There is insufficient evidence at 0.05 that the population mean first-period grade is higher."))
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Two grade periods with a related permutation
+    Compare G1 and G3 again with a related permutation. The module swaps the two grades within each student. That swap turns the student's difference into its opposite, so this is the same sign flip as `shuffle_1_sample` in Lesson 07, and it gives the same result as that test. The statistic is still the first group mean minus the second.
+    """)
+    return
+
+
+@app.cell
+def _(data_st, make_model, mo):
+    first_final_perm = make_model({"G1": data_st["G1"], "G3": data_st["G3"]}, "Permutation", "Related", seed=303)
+    _stat = first_final_perm.get_observed_stat()
+    _p = first_final_perm.get_p_value()
+    mo.md(f"Related permutation, G1 minus G3: observed statistic = {_stat:.4g}; p-value = {_p:.4g}. " + ("There is sufficient evidence to reject the sign-flip null at 0.05." if _p <= 0.05 else "There is insufficient evidence to reject the sign-flip null at 0.05."))
     return
 
 
@@ -995,7 +1118,7 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## References
-    - [Seaborn example datasets: restaurant tips](https://github.com/mwaskom/seaborn-data). The local CSV contains the standard tips data.
+    - [Seaborn example datasets: restaurant tips](https://github.com/mwaskom/seaborn-data). The tips data is loaded from seaborn's online sample datasets (needs internet).
     - [UCI Machine Learning Repository: Glass Identification](https://archive.ics.uci.edu/dataset/42/glass+identification).
     - [UCI Machine Learning Repository: Student Performance](https://archive.ics.uci.edu/dataset/320/student+performance).
     - Efron, B., and Tibshirani, R. J. (1993). *An Introduction to the Bootstrap*. Chapman & Hall/CRC.

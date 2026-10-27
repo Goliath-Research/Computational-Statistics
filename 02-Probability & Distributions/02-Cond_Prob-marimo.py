@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "marimo",
+#     "matplotlib",
+#     "numpy",
+#     "pandas",
+# ]
+# ///
+
 import marimo
 
 __generated_with = "0.24.2"
@@ -10,9 +20,8 @@ def _():
     import pandas as pd
     import numpy as np
     import matplotlib.pyplot as plt
-    from pathlib import Path
 
-    return Path, mo, np, pd, plt
+    return mo, np, pd, plt
 
 
 @app.cell(hide_code=True)
@@ -50,7 +59,11 @@ def _(mo):
 
     $$P(A\mid B)=\frac{P(A\cap B)}{P(B)},\qquad P(B)>0.$$
 
-    Here A ∩ B means that both A and B hold. For equally likely selections from a table:
+    Here A ∩ B means that both A and B hold.
+
+    In a Venn diagram, A ∩ B (the **intersection**) is the overlap of the two circles; A ∪ B (the **union**) is everything inside either circle; the **complement** of A is everything outside A. A is a **subset** of B when its circle lies entirely inside B's.
+
+    For equally likely selections from a table:
 
     $$P(A\mid B)=\frac{\text{number satisfying both A and B}}{\text{number satisfying B}}.$$
 
@@ -72,6 +85,7 @@ def _(mo):
 
     Are “Passed” and “Higher study time” independent? Compare P(Passed | Higher) = 0.600 with P(Passed) = 0.525.
     Events A and B are independent when P(A | B) = P(A), provided P(B) > 0.
+    Equivalently, independent events satisfy the **multiplication rule** P(A ∩ B) = P(A) × P(B). For example, a head on a coin and a five on a die: 1/2 × 1/6 = 1/12.
     """)
     return
 
@@ -94,7 +108,7 @@ def _(mo):
     mo.md(r"""
     ## 2. Work with the student dataset
     We now use the mathematics file `student-mat.csv` from the [UCI Student Performance dataset](https://archive.ics.uci.edu/dataset/320/student+performance).
-    The code reads `../data/student-mat.csv`, relative to the current working directory. Run the notebook with the lesson folder as the working directory, and place `student-mat.csv` in a `data` folder one directory above it.
+    The code reads `student-mat.csv` from the `data` folder one directory above this lesson's folder, as in the course repository.
 
     Imagine selecting one recorded student uniformly at random. Calculated probabilities describe that selection from this file. They do not automatically describe all students.
 
@@ -111,7 +125,7 @@ def _(mo):
 
 @app.cell
 def _(mo, pd):
-    student_file = pd.read_csv("../data/student-mat.csv", sep=";")
+    student_file = pd.read_csv(mo.notebook_dir().parent / "data" / "student-mat.csv", sep=";")
 
     source_data = student_file[
         ["studytime", "internet", "G1", "G2", "G3"]
@@ -233,12 +247,12 @@ def _(data, mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-### Try it yourself
+    ### Try it yourself
     1. Calculate the G1 conditional probability directly from the cross-tabulation.
     2. Compare both study groups for G1, G2, and G3. Is the direction of the comparison identical for every grade?
     3. Predict what happens to a fixed group's passing rate if the threshold decreases. Move the threshold from 60% to 50% and check.
 
-**Write your script in the next cell:**
+    **Write your script in the next cell:**
     - Select students with **data["HigherStudyTime"]**.
     - Count the selected students and their G1 passes using **.sum()**.
     - Divide passes by students. Use **np.nan** if the selected group is empty.
@@ -321,12 +335,12 @@ def _(internet_comparison, passing_percent, plt):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-### Try it yourself
+    ### Try it yourself
     1. Identify the denominator for P(G3pass | internet = yes).
     2. Compare this probability with P(G3pass | internet = no).
     3. Could differences in other characteristics contribute to the observed comparison?
 
-**Write your script in the next cell:**
+    **Write your script in the next cell:**
     - Select each internet group with `data["internet"] == "yes"` or `"no"`.
     - Calculate each group's G3 passing rate using the filtered indicator's `.mean()`.
     - Print both results and compare with the table. An empty group's mean is undefined.
@@ -409,12 +423,12 @@ def _(data, np, study_summary):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-### Try it yourself
+    ### Try it yourself
     1. Multiply each group's conditional passing rate by its group probability. Add the contributions.
     2. Why would an unweighted average of the four passing rates generally be wrong?
     3. Change the cutoff and check that the weighted and direct calculations still agree.
 
-**Write your script in the next cell:**
+    **Write your script in the next cell:**
     - Use the `Pass_given_group` and `Group_probability` columns of `study_summary`.
     - Multiply the columns and add the contributions with `.sum()`.
     - For empty groups, use `.fillna(0)` on the contributions.
@@ -512,13 +526,13 @@ def _(data, mo, study_summary):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-### Try it yourself
+    ### Try it yourself
     1. Choose categories 2 and 3. Calculate the reversed probabilities using both methods.
     2. Explain why P(G3pass | category 2) and P(category 2 | G3pass) have different denominators.
     3. Add the four probabilities of study category given passing. Why must they sum to 1 when at least one student passed?
     4. Lower the cutoff. Must every category's share among passing students increase?
 
-**Write your script in the next cell:**
+    **Write your script in the next cell:**
     - Use the category selected by `chosen_group.value`.
     - Select its row with `study_summary.loc[chosen_group.value]`.
     - Calculate P(category | G3pass) using Bayes' rule and direct counts.

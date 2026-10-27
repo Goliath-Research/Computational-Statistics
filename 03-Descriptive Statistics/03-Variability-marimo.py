@@ -1,12 +1,18 @@
 # /// script
+# requires-python = ">=3.10"
 # dependencies = [
 #     "marimo",
+#     "matplotlib",
+#     "numpy",
+#     "pandas",
+#     "scipy",
 #     "seaborn",
 # ]
 # ///
 
 import marimo
 
+__generated_with = "0.25.2"
 app = marimo.App(width="medium")
 
 
@@ -85,7 +91,7 @@ descriptive_sd = values.std(ddof=0)
 def _(mo):
     mo.md(r"""
     ## 2. The student file
-    The code reads `../data/student-mat.csv`. Run the notebook with this lesson folder as the working directory.
+    The code reads `student-mat.csv` from the `data` folder one directory above this lesson's folder, as in the course repository.
     `G1`, `G2`, and `G3` are grades on a 0–20 scale. Grouped calculations describe the recorded students in each group.
     """)
     return
@@ -93,7 +99,7 @@ def _(mo):
 
 @app.cell
 def _(mo, pd):
-    student_file = pd.read_csv("../data/student-mat.csv", sep=";")
+    student_file = pd.read_csv(mo.notebook_dir().parent / "data" / "student-mat.csv", sep=";")
     data = student_file[["G1", "G2", "G3", "school", "sex"]].copy()
     print(f"Loaded {len(data)} records.")
     mo.Html(
@@ -238,6 +244,7 @@ def _(mo):
     mo.md(r"""
     ## 5. Range and interquartile range
     The **range** is the maximum minus the minimum. It uses only the two extremes, so one unusual value can determine it.
+    One value far from the mean also adds a large squared deviation, so it increases the variance and the standard deviation; a value added in the middle of the data does not change the range.
 
     The **interquartile range** is
 

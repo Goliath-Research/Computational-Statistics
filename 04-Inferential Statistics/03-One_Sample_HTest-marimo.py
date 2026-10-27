@@ -401,7 +401,7 @@ def _(mo):
     The alternatives are `two-sided`, `larger`, and `smaller`.
 
     Observations must be independent, and the normal approximation needs sufficiently many expected successes and failures. A common guideline is \(np_0 \geq 10\) and \(n(1-p_0) \geq 10\).
-    The code reads `../data/student-mat.csv`. Run the notebook with this lesson folder as the working directory.
+    The code reads `student-mat.csv` from the lesson folder beside this notebook.
     This file records students at two Portuguese secondary schools. The `internet` column says whether each student has internet access at home. We count `yes` as a success. Generalizing beyond these students requires an appropriate sampling design.
 
     We show three research questions: is the population proportion above 0.80, above 0.90, or different from 0.85? Each row corresponds to a different alternative. These are teaching examples, rather than a reason to choose an alternative after inspecting the results.
@@ -420,7 +420,7 @@ def _(mo):
 
 @app.cell
 def _(mo, pd):
-    student_file = pd.read_csv("../data/student-mat.csv", sep=";")
+    student_file = pd.read_csv(mo.notebook_dir() / "student-mat.csv", sep=";")
     print("Rows and columns:", student_file.shape)
     mo.Html(student_file.head().to_html(index=False, border=0))
     return (student_file,)

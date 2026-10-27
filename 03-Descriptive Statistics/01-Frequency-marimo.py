@@ -1,12 +1,18 @@
 # /// script
+# requires-python = ">=3.10"
 # dependencies = [
 #     "marimo",
+#     "matplotlib",
+#     "numpy",
+#     "pandas",
+#     "scipy",
 #     "seaborn",
 # ]
 # ///
 
 import marimo
 
+__generated_with = "0.25.2"
 app = marimo.App(width="medium")
 
 
@@ -35,6 +41,8 @@ def _(mo):
     - Interpret a normalized cross-tabulation by naming its denominator.
     - Use a histogram for a numeric measurement and a bar chart for categories.
     - Explain what changing histogram bins does and does not change.
+
+    Descriptive statistics summarize and organize the recorded data. Its measures fall into four groups: **frequency** (this lesson), **central tendency** (mean, median, mode), **variability** (range, variance, standard deviation, IQR) and **shape** (skewness, kurtosis). Methods that go beyond the recorded data, such as interval estimation or hypothesis tests, belong to inferential statistics.
 
     ## 1. Counts and relative frequencies
     A **frequency distribution** assigns every observation to one class and records how many observations fall in each class.
@@ -75,7 +83,7 @@ def _(mo):
     mo.md(r"""
     ## 2. The student file
     We use `student-mat.csv` from the [UCI Student Performance dataset](https://archive.ics.uci.edu/dataset/320/student+performance).
-    The code reads `../data/student-mat.csv`. Run the notebook with this lesson folder as the working directory.
+    The code reads `student-mat.csv` from the `data` folder one directory above this lesson's folder, as in the course repository.
 
     The retained variables are:
     - `school`: GP or MS.
@@ -92,7 +100,7 @@ def _(mo):
 
 @app.cell
 def _(mo, pd):
-    student_file = pd.read_csv("../data/student-mat.csv", sep=";")
+    student_file = pd.read_csv(mo.notebook_dir().parent / "data" / "student-mat.csv", sep=";")
     data = student_file[
         ["school", "sex", "age", "Pstatus", "studytime", "schoolsup", "internet", "G1", "G2", "G3"]
     ].copy()
@@ -290,6 +298,7 @@ def _(mo):
 
     `studytime` has four ordered codes. A bar chart of those codes matches the categories directly.
     A kernel density estimate draws a smooth curve from the observations. It is an estimate of shape, not a table of counts.
+    With `stat="density"` the bar areas add to 1, so the bars and the curve share one scale; the curve still does not count students.
     """)
     return
 
@@ -328,11 +337,23 @@ def _(data, np, plt):
     return
 
 
+@app.cell
+def _(data, np, plt, sns):
+    _fig, _ax = plt.subplots(figsize=(6, 3.4))
+    sns.histplot(data["G3"], bins=np.arange(-0.5, 21.5, 1), stat="density", color="#4C78A8", edgecolor="white", ax=_ax)
+    sns.kdeplot(data["G3"], color="black", ax=_ax)
+    _ax.set(title="G3 histogram (density scale) and kernel density estimate", xlabel="Grade", ylabel="Density")
+    _fig.tight_layout()
+    plt.close(_fig)
+    _fig
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ### Try it yourself
-    1. Move the age-bin slider. Do any student's recorded age change?
+    1. Move the age-bin slider. Does any student's recorded age change?
     2. Why is a bar chart a direct display for `studytime`?
     3. Is a kernel density curve a count of students in a grade interval?
     """)

@@ -42,9 +42,8 @@ def _(mo):
     - Describe the direction and strength of a linear association with a correlation coefficient.
     - Match a scatter of points to a strong, weak, positive, or negative coefficient.
     - Explain why a curved pattern can have a correlation near zero.
-    - State the hypotheses of a test that the linear correlation is zero, and read the p-value beside the coefficient.
+    - State the hypotheses of a test that the linear correlation is zero, and read a coefficient together with its scatter and with the p-value when a test is reported.
     - Contrast Pearson's \(r\) with Spearman's rank correlation and Kendall's \(\tau\).
-    - Read a coefficient together with its scatter, and with the p-value when a test is reported.
 
     The examples below are teaching data. A coefficient summarizes the pairs in front of you.
     """)
@@ -226,12 +225,12 @@ def _(mo):
     ## 3. A curve is not "no relationship"
     Pearson's \(r\) answers a narrow question: how well does a **straight line** describe the pairs?
 
-    The course file `corrExamples.csv` holds 30 synthetic pairs used again in the bootstrap and permutation lessons. The next cell generates these data using the original Jupyter recipe and seed, then automatically saves them in this lesson's folder as `corrExamples.csv` if that file is missing. An existing file is preserved without prompting. Two of its columns are easy to misread if you look only at the coefficient:
+    The course file `corrExamples.csv` holds 30 synthetic pairs used again in the bootstrap and permutation lessons. The next cell rebuilds these data with the original seed and saves `corrExamples.csv` if the file is missing. Two of its columns are easy to misread if you look only at the coefficient:
 
     - `y_nc` is generated independently of `x`; its sample correlation need not be exactly zero.
     - `y_nc2` is a **curve**: the square of `x`, plus a little vertical noise.
 
-    The short names were chosen when the file was saved. "nc" is not a verdict you should trust until you have seen the scatter. The analysis below always uses the original generated data in memory. If an existing CSV has different contents, a message explains that it was preserved; later notebooks will use the saved file.
+    The short names were chosen when the file was saved. "nc" is not a verdict you should trust until you have seen the scatter.
     """)
     return
 

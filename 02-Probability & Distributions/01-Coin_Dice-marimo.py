@@ -1,3 +1,12 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "marimo",
+#     "matplotlib",
+#     "numpy",
+# ]
+# ///
+
 import marimo
 
 __generated_with = "0.25.0"
@@ -35,6 +44,8 @@ def _(mo):
     For a coin it is {Heads, Tails}; for a die it is {1, 2, 3, 4, 5, 6}.
 
     For a fair coin, P(Heads) = P(Tails) = 1/2. For a fair die, each face has probability 1/6.
+    
+    Every probability is between 0 and 1: an **impossible** event has probability 0 and a **certain** event has probability 1. When all outcomes are equally likely, P(event) = number of outcomes in the event / number of possible outcomes. For two coins the sample space is {HH, HT, TH, TT}, so P(both tails) = 1/4. Two dice give 6 × 6 = 36 equally likely pairs, and 6 of them sum to 7. The **complement** "not A" has P(not A) = 1 − P(A); for example, P(at least one head in two tosses) = 1 − P(TT) = 3/4.
     
     These are properties of our model, not numbers calculated from one experiment.
 
@@ -355,7 +366,7 @@ def _(mo):
     mo.md(r"""
     **Discussion:** 
     - Ten tosses do not guarantee five Heads. 
-    - Relative frequencies fluctuate, a larger sample can sometimes be farther from 0.5. 
+    - Relative frequencies fluctuate; a larger sample can sometimes be farther from 0.5. 
     - Under our independence assumption, P(Heads) on the next toss is still 0.5, whatever happened before.
     """)
     return
@@ -816,7 +827,7 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Reference
+    ## References
     Unpingco, J. (2019). *Python for Probability, Statistics, and Machine Learning*. Springer, Chapter 2.
     """)
     return

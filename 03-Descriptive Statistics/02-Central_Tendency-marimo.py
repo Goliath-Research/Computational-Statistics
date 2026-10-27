@@ -1,12 +1,18 @@
 # /// script
+# requires-python = ">=3.10"
 # dependencies = [
 #     "marimo",
+#     "matplotlib",
+#     "numpy",
+#     "pandas",
+#     "scipy",
 #     "seaborn",
 # ]
 # ///
 
 import marimo
 
+__generated_with = "0.25.2"
 app = marimo.App(width="medium")
 
 
@@ -66,7 +72,7 @@ def _(mo):
 def _(mo):
     mo.md(r"""
     ## 2. The student file
-    The code reads `../data/student-mat.csv`. Run the notebook with this lesson folder as the working directory.
+    The code reads `student-mat.csv` from the `data` folder one directory above this lesson's folder, as in the course repository.
     Grades `G1`, `G2`, and `G3` use a 0–20 scale. `studytime` is an ordered category code, not a number of hours.
     """)
     return
@@ -74,7 +80,7 @@ def _(mo):
 
 @app.cell
 def _(mo, pd):
-    student_file = pd.read_csv("../data/student-mat.csv", sep=";")
+    student_file = pd.read_csv(mo.notebook_dir().parent / "data" / "student-mat.csv", sep=";")
     data = student_file[
         ["school", "sex", "age", "Pstatus", "studytime", "schoolsup", "internet", "G1", "G2", "G3"]
     ].copy()

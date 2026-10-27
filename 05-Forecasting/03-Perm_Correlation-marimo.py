@@ -122,7 +122,7 @@ def _(mo):
 
     - **step 4**: compare p with the significance level **α**. If **p < α**, reject H₀; otherwise, do not reject H₀.
 
-    The helper includes a small floating-point tolerance so numerically equal statistics count as equally extreme.
+    This course's two-sided p-value compares the absolute size of \(r\), while the Inferential Statistics course doubled the smaller tail, and both are valid.
 
     Adding one keeps the p-value from being reported as zero. With 4,000 shuffles the smallest value is \(1/4001 \approx 0.00025\). A result that lands on that floor means none of the shuffles matched the observed correlation in size. It does not mean the probability is exactly zero.
     """)
