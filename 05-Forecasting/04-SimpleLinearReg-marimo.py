@@ -39,7 +39,7 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # Simple linear regression
+    # Introduction to Simple Linear Regression
 
     ## Learning goals
     By the end of this lesson, you should be able to:

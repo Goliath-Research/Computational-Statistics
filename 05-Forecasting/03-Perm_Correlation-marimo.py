@@ -39,7 +39,7 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # Permutation tests for a correlation
+    # Permutation Tests for a Correlation
 
     ## Learning goals
     By the end of this lesson, you should be able to:

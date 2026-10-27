@@ -35,7 +35,7 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # Correlation
+    # Introduction to Correlation
 
     ## Learning goals
     By the end of this lesson, you should be able to:
