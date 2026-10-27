@@ -23,6 +23,7 @@ def _():
 def _(mo):
     mo.md(r"""
     # Resampling Hypothesis Tests for Two Samples
+    
     ## Learning goals
     By the end of this lesson, you should be able to:
     - Apply bootstrap and permutation procedures to compare two independent samples.

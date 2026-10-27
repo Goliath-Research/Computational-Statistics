@@ -24,7 +24,7 @@ def _():
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    # Two-Sample Hypothesis Tests with Python
+    # Two-Sample Hypothesis Tests
 
     ## Learning goals
     By the end of this lesson, you should be able to:
